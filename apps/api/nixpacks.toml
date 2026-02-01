@@ -1,0 +1,15 @@
+# API Service Nixpacks Configuration
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["cd ../.. && npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = [
+  "cd ../.. && npm run build --workspace=@change/shared",
+  "cd ../.. && npm run build --workspace=@change/api"
+]
+
+[start]
+cmd = "node dist/index.js"
