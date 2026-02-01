@@ -3,7 +3,7 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm install --legacy-peer-deps"]
 
 [phases.build]
 cmds = [
@@ -13,4 +13,4 @@ cmds = [
 ]
 
 [start]
-cmd = "node apps/api/dist/index.js"
+cmd = "bash start.sh"
