@@ -106,6 +106,7 @@ export function useCreateUser(tenantId: string) {
   return useMutation({
     mutationFn: async (data: {
       email: string;
+      phoneNumber?: string;
       firstName: string;
       lastName: string;
       password?: string;
@@ -132,6 +133,8 @@ export function useUpdateUser(tenantId: string, userId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: {
+      email?: string;
+      phoneNumber?: string;
       firstName?: string;
       lastName?: string;
       role?: string;

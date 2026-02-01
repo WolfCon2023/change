@@ -27,6 +27,7 @@ import { IamPermission, PrimaryRole, PrimaryRoleLabels } from '@change/shared';
 interface User {
   id: string;
   email: string;
+  phoneNumber?: string;
   firstName: string;
   lastName: string;
   role: string;
@@ -78,6 +79,7 @@ export function UsersPage() {
   // Form state for create/edit
   const [formData, setFormData] = useState({
     email: '',
+    phoneNumber: '',
     firstName: '',
     lastName: '',
     primaryRole: PrimaryRole.CUSTOMER as string,
@@ -175,6 +177,7 @@ export function UsersPage() {
   const openCreateModal = () => {
     setFormData({
       email: '',
+      phoneNumber: '',
       firstName: '',
       lastName: '',
       primaryRole: PrimaryRole.CUSTOMER,
@@ -189,6 +192,7 @@ export function UsersPage() {
   const openEditModal = (user: User) => {
     setFormData({
       email: user.email,
+      phoneNumber: user.phoneNumber || '',
       firstName: user.firstName,
       lastName: user.lastName,
       primaryRole: user.primaryRole || PrimaryRole.CUSTOMER,
@@ -215,6 +219,7 @@ export function UsersPage() {
     try {
       const result = await createUser.mutateAsync({
         email: formData.email,
+        phoneNumber: formData.phoneNumber || undefined,
         firstName: formData.firstName,
         lastName: formData.lastName,
         primaryRole: formData.primaryRole,
@@ -233,13 +238,15 @@ export function UsersPage() {
   };
 
   const handleUpdateUser = async () => {
-    if (!selectedUser || !formData.firstName || !formData.lastName) {
+    if (!selectedUser || !formData.email || !formData.firstName || !formData.lastName) {
       toast({ title: 'Please fill in all required fields', variant: 'destructive' });
       return;
     }
 
     try {
       await updateUser.mutateAsync({
+        email: formData.email,
+        phoneNumber: formData.phoneNumber || undefined,
         firstName: formData.firstName,
         lastName: formData.lastName,
         primaryRole: formData.primaryRole,
@@ -377,18 +384,27 @@ export function UsersPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {modalMode === 'create' && (
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                      placeholder="user@example.com"
-                    />
-                  </div>
-                )}
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="user@example.com"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>

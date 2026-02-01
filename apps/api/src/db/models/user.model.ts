@@ -5,6 +5,7 @@ import { UserRole, PrimaryRole, type UserRoleType, type PrimaryRoleType } from '
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
+  phoneNumber?: string;
   passwordHash: string;
   firstName: string;
   lastName: string;
@@ -52,6 +53,11 @@ const userSchema = new Schema<IUser>(
       lowercase: true,
       trim: true,
       index: true,
+    },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      maxlength: 20,
     },
     passwordHash: {
       type: String,

@@ -54,6 +54,7 @@ const userFiltersSchema = z.object({
 const createUserSchema = z.object({
   body: z.object({
     email: z.string().email(),
+    phoneNumber: z.string().max(20).optional(),
     password: z.string().min(8).optional(),
     firstName: z.string().min(1).max(100),
     lastName: z.string().min(1).max(100),
@@ -71,6 +72,8 @@ const updateUserSchema = z.object({
     userId: z.string(),
   }),
   body: z.object({
+    email: z.string().email().optional(),
+    phoneNumber: z.string().max(20).optional(),
     firstName: z.string().min(1).max(100).optional(),
     lastName: z.string().min(1).max(100).optional(),
     role: z.nativeEnum(UserRole).optional(),
@@ -321,6 +324,7 @@ router.post(
       const { tenantId } = req.params;
       const {
         email,
+        phoneNumber,
         password,
         firstName,
         lastName,
@@ -355,6 +359,7 @@ router.post(
       // Create user
       const user = await User.create({
         email: email.toLowerCase(),
+        phoneNumber: phoneNumber || undefined,
         passwordHash: tempPassword, // Will be hashed by pre-save hook
         firstName,
         lastName,
@@ -438,6 +443,19 @@ router.put(
         throw new NotFoundError('User not found');
       }
 
+      // Check if email is being changed and validate uniqueness
+      if (updates.email && updates.email.toLowerCase() !== user.email.toLowerCase()) {
+        const existingUser = await User.findOne({ 
+          email: updates.email.toLowerCase(),
+          _id: { $ne: userId },
+        });
+        if (existingUser) {
+          throw new ConflictError('Email already in use by another user');
+        }
+        // Normalize email to lowercase
+        updates.email = updates.email.toLowerCase();
+      }
+
       // Check privilege escalation for role changes
       if (updates.primaryRole && updates.primaryRole !== user.primaryRole) {
         if (!canAssignRole(req.primaryRole, updates.primaryRole)) {
@@ -457,6 +475,8 @@ router.put(
       }
 
       const beforeState = {
+        email: user.email,
+        phoneNumber: user.phoneNumber,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
@@ -470,6 +490,8 @@ router.put(
       await user.save();
 
       const afterState = {
+        email: user.email,
+        phoneNumber: user.phoneNumber,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
