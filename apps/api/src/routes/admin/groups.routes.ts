@@ -147,6 +147,7 @@ router.get(
 /**
  * GET /admin/tenants/:tenantId/groups/:groupId
  * Get group details with members
+ * IT_ADMIN can view platform groups as well as tenant groups
  */
 router.get(
   '/tenants/:tenantId/groups/:groupId',
@@ -157,7 +158,23 @@ router.get(
     try {
       const { tenantId, groupId } = req.params;
 
-      const group = await Group.findOne({ _id: groupId, tenantId })
+      // IT_ADMIN can see platform groups (isPlatformGroup: true or no tenantId)
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: groupId,
+          $or: [
+            { tenantId: tenantId },
+            { isPlatformGroup: true },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: groupId, tenantId: tenantId };
+      }
+
+      const group = await Group.findOne(query)
         .populate('roles')
         .populate('members', 'email firstName lastName role isActive')
         .populate('createdBy', 'email firstName lastName');
@@ -246,6 +263,7 @@ router.post(
 /**
  * PUT /admin/tenants/:tenantId/groups/:groupId
  * Update group
+ * IT_ADMIN can update platform groups as well as tenant groups
  */
 router.put(
   '/tenants/:tenantId/groups/:groupId',
@@ -258,7 +276,23 @@ router.put(
       const { tenantId, groupId } = req.params;
       const updates = req.body;
 
-      const group = await Group.findOne({ _id: groupId, tenantId });
+      // IT_ADMIN can update platform groups
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: groupId,
+          $or: [
+            { tenantId: tenantId },
+            { isPlatformGroup: true },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: groupId, tenantId: tenantId };
+      }
+
+      const group = await Group.findOne(query);
       if (!group) {
         throw new NotFoundError('Group not found');
       }
@@ -307,6 +341,7 @@ router.put(
 /**
  * POST /admin/tenants/:tenantId/groups/:groupId/members
  * Add or remove group members
+ * IT_ADMIN can manage platform group members
  */
 router.post(
   '/tenants/:tenantId/groups/:groupId/members',
@@ -319,16 +354,39 @@ router.post(
       const { tenantId, groupId } = req.params;
       const { action, userIds } = req.body;
 
-      const group = await Group.findOne({ _id: groupId, tenantId });
+      // IT_ADMIN can manage platform groups
+      let groupQuery: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        groupQuery = {
+          _id: groupId,
+          $or: [
+            { tenantId: tenantId },
+            { isPlatformGroup: true },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        groupQuery = { _id: groupId, tenantId: tenantId };
+      }
+
+      const group = await Group.findOne(groupQuery);
       if (!group) {
         throw new NotFoundError('Group not found');
       }
 
-      // Verify users exist and belong to tenant
-      const users = await User.find({
-        _id: { $in: userIds },
-        tenantId,
-      });
+      // For platform groups, allow users from any tenant or platform users
+      // For tenant groups, verify users belong to tenant
+      let userQuery: Record<string, unknown>;
+      if (group.isPlatformGroup || !group.tenantId) {
+        // Platform group - accept any user
+        userQuery = { _id: { $in: userIds } };
+      } else {
+        // Tenant group - users must belong to the tenant
+        userQuery = { _id: { $in: userIds }, tenantId: tenantId };
+      }
+
+      const users = await User.find(userQuery);
 
       if (users.length !== userIds.length) {
         throw new NotFoundError('One or more users not found');
@@ -377,6 +435,7 @@ router.post(
 /**
  * POST /admin/tenants/:tenantId/groups/:groupId/roles
  * Add or remove group roles
+ * IT_ADMIN can manage platform group roles
  */
 router.post(
   '/tenants/:tenantId/groups/:groupId/roles',
@@ -389,7 +448,23 @@ router.post(
       const { tenantId, groupId } = req.params;
       const { action, roleIds } = req.body;
 
-      const group = await Group.findOne({ _id: groupId, tenantId });
+      // IT_ADMIN can manage platform groups
+      let groupQuery: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        groupQuery = {
+          _id: groupId,
+          $or: [
+            { tenantId: tenantId },
+            { isPlatformGroup: true },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        groupQuery = { _id: groupId, tenantId: tenantId };
+      }
+
+      const group = await Group.findOne(groupQuery);
       if (!group) {
         throw new NotFoundError('Group not found');
       }
@@ -440,6 +515,7 @@ router.post(
 /**
  * DELETE /admin/tenants/:tenantId/groups/:groupId
  * Delete group
+ * IT_ADMIN can delete platform groups as well as tenant groups
  */
 router.delete(
   '/tenants/:tenantId/groups/:groupId',
@@ -450,7 +526,23 @@ router.delete(
     try {
       const { tenantId, groupId } = req.params;
 
-      const group = await Group.findOne({ _id: groupId, tenantId });
+      // IT_ADMIN can delete platform groups
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: groupId,
+          $or: [
+            { tenantId: tenantId },
+            { isPlatformGroup: true },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: groupId, tenantId: tenantId };
+      }
+
+      const group = await Group.findOne(query);
       if (!group) {
         throw new NotFoundError('Group not found');
       }

@@ -259,6 +259,7 @@ router.get(
 /**
  * GET /admin/tenants/:tenantId/users/:userId
  * Get user details
+ * IT_ADMIN can view any user including platform users
  */
 router.get(
   '/tenants/:tenantId/users/:userId',
@@ -269,7 +270,23 @@ router.get(
     try {
       const { tenantId, userId } = req.params;
 
-      const user = await User.findOne({ _id: userId, tenantId })
+      // Build query based on role
+      // IT_ADMIN can view platform users (no tenantId) or tenant users
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query)
         .populate('iamRoles')
         .populate('groups');
 
@@ -381,6 +398,7 @@ router.post(
 /**
  * PUT /admin/tenants/:tenantId/users/:userId
  * Update user profile
+ * IT_ADMIN can update any user including platform users
  */
 router.put(
   '/tenants/:tenantId/users/:userId',
@@ -399,7 +417,23 @@ router.put(
         throw new ForbiddenError('You cannot modify your own role');
       }
 
-      const user = await User.findOne({ _id: userId, tenantId });
+      // Build query based on role
+      // IT_ADMIN can update platform users (no tenantId) or tenant users
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query);
       if (!user) {
         throw new NotFoundError('User not found');
       }
@@ -474,6 +508,7 @@ router.put(
 /**
  * POST /admin/tenants/:tenantId/users/:userId/reset-password
  * Admin reset password
+ * IT_ADMIN can reset password for any user including platform users
  */
 router.post(
   '/tenants/:tenantId/users/:userId/reset-password',
@@ -484,7 +519,22 @@ router.post(
     try {
       const { tenantId, userId } = req.params;
 
-      const user = await User.findOne({ _id: userId, tenantId });
+      // Build query based on role
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query);
       if (!user) {
         throw new NotFoundError('User not found');
       }
@@ -524,6 +574,7 @@ router.post(
 /**
  * POST /admin/tenants/:tenantId/users/:userId/roles
  * Set user IAM roles
+ * IT_ADMIN can set roles for any user including platform users
  */
 router.post(
   '/tenants/:tenantId/users/:userId/roles',
@@ -536,7 +587,22 @@ router.post(
       const { tenantId, userId } = req.params;
       const { iamRoleIds } = req.body;
 
-      const user = await User.findOne({ _id: userId, tenantId }).populate('iamRoles', 'name');
+      // Build query based on role
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query).populate('iamRoles', 'name');
       if (!user) {
         throw new NotFoundError('User not found');
       }
@@ -586,6 +652,7 @@ router.post(
 /**
  * POST /admin/tenants/:tenantId/users/:userId/groups
  * Set user groups
+ * IT_ADMIN can set groups for any user including platform users
  */
 router.post(
   '/tenants/:tenantId/users/:userId/groups',
@@ -598,7 +665,22 @@ router.post(
       const { tenantId, userId } = req.params;
       const { groupIds } = req.body;
 
-      const user = await User.findOne({ _id: userId, tenantId }).populate('groups', 'name');
+      // Build query based on role
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query).populate('groups', 'name');
       if (!user) {
         throw new NotFoundError('User not found');
       }
@@ -658,6 +740,7 @@ router.post(
 /**
  * POST /admin/tenants/:tenantId/users/:userId/lock
  * Lock user account
+ * IT_ADMIN can lock any user including platform users
  */
 router.post(
   '/tenants/:tenantId/users/:userId/lock',
@@ -669,7 +752,22 @@ router.post(
       const { tenantId, userId } = req.params;
       const { reason } = req.body;
 
-      const user = await User.findOne({ _id: userId, tenantId });
+      // Build query based on role
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query);
       if (!user) {
         throw new NotFoundError('User not found');
       }
@@ -702,6 +800,7 @@ router.post(
 /**
  * POST /admin/tenants/:tenantId/users/:userId/unlock
  * Unlock user account
+ * IT_ADMIN can unlock any user including platform users
  */
 router.post(
   '/tenants/:tenantId/users/:userId/unlock',
@@ -712,7 +811,22 @@ router.post(
     try {
       const { tenantId, userId } = req.params;
 
-      const user = await User.findOne({ _id: userId, tenantId });
+      // Build query based on role
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query);
       if (!user) {
         throw new NotFoundError('User not found');
       }
@@ -742,6 +856,7 @@ router.post(
 /**
  * DELETE /admin/tenants/:tenantId/users/:userId
  * Deactivate user
+ * IT_ADMIN can deactivate any user including platform users
  */
 router.delete(
   '/tenants/:tenantId/users/:userId',
@@ -752,7 +867,22 @@ router.delete(
     try {
       const { tenantId, userId } = req.params;
 
-      const user = await User.findOne({ _id: userId, tenantId });
+      // Build query based on role
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = {
+          _id: userId,
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query);
       if (!user) {
         throw new NotFoundError('User not found');
       }

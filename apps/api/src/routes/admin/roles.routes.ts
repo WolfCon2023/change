@@ -249,6 +249,7 @@ router.post(
 /**
  * PUT /admin/tenants/:tenantId/roles/:roleId
  * Update a role
+ * IT_ADMIN can update custom roles including platform-level roles
  */
 router.put(
   '/tenants/:tenantId/roles/:roleId',
@@ -261,9 +262,14 @@ router.put(
       const { tenantId, roleId } = req.params;
       const updates = req.body;
 
+      // Look for role in tenant or platform-level (no tenantId)
       const role = await IamRole.findOne({
         _id: roleId,
-        tenantId,
+        $or: [
+          { tenantId: tenantId },
+          { tenantId: { $exists: false } },
+          { tenantId: null },
+        ],
       });
 
       if (!role) {
@@ -330,6 +336,7 @@ router.put(
 /**
  * DELETE /admin/tenants/:tenantId/roles/:roleId
  * Delete a custom role
+ * IT_ADMIN can delete custom roles including platform-level roles
  */
 router.delete(
   '/tenants/:tenantId/roles/:roleId',
@@ -340,9 +347,14 @@ router.delete(
     try {
       const { tenantId, roleId } = req.params;
 
+      // Look for role in tenant or platform-level (no tenantId)
       const role = await IamRole.findOne({
         _id: roleId,
-        tenantId,
+        $or: [
+          { tenantId: tenantId },
+          { tenantId: { $exists: false } },
+          { tenantId: null },
+        ],
       });
 
       if (!role) {
