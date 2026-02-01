@@ -10,13 +10,15 @@ import {
   IamPermissionCatalog,
   UserRole,
   PaginationDefaults,
+  PrimaryRole,
 } from '@change/shared';
 import {
   authenticate,
   loadIamPermissions,
   requireAnyPermission,
+  getAccessibleTenants,
 } from '../../middleware/index.js';
-import { User, IamRole, Group, AccessRequest, AccessReview, ApiKey } from '../../db/models/index.js';
+import { User, IamRole, Group, AccessRequest, AccessReview, ApiKey, Tenant } from '../../db/models/index.js';
 
 import usersRoutes from './users.routes.js';
 import rolesRoutes from './roles.routes.js';
@@ -36,17 +38,54 @@ router.get(
   '/me',
   authenticate,
   loadIamPermissions,
-  async (req: Request, res: Response) => {
-    res.json({
-      success: true,
-      data: {
-        user: req.currentUser?.toJSON(),
-        permissions: req.iamPermissions ? Array.from(req.iamPermissions) : [],
-        roles: req.iamRoles || [],
-        tenantId: req.tenantId,
-      },
-      meta: { timestamp: new Date().toISOString() },
-    });
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.currentUser;
+      const primaryRole = req.primaryRole || PrimaryRole.CUSTOMER;
+      
+      // Determine which tenants this user can access
+      let tenantId = req.user?.tenantId;
+      let accessibleTenants: string[] = [];
+      
+      // For IT_ADMIN, get all tenants; for ADVISOR, get assigned tenants
+      if (primaryRole === PrimaryRole.IT_ADMIN || primaryRole === PrimaryRole.ADVISOR) {
+        const tenantAccess = await getAccessibleTenants(
+          req.user!.userId,
+          primaryRole,
+          req.user?.tenantId
+        );
+        
+        if (tenantAccess === 'all') {
+          // IT_ADMIN: Get all active tenants
+          const allTenants = await Tenant.find({ isActive: true }).select('_id').lean();
+          accessibleTenants = allTenants.map(t => t._id.toString());
+        } else {
+          accessibleTenants = tenantAccess;
+        }
+        
+        // Default to first accessible tenant if user doesn't have one
+        if (!tenantId && accessibleTenants.length > 0) {
+          tenantId = accessibleTenants[0];
+        }
+      } else if (tenantId) {
+        accessibleTenants = [tenantId];
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          user: user?.toJSON(),
+          permissions: req.iamPermissions ? Array.from(req.iamPermissions) : [],
+          roles: req.iamRoles || [],
+          tenantId,
+          accessibleTenants,
+          primaryRole,
+        },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
