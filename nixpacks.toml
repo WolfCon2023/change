@@ -1,0 +1,16 @@
+# Nixpacks configuration for Railway deployment
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = [
+  "npm run build --workspace=@change/shared",
+  "npm run build --workspace=@change/api",
+  "npm run build --workspace=@change/web"
+]
+
+[start]
+cmd = "node apps/api/dist/index.js"
