@@ -29,7 +29,7 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password);
+      await login(data.email!, data.password!);
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',

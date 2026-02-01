@@ -48,11 +48,11 @@ const workflowSteps = [
 export function DashboardPage() {
   const { user } = useAuthStore();
 
-  const isAdvisor = user?.role && [
-    UserRole.ADVISOR,
-    UserRole.PROGRAM_ADMIN,
-    UserRole.SYSTEM_ADMIN,
-  ].includes(user.role);
+  const isAdvisor = user?.role && (
+    user.role === UserRole.ADVISOR ||
+    user.role === UserRole.PROGRAM_ADMIN ||
+    user.role === UserRole.SYSTEM_ADMIN
+  );
 
   return (
     <div className="space-y-8">
