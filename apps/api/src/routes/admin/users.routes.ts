@@ -36,6 +36,9 @@ const router = Router();
 
 // Validation schemas
 const userFiltersSchema = z.object({
+  params: z.object({
+    tenantId: z.string(),
+  }),
   query: z.object({
     page: z.string().optional().transform(v => v ? parseInt(v, 10) : PaginationDefaults.PAGE),
     limit: z.string().optional().transform(v => v ? Math.min(parseInt(v, 10), PaginationDefaults.MAX_LIMIT) : PaginationDefaults.LIMIT),
@@ -146,20 +149,22 @@ router.get(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_USER_READ),
-  validate(userFiltersSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId } = req.params;
-      const { page, limit, search, role, isActive, mfaEnabled, sortBy, sortOrder } = req.query as {
-        page: number;
-        limit: number;
-        search?: string;
-        role?: string;
-        isActive?: boolean;
-        mfaEnabled?: boolean;
-        sortBy?: string;
-        sortOrder?: string;
-      };
+      
+      // Parse query params manually
+      const page = parseInt(req.query.page as string) || PaginationDefaults.PAGE;
+      const limit = Math.min(
+        parseInt(req.query.limit as string) || PaginationDefaults.LIMIT,
+        PaginationDefaults.MAX_LIMIT
+      );
+      const search = req.query.search as string | undefined;
+      const role = req.query.role as string | undefined;
+      const isActive = req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined;
+      const mfaEnabled = req.query.mfaEnabled === 'true' ? true : req.query.mfaEnabled === 'false' ? false : undefined;
+      const sortBy = req.query.sortBy as string | undefined;
+      const sortOrder = req.query.sortOrder as string | undefined;
 
       // Build base filter
       // IT_ADMIN can see all users (platform users without tenantId + tenant users)
