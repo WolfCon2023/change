@@ -4,14 +4,14 @@
  */
 
 import { useState } from 'react';
-import { Plus, Shield } from 'lucide-react';
+import { Plus, Shield, Pencil, Trash2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/admin/DataTable';
 import { PermissionGate } from '@/components/admin/PermissionGate';
-import { useRoles, useCreateRole, usePermissionCatalog } from '@/lib/admin-api';
+import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePermissionCatalog } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
 import { IamPermission } from '@change/shared';
@@ -25,18 +25,23 @@ interface Role {
   isActive: boolean;
 }
 
+type ModalMode = 'create' | 'edit' | 'view' | 'delete' | null;
+
 export function RolesPage() {
   const { context } = useAdminStore();
   const tenantId = context?.currentTenantId || '';
   const { toast } = useToast();
 
   const [page, setPage] = useState(1);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newRole, setNewRole] = useState({ name: '', description: '', permissions: [] as string[] });
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [formData, setFormData] = useState({ name: '', description: '', permissions: [] as string[] });
 
   const { data, isLoading, refetch } = useRoles(tenantId, { page });
   const { data: permissionCatalog } = usePermissionCatalog();
   const createRole = useCreateRole(tenantId);
+  const updateRole = useUpdateRole(tenantId, selectedRole?.id || '');
+  const deleteRole = useDeleteRole(tenantId);
 
   const columns = [
     {
@@ -85,27 +90,144 @@ export function RolesPage() {
         )
       ),
     },
+    {
+      key: 'actions',
+      header: '',
+      className: 'w-24',
+      render: (role: Role) => (
+        <PermissionGate permission={IamPermission.IAM_ROLE_WRITE}>
+          <div className="flex items-center gap-1">
+            {role.isSystem ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openViewModal(role);
+                }}
+                title="View system role"
+              >
+                <Lock className="h-4 w-4 text-gray-400" />
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditModal(role);
+                  }}
+                  title="Edit role"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDeleteModal(role);
+                  }}
+                  title="Delete role"
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </>
+            )}
+          </div>
+        </PermissionGate>
+      ),
+    },
   ];
 
+  const openCreateModal = () => {
+    setFormData({ name: '', description: '', permissions: [] });
+    setSelectedRole(null);
+    setModalMode('create');
+  };
+
+  const openEditModal = (role: Role) => {
+    setFormData({
+      name: role.name,
+      description: role.description || '',
+      permissions: [...role.permissions],
+    });
+    setSelectedRole(role);
+    setModalMode('edit');
+  };
+
+  const openViewModal = (role: Role) => {
+    setFormData({
+      name: role.name,
+      description: role.description || '',
+      permissions: [...role.permissions],
+    });
+    setSelectedRole(role);
+    setModalMode('view');
+  };
+
+  const openDeleteModal = (role: Role) => {
+    setSelectedRole(role);
+    setModalMode('delete');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setSelectedRole(null);
+  };
+
   const handleCreateRole = async () => {
-    if (!newRole.name || newRole.permissions.length === 0) {
+    if (!formData.name || formData.permissions.length === 0) {
       toast({ title: 'Please fill in all required fields', variant: 'destructive' });
       return;
     }
 
     try {
-      await createRole.mutateAsync(newRole);
+      await createRole.mutateAsync(formData);
       toast({ title: 'Role created successfully' });
-      setShowCreateModal(false);
-      setNewRole({ name: '', description: '', permissions: [] });
+      closeModal();
       refetch();
     } catch {
       toast({ title: 'Failed to create role', variant: 'destructive' });
     }
   };
 
+  const handleUpdateRole = async () => {
+    if (!selectedRole || !formData.name || formData.permissions.length === 0) {
+      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await updateRole.mutateAsync({
+        name: formData.name,
+        description: formData.description,
+        permissions: formData.permissions,
+      });
+      toast({ title: 'Role updated successfully' });
+      closeModal();
+      refetch();
+    } catch {
+      toast({ title: 'Failed to update role', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteRole = async () => {
+    if (!selectedRole) return;
+
+    try {
+      await deleteRole.mutateAsync(selectedRole.id);
+      toast({ title: 'Role deleted successfully' });
+      closeModal();
+      refetch();
+    } catch {
+      toast({ title: 'Failed to delete role', variant: 'destructive' });
+    }
+  };
+
   const togglePermission = (permission: string) => {
-    setNewRole((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       permissions: prev.permissions.includes(permission)
         ? prev.permissions.filter((p) => p !== permission)
@@ -125,6 +247,8 @@ export function RolesPage() {
     {} as Record<string, typeof permissionCatalog>
   );
 
+  const isViewOnly = modalMode === 'view';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -133,7 +257,7 @@ export function RolesPage() {
           <p className="text-gray-500">Manage roles and their permissions</p>
         </div>
         <PermissionGate permission={IamPermission.IAM_ROLE_WRITE}>
-          <Button onClick={() => setShowCreateModal(true)}>
+          <Button onClick={openCreateModal}>
             <Plus className="h-4 w-4 mr-2" />
             Create Role
           </Button>
@@ -151,20 +275,32 @@ export function RolesPage() {
         emptyMessage="No roles found"
       />
 
-      {/* Create Role Modal */}
-      {showCreateModal && (
+      {/* Create/Edit/View Role Modal */}
+      {(modalMode === 'create' || modalMode === 'edit' || modalMode === 'view') && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold mb-4">Create New Role</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              {modalMode === 'create' ? 'Create New Role' : modalMode === 'edit' ? 'Edit Role' : 'View System Role'}
+            </h2>
+
+            {isViewOnly && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800">
+                  <Lock className="h-4 w-4 inline mr-1" />
+                  System roles cannot be modified. They are managed by the platform.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
                 <Label htmlFor="name">Role Name</Label>
                 <Input
                   id="name"
-                  value={newRole.name}
-                  onChange={(e) => setNewRole((prev) => ({ ...prev, name: e.target.value }))}
+                  value={formData.name}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., Billing Admin"
+                  disabled={isViewOnly}
                 />
               </div>
 
@@ -172,16 +308,17 @@ export function RolesPage() {
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
-                  value={newRole.description}
-                  onChange={(e) => setNewRole((prev) => ({ ...prev, description: e.target.value }))}
+                  value={formData.description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Describe what this role is for"
+                  disabled={isViewOnly}
                 />
               </div>
 
               <div>
                 <Label>Permissions</Label>
                 <p className="text-sm text-gray-500 mb-2">
-                  Select the permissions for this role
+                  {isViewOnly ? 'Permissions assigned to this role' : 'Select the permissions for this role'}
                 </p>
 
                 <div className="space-y-4 max-h-64 overflow-y-auto border rounded-md p-4">
@@ -193,12 +330,15 @@ export function RolesPage() {
                           {perms?.map((perm) => (
                             <label
                               key={perm.key}
-                              className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+                              className={`flex items-center space-x-2 p-1 rounded ${
+                                isViewOnly ? '' : 'cursor-pointer hover:bg-gray-50'
+                              }`}
                             >
                               <input
                                 type="checkbox"
-                                checked={newRole.permissions.includes(perm.key)}
-                                onChange={() => togglePermission(perm.key)}
+                                checked={formData.permissions.includes(perm.key)}
+                                onChange={() => !isViewOnly && togglePermission(perm.key)}
+                                disabled={isViewOnly}
                                 className="rounded border-gray-300"
                               />
                               <div className="flex-1">
@@ -213,17 +353,48 @@ export function RolesPage() {
                 </div>
 
                 <p className="text-sm text-gray-500 mt-2">
-                  {newRole.permissions.length} permission{newRole.permissions.length !== 1 ? 's' : ''} selected
+                  {formData.permissions.length} permission{formData.permissions.length !== 1 ? 's' : ''} selected
                 </p>
               </div>
             </div>
 
             <div className="mt-6 flex justify-end space-x-2">
-              <Button variant="ghost" onClick={() => setShowCreateModal(false)}>
+              <Button variant="ghost" onClick={closeModal}>
+                {isViewOnly ? 'Close' : 'Cancel'}
+              </Button>
+              {!isViewOnly && (
+                <Button
+                  onClick={modalMode === 'create' ? handleCreateRole : handleUpdateRole}
+                  disabled={createRole.isPending || updateRole.isPending}
+                >
+                  {(createRole.isPending || updateRole.isPending)
+                    ? 'Saving...'
+                    : modalMode === 'create' ? 'Create Role' : 'Save Changes'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {modalMode === 'delete' && selectedRole && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-2">Delete Role</h2>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete the role "{selectedRole.name}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Button variant="ghost" onClick={closeModal}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateRole} disabled={createRole.isPending}>
-                {createRole.isPending ? 'Creating...' : 'Create Role'}
+              <Button
+                variant="destructive"
+                onClick={handleDeleteRole}
+                disabled={deleteRole.isPending}
+              >
+                {deleteRole.isPending ? 'Deleting...' : 'Delete Role'}
               </Button>
             </div>
           </div>

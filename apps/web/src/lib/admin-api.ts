@@ -108,6 +108,7 @@ export function useCreateUser(tenantId: string) {
       lastName: string;
       password?: string;
       role?: string;
+      primaryRole?: string;
       iamRoleIds?: string[];
       groupIds?: string[];
       mfaEnforced?: boolean;
@@ -132,6 +133,7 @@ export function useUpdateUser(tenantId: string, userId: string) {
       firstName?: string;
       lastName?: string;
       role?: string;
+      primaryRole?: string;
       isActive?: boolean;
       mfaEnforced?: boolean;
     }) => {
@@ -334,6 +336,20 @@ export function useCreateGroup(tenantId: string) {
   });
 }
 
+export function useUpdateGroup(tenantId: string, groupId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { name?: string; description?: string; isActive?: boolean }) => {
+      const res = await api.put<ApiResponse<unknown>>(`/admin/tenants/${tenantId}/groups/${groupId}`, data);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'groups', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'groups', tenantId, groupId] });
+    },
+  });
+}
+
 export function useManageGroupMembers(tenantId: string, groupId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -347,6 +363,36 @@ export function useManageGroupMembers(tenantId: string, groupId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'groups', tenantId] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'groups', tenantId, groupId] });
+    },
+  });
+}
+
+export function useManageGroupRoles(tenantId: string, groupId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { action: 'add' | 'remove'; roleIds: string[] }) => {
+      const res = await api.post<ApiResponse<{ message: string }>>(
+        `/admin/tenants/${tenantId}/groups/${groupId}/roles`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'groups', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'groups', tenantId, groupId] });
+    },
+  });
+}
+
+export function useDeleteGroup(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      const res = await api.delete<ApiResponse<{ message: string }>>(`/admin/tenants/${tenantId}/groups/${groupId}`);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'groups', tenantId] });
     },
   });
 }
