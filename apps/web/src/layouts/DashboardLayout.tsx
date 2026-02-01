@@ -10,6 +10,7 @@ import {
   Building2,
   GraduationCap,
   Menu,
+  Shield,
 } from 'lucide-react';
 import { cn, formatRole } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -40,6 +41,12 @@ const navItems: NavItem[] = [
     label: 'Advisor Dashboard',
     icon: <Users className="h-5 w-5" />,
     roles: [UserRole.ADVISOR, UserRole.PROGRAM_ADMIN, UserRole.SYSTEM_ADMIN],
+  },
+  {
+    href: '/admin',
+    label: 'Admin Portal',
+    icon: <Shield className="h-5 w-5" />,
+    roles: [UserRole.PROGRAM_ADMIN, UserRole.SYSTEM_ADMIN],
   },
   { href: '/profile', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
 ];

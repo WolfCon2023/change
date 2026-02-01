@@ -17,6 +17,9 @@ import {
   Task,
   DocumentTemplate,
   AuditLog,
+  IamRole,
+  Group,
+  IamAuditLog,
 } from '../db/models/index.js';
 import {
   UserRole,
@@ -32,6 +35,9 @@ import {
   TaskCategory,
   DocumentType,
   AuditAction,
+  SystemRole,
+  SystemRolePermissions,
+  IamAuditAction,
 } from '@change/shared';
 
 async function clearDatabase(): Promise<void> {
@@ -48,6 +54,10 @@ async function clearDatabase(): Promise<void> {
     Task.deleteMany({}),
     DocumentTemplate.deleteMany({}),
     AuditLog.deleteMany({}),
+    // IAM models
+    IamRole.deleteMany({}),
+    Group.deleteMany({}),
+    IamAuditLog.deleteMany({}),
   ]);
 }
 
@@ -55,7 +65,48 @@ async function seedData(): Promise<void> {
   console.log('🌱 Seeding database...');
 
   // ==========================================================================
-  // 1. Create System Admin User (no tenant)
+  // 1. Create System IAM Roles
+  // ==========================================================================
+  console.log('   Creating system IAM roles...');
+  const globalAdminRole = await IamRole.create({
+    name: 'Global Admin',
+    description: 'Full access to all IAM features across all tenants',
+    isSystem: true,
+    systemRole: SystemRole.GLOBAL_ADMIN,
+    permissions: SystemRolePermissions[SystemRole.GLOBAL_ADMIN],
+    isActive: true,
+  });
+
+  const tenantAdminRole = await IamRole.create({
+    name: 'Tenant Admin',
+    description: 'Full IAM access within a tenant',
+    isSystem: true,
+    systemRole: SystemRole.TENANT_ADMIN,
+    permissions: SystemRolePermissions[SystemRole.TENANT_ADMIN],
+    isActive: true,
+  });
+
+  const advisorAdminRole = await IamRole.create({
+    name: 'Advisor Admin',
+    description: 'Limited IAM access for advisors',
+    isSystem: true,
+    systemRole: SystemRole.ADVISOR_ADMIN,
+    permissions: SystemRolePermissions[SystemRole.ADVISOR_ADMIN],
+    isActive: true,
+  });
+
+  const auditorRole = await IamRole.create({
+    name: 'Auditor',
+    description: 'Read-only access to audit logs and reviews',
+    isSystem: true,
+    systemRole: SystemRole.AUDITOR,
+    permissions: SystemRolePermissions[SystemRole.AUDITOR],
+    isActive: true,
+  });
+  console.log('   ✓ System IAM roles: 4 created');
+
+  // ==========================================================================
+  // 2. Create System Admin User (no tenant)
   // ==========================================================================
   console.log('   Creating system admin...');
   const systemAdmin = await User.create({
@@ -66,11 +117,16 @@ async function seedData(): Promise<void> {
     role: UserRole.SYSTEM_ADMIN,
     isActive: true,
     emailVerified: true,
+    mfaEnabled: false,
+    mfaEnforced: false,
+    iamRoles: [globalAdminRole._id],
+    failedLoginAttempts: 0,
+    mustChangePassword: false,
   });
   console.log(`   ✓ System admin: ${systemAdmin.email}`);
 
   // ==========================================================================
-  // 2. Create Demo Tenant
+  // 3. Create Demo Tenant
   // ==========================================================================
   console.log('   Creating demo tenant...');
   const demoTenant = await Tenant.create({
@@ -91,7 +147,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Demo tenant: ${demoTenant.name} (${demoTenant.slug})`);
 
   // ==========================================================================
-  // 3. Create Advisor User
+  // 4. Create Advisor User
   // ==========================================================================
   console.log('   Creating advisor user...');
   const advisor = await User.create({
@@ -102,11 +158,16 @@ async function seedData(): Promise<void> {
     role: UserRole.ADVISOR,
     isActive: true,
     emailVerified: true,
+    mfaEnabled: false,
+    mfaEnforced: false,
+    iamRoles: [advisorAdminRole._id],
+    failedLoginAttempts: 0,
+    mustChangePassword: false,
   });
   console.log(`   ✓ Advisor: ${advisor.email}`);
 
   // ==========================================================================
-  // 4. Create Demo Client User
+  // 5. Create Demo Client User
   // ==========================================================================
   console.log('   Creating demo client user...');
   const clientUser = await User.create({
@@ -118,11 +179,34 @@ async function seedData(): Promise<void> {
     tenantId: demoTenant._id,
     isActive: true,
     emailVerified: true,
+    mfaEnabled: false,
+    mfaEnforced: false,
+    failedLoginAttempts: 0,
+    mustChangePassword: false,
   });
   console.log(`   ✓ Client user: ${clientUser.email}`);
 
   // ==========================================================================
-  // 5. Create Demo Cohort
+  // 6. Create Demo Group
+  // ==========================================================================
+  console.log('   Creating demo group...');
+  const demoGroup = await Group.create({
+    tenantId: demoTenant._id,
+    name: 'Business Owners',
+    description: 'Group for all business owners in the tenant',
+    members: [clientUser._id],
+    roles: [tenantAdminRole._id],
+    isActive: true,
+    createdBy: systemAdmin._id,
+  });
+
+  // Update client user with group
+  clientUser.groups = [demoGroup._id];
+  await clientUser.save();
+  console.log(`   ✓ Group: ${demoGroup.name}`);
+
+  // ==========================================================================
+  // 7. Create Demo Cohort
   // ==========================================================================
   console.log('   Creating demo cohort...');
   const cohort = await Cohort.create({
@@ -144,7 +228,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Cohort: ${cohort.name}`);
 
   // ==========================================================================
-  // 6. Create Demo Business Profile
+  // 8. Create Demo Business Profile
   // ==========================================================================
   console.log('   Creating demo business profile...');
   const businessProfile = await BusinessProfile.create({
@@ -167,7 +251,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Business profile: ${businessProfile.businessName}`);
 
   // ==========================================================================
-  // 7. Create Demo Person (Business Owner)
+  // 9. Create Demo Person (Business Owner)
   // ==========================================================================
   console.log('   Creating demo business owner...');
   const person = await Person.create({
@@ -191,7 +275,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Person: ${person.firstName} ${person.lastName}`);
 
   // ==========================================================================
-  // 8. Create Demo Enrollment
+  // 10. Create Demo Enrollment
   // ==========================================================================
   console.log('   Creating demo enrollment...');
   const enrollment = await Enrollment.create({
@@ -213,7 +297,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Enrollment: ${enrollment.status}`);
 
   // ==========================================================================
-  // 9. Create Demo Workflow Instance
+  // 11. Create Demo Workflow Instance
   // ==========================================================================
   console.log('   Creating demo workflow instance...');
   const workflowInstance = await WorkflowInstance.create({
@@ -247,7 +331,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Workflow: Phase ${workflowInstance.currentPhase}`);
 
   // ==========================================================================
-  // 10. Create Demo Tasks
+  // 12. Create Demo Tasks
   // ==========================================================================
   console.log('   Creating demo tasks...');
   const tasks = await Task.create([
@@ -318,7 +402,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Tasks: ${tasks.length} created`);
 
   // ==========================================================================
-  // 11. Create Document Templates
+  // 13. Create Document Templates
   // ==========================================================================
   console.log('   Creating document templates...');
   const templates = await DocumentTemplate.create([
@@ -416,7 +500,7 @@ Sole Member`,
   console.log(`   ✓ Document templates: ${templates.length} created`);
 
   // ==========================================================================
-  // 12. Create Sample Audit Logs
+  // 14. Create Sample Audit Logs
   // ==========================================================================
   console.log('   Creating sample audit logs...');
   await AuditLog.create([
@@ -463,6 +547,50 @@ Sole Member`,
     },
   ]);
   console.log('   ✓ Audit logs created');
+
+  // ==========================================================================
+  // 15. Create Sample IAM Audit Logs
+  // ==========================================================================
+  console.log('   Creating sample IAM audit logs...');
+  await IamAuditLog.create([
+    {
+      tenantId: demoTenant._id,
+      actorId: systemAdmin._id,
+      actorEmail: systemAdmin.email,
+      actorType: 'user',
+      action: IamAuditAction.USER_CREATED,
+      targetType: 'User',
+      targetId: clientUser._id.toString(),
+      targetName: `${clientUser.firstName} ${clientUser.lastName}`,
+      summary: `Created user ${clientUser.email}`,
+      after: { email: clientUser.email, role: clientUser.role },
+    },
+    {
+      tenantId: demoTenant._id,
+      actorId: systemAdmin._id,
+      actorEmail: systemAdmin.email,
+      actorType: 'user',
+      action: IamAuditAction.GROUP_CREATED,
+      targetType: 'Group',
+      targetId: demoGroup._id.toString(),
+      targetName: demoGroup.name,
+      summary: `Created group ${demoGroup.name}`,
+      after: { name: demoGroup.name, memberCount: 1 },
+    },
+    {
+      tenantId: demoTenant._id,
+      actorId: systemAdmin._id,
+      actorEmail: systemAdmin.email,
+      actorType: 'user',
+      action: IamAuditAction.GROUP_MEMBER_ADDED,
+      targetType: 'Group',
+      targetId: demoGroup._id.toString(),
+      targetName: demoGroup.name,
+      summary: `Added ${clientUser.email} to group ${demoGroup.name}`,
+      after: { addedUser: clientUser.email },
+    },
+  ]);
+  console.log('   ✓ IAM audit logs created');
 
   // ==========================================================================
   // Summary

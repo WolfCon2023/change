@@ -32,3 +32,18 @@ export {
   type IDocumentVersionEntry,
 } from './document-instance.model.js';
 export { AuditLog, type IAuditLog } from './audit-log.model.js';
+
+// IAM Models
+export { IamRole, type IIamRole } from './iam-role.model.js';
+export { Group, type IGroup } from './group.model.js';
+export { AccessRequest, type IAccessRequest } from './access-request.model.js';
+export { ServiceAccount, type IServiceAccount } from './service-account.model.js';
+export { ApiKey, type IApiKey } from './api-key.model.js';
+export { AccessReview, type IAccessReview } from './access-review.model.js';
+export {
+  AccessReviewItem,
+  type IAccessReviewItem,
+  type IRoleSnapshot,
+  type IGroupSnapshot,
+} from './access-review-item.model.js';
+export { IamAuditLog, type IIamAuditLog } from './iam-audit-log.model.js';

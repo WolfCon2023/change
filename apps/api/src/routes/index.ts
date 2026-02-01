@@ -2,6 +2,7 @@ import { Router } from 'express';
 import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
 import tenantRoutes from './tenant.routes.js';
+import adminRoutes from './admin/index.js';
 
 const router = Router();
 
@@ -13,6 +14,9 @@ router.use('/auth', authRoutes);
 
 // Tenant management (admin)
 router.use('/tenants', tenantRoutes);
+
+// Admin Portal IAM routes
+router.use('/admin', adminRoutes);
 
 // API info
 router.get('/', (_req, res) => {
@@ -26,6 +30,7 @@ router.get('/', (_req, res) => {
         health: '/api/v1/health',
         auth: '/api/v1/auth',
         tenants: '/api/v1/tenants',
+        admin: '/api/v1/admin',
         businessProfiles: '/api/v1/business-profiles',
         enrollments: '/api/v1/enrollments',
         workflows: '/api/v1/workflows',

@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { useAuthStore } from '@/stores/auth.store';
 
 // Layouts
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
+import { AdminLayout } from '@/layouts/AdminLayout';
 
 // Auth Pages
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -13,6 +15,28 @@ import { RegisterPage } from '@/pages/auth/RegisterPage';
 // Dashboard Pages
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { ProfilePage } from '@/pages/dashboard/ProfilePage';
+
+// Admin Pages
+import {
+  AdminDashboardPage,
+  UsersPage,
+  RolesPage,
+  GroupsPage,
+  AccessRequestsPage,
+  ApiKeysPage,
+  AuditLogsPage,
+  AccessReviewsPage,
+} from '@/pages/admin';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60, // 1 minute
+      retry: 1,
+    },
+  },
+});
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -54,6 +78,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
@@ -108,12 +133,32 @@ function App() {
           }
         />
 
+        {/* Admin Portal Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="roles" element={<RolesPage />} />
+          <Route path="groups" element={<GroupsPage />} />
+          <Route path="access-requests" element={<AccessRequestsPage />} />
+          <Route path="api-keys" element={<ApiKeysPage />} />
+          <Route path="audit-logs" element={<AuditLogsPage />} />
+          <Route path="access-reviews" element={<AccessReviewsPage />} />
+        </Route>
+
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       <Toaster />
     </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 

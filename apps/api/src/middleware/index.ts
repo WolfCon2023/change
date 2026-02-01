@@ -43,3 +43,16 @@ export {
 
 // Validation
 export { validate, validateMultiple } from './validate.js';
+
+// IAM Authorization
+export {
+  loadIamPermissions,
+  requirePermission,
+  requireAnyPermission,
+  requireAllPermissions,
+  requireCrossTenantAccess,
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+  getUserPermissions,
+} from './iam-auth.js';

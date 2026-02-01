@@ -470,3 +470,317 @@ export const PaginationDefaults = {
   LIMIT: 20,
   MAX_LIMIT: 100,
 } as const;
+
+// =============================================================================
+// IAM PERMISSIONS (Admin Portal)
+// =============================================================================
+
+export const IamPermission = {
+  // User management
+  IAM_USER_READ: 'iam.user.read',
+  IAM_USER_WRITE: 'iam.user.write',
+  IAM_USER_DELETE: 'iam.user.delete',
+  IAM_USER_INVITE: 'iam.user.invite',
+  IAM_USER_RESET_PASSWORD: 'iam.user.reset_password',
+
+  // Role management
+  IAM_ROLE_READ: 'iam.role.read',
+  IAM_ROLE_WRITE: 'iam.role.write',
+  IAM_ROLE_DELETE: 'iam.role.delete',
+  IAM_ROLE_ASSIGN: 'iam.role.assign',
+
+  // Group management
+  IAM_GROUP_READ: 'iam.group.read',
+  IAM_GROUP_WRITE: 'iam.group.write',
+  IAM_GROUP_DELETE: 'iam.group.delete',
+  IAM_GROUP_MANAGE_MEMBERS: 'iam.group.manage_members',
+
+  // Access requests
+  IAM_ACCESS_REQUEST_READ: 'iam.access_request.read',
+  IAM_ACCESS_REQUEST_APPROVE: 'iam.access_request.approve',
+  IAM_ACCESS_REQUEST_CREATE: 'iam.access_request.create',
+
+  // API keys and service accounts
+  IAM_API_KEY_READ: 'iam.api_key.read',
+  IAM_API_KEY_WRITE: 'iam.api_key.write',
+  IAM_API_KEY_REVOKE: 'iam.api_key.revoke',
+  IAM_SERVICE_ACCOUNT_READ: 'iam.service_account.read',
+  IAM_SERVICE_ACCOUNT_WRITE: 'iam.service_account.write',
+
+  // Audit and compliance
+  IAM_AUDIT_READ: 'iam.audit.read',
+  IAM_AUDIT_EXPORT: 'iam.audit.export',
+
+  // Access reviews
+  IAM_ACCESS_REVIEW_READ: 'iam.access_review.read',
+  IAM_ACCESS_REVIEW_WRITE: 'iam.access_review.write',
+  IAM_ACCESS_REVIEW_DECIDE: 'iam.access_review.decide',
+
+  // Policy and settings
+  IAM_POLICY_READ: 'iam.policy.read',
+  IAM_POLICY_WRITE: 'iam.policy.write',
+  IAM_SETTINGS_READ: 'iam.settings.read',
+  IAM_SETTINGS_WRITE: 'iam.settings.write',
+
+  // Tenant management (cross-tenant for global admins)
+  IAM_TENANT_READ: 'iam.tenant.read',
+  IAM_TENANT_WRITE: 'iam.tenant.write',
+  IAM_CROSS_TENANT: 'iam.cross_tenant',
+} as const;
+
+export type IamPermissionType = (typeof IamPermission)[keyof typeof IamPermission];
+
+// Permission categories for UI grouping
+export const IamPermissionCategory = {
+  USER_MANAGEMENT: 'User Management',
+  ROLE_MANAGEMENT: 'Role Management',
+  GROUP_MANAGEMENT: 'Group Management',
+  ACCESS_REQUESTS: 'Access Requests',
+  API_KEYS: 'API Keys and Service Accounts',
+  AUDIT: 'Audit and Compliance',
+  ACCESS_REVIEWS: 'Access Reviews',
+  POLICY: 'Policy and Settings',
+  TENANT: 'Tenant Management',
+} as const;
+
+export type IamPermissionCategoryType = (typeof IamPermissionCategory)[keyof typeof IamPermissionCategory];
+
+// Map permissions to categories
+export const IamPermissionCatalog: Array<{
+  key: IamPermissionType;
+  description: string;
+  category: IamPermissionCategoryType;
+}> = [
+  // User Management
+  { key: IamPermission.IAM_USER_READ, description: 'View users and their details', category: IamPermissionCategory.USER_MANAGEMENT },
+  { key: IamPermission.IAM_USER_WRITE, description: 'Create and update users', category: IamPermissionCategory.USER_MANAGEMENT },
+  { key: IamPermission.IAM_USER_DELETE, description: 'Deactivate or delete users', category: IamPermissionCategory.USER_MANAGEMENT },
+  { key: IamPermission.IAM_USER_INVITE, description: 'Invite new users', category: IamPermissionCategory.USER_MANAGEMENT },
+  { key: IamPermission.IAM_USER_RESET_PASSWORD, description: 'Reset user passwords', category: IamPermissionCategory.USER_MANAGEMENT },
+
+  // Role Management
+  { key: IamPermission.IAM_ROLE_READ, description: 'View roles and permissions', category: IamPermissionCategory.ROLE_MANAGEMENT },
+  { key: IamPermission.IAM_ROLE_WRITE, description: 'Create and update roles', category: IamPermissionCategory.ROLE_MANAGEMENT },
+  { key: IamPermission.IAM_ROLE_DELETE, description: 'Delete custom roles', category: IamPermissionCategory.ROLE_MANAGEMENT },
+  { key: IamPermission.IAM_ROLE_ASSIGN, description: 'Assign roles to users', category: IamPermissionCategory.ROLE_MANAGEMENT },
+
+  // Group Management
+  { key: IamPermission.IAM_GROUP_READ, description: 'View groups and members', category: IamPermissionCategory.GROUP_MANAGEMENT },
+  { key: IamPermission.IAM_GROUP_WRITE, description: 'Create and update groups', category: IamPermissionCategory.GROUP_MANAGEMENT },
+  { key: IamPermission.IAM_GROUP_DELETE, description: 'Delete groups', category: IamPermissionCategory.GROUP_MANAGEMENT },
+  { key: IamPermission.IAM_GROUP_MANAGE_MEMBERS, description: 'Add or remove group members', category: IamPermissionCategory.GROUP_MANAGEMENT },
+
+  // Access Requests
+  { key: IamPermission.IAM_ACCESS_REQUEST_READ, description: 'View access requests', category: IamPermissionCategory.ACCESS_REQUESTS },
+  { key: IamPermission.IAM_ACCESS_REQUEST_APPROVE, description: 'Approve or reject access requests', category: IamPermissionCategory.ACCESS_REQUESTS },
+  { key: IamPermission.IAM_ACCESS_REQUEST_CREATE, description: 'Submit access requests', category: IamPermissionCategory.ACCESS_REQUESTS },
+
+  // API Keys
+  { key: IamPermission.IAM_API_KEY_READ, description: 'View API keys', category: IamPermissionCategory.API_KEYS },
+  { key: IamPermission.IAM_API_KEY_WRITE, description: 'Create API keys', category: IamPermissionCategory.API_KEYS },
+  { key: IamPermission.IAM_API_KEY_REVOKE, description: 'Revoke API keys', category: IamPermissionCategory.API_KEYS },
+  { key: IamPermission.IAM_SERVICE_ACCOUNT_READ, description: 'View service accounts', category: IamPermissionCategory.API_KEYS },
+  { key: IamPermission.IAM_SERVICE_ACCOUNT_WRITE, description: 'Create and update service accounts', category: IamPermissionCategory.API_KEYS },
+
+  // Audit
+  { key: IamPermission.IAM_AUDIT_READ, description: 'View audit logs', category: IamPermissionCategory.AUDIT },
+  { key: IamPermission.IAM_AUDIT_EXPORT, description: 'Export audit logs', category: IamPermissionCategory.AUDIT },
+
+  // Access Reviews
+  { key: IamPermission.IAM_ACCESS_REVIEW_READ, description: 'View access reviews', category: IamPermissionCategory.ACCESS_REVIEWS },
+  { key: IamPermission.IAM_ACCESS_REVIEW_WRITE, description: 'Create access reviews', category: IamPermissionCategory.ACCESS_REVIEWS },
+  { key: IamPermission.IAM_ACCESS_REVIEW_DECIDE, description: 'Make access review decisions', category: IamPermissionCategory.ACCESS_REVIEWS },
+
+  // Policy
+  { key: IamPermission.IAM_POLICY_READ, description: 'View security policies', category: IamPermissionCategory.POLICY },
+  { key: IamPermission.IAM_POLICY_WRITE, description: 'Update security policies', category: IamPermissionCategory.POLICY },
+  { key: IamPermission.IAM_SETTINGS_READ, description: 'View IAM settings', category: IamPermissionCategory.POLICY },
+  { key: IamPermission.IAM_SETTINGS_WRITE, description: 'Update IAM settings', category: IamPermissionCategory.POLICY },
+
+  // Tenant
+  { key: IamPermission.IAM_TENANT_READ, description: 'View tenant information', category: IamPermissionCategory.TENANT },
+  { key: IamPermission.IAM_TENANT_WRITE, description: 'Update tenant settings', category: IamPermissionCategory.TENANT },
+  { key: IamPermission.IAM_CROSS_TENANT, description: 'Access resources across tenants', category: IamPermissionCategory.TENANT },
+];
+
+// =============================================================================
+// SYSTEM ROLES (Pre-defined roles with fixed permissions)
+// =============================================================================
+
+export const SystemRole = {
+  GLOBAL_ADMIN: 'global_admin',
+  TENANT_ADMIN: 'tenant_admin',
+  ADVISOR_ADMIN: 'advisor_admin',
+  AUDITOR: 'auditor',
+} as const;
+
+export type SystemRoleType = (typeof SystemRole)[keyof typeof SystemRole];
+
+// Permissions for each system role
+export const SystemRolePermissions: Record<SystemRoleType, IamPermissionType[]> = {
+  [SystemRole.GLOBAL_ADMIN]: Object.values(IamPermission), // All permissions
+  [SystemRole.TENANT_ADMIN]: [
+    IamPermission.IAM_USER_READ,
+    IamPermission.IAM_USER_WRITE,
+    IamPermission.IAM_USER_DELETE,
+    IamPermission.IAM_USER_INVITE,
+    IamPermission.IAM_USER_RESET_PASSWORD,
+    IamPermission.IAM_ROLE_READ,
+    IamPermission.IAM_ROLE_WRITE,
+    IamPermission.IAM_ROLE_ASSIGN,
+    IamPermission.IAM_GROUP_READ,
+    IamPermission.IAM_GROUP_WRITE,
+    IamPermission.IAM_GROUP_DELETE,
+    IamPermission.IAM_GROUP_MANAGE_MEMBERS,
+    IamPermission.IAM_ACCESS_REQUEST_READ,
+    IamPermission.IAM_ACCESS_REQUEST_APPROVE,
+    IamPermission.IAM_API_KEY_READ,
+    IamPermission.IAM_API_KEY_WRITE,
+    IamPermission.IAM_API_KEY_REVOKE,
+    IamPermission.IAM_SERVICE_ACCOUNT_READ,
+    IamPermission.IAM_SERVICE_ACCOUNT_WRITE,
+    IamPermission.IAM_AUDIT_READ,
+    IamPermission.IAM_AUDIT_EXPORT,
+    IamPermission.IAM_ACCESS_REVIEW_READ,
+    IamPermission.IAM_ACCESS_REVIEW_WRITE,
+    IamPermission.IAM_ACCESS_REVIEW_DECIDE,
+    IamPermission.IAM_SETTINGS_READ,
+    IamPermission.IAM_SETTINGS_WRITE,
+  ],
+  [SystemRole.ADVISOR_ADMIN]: [
+    IamPermission.IAM_USER_READ,
+    IamPermission.IAM_USER_INVITE,
+    IamPermission.IAM_ROLE_READ,
+    IamPermission.IAM_GROUP_READ,
+    IamPermission.IAM_ACCESS_REQUEST_READ,
+    IamPermission.IAM_ACCESS_REQUEST_APPROVE,
+    IamPermission.IAM_AUDIT_READ,
+    IamPermission.IAM_ACCESS_REVIEW_READ,
+    IamPermission.IAM_ACCESS_REVIEW_DECIDE,
+  ],
+  [SystemRole.AUDITOR]: [
+    IamPermission.IAM_USER_READ,
+    IamPermission.IAM_ROLE_READ,
+    IamPermission.IAM_GROUP_READ,
+    IamPermission.IAM_AUDIT_READ,
+    IamPermission.IAM_AUDIT_EXPORT,
+    IamPermission.IAM_ACCESS_REVIEW_READ,
+    IamPermission.IAM_ACCESS_REQUEST_READ,
+  ],
+};
+
+// =============================================================================
+// ACCESS REQUEST STATUS
+// =============================================================================
+
+export const AccessRequestStatus = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type AccessRequestStatusType = (typeof AccessRequestStatus)[keyof typeof AccessRequestStatus];
+
+// =============================================================================
+// ACCESS REVIEW STATUS
+// =============================================================================
+
+export const AccessReviewStatus = {
+  DRAFT: 'draft',
+  OPEN: 'open',
+  IN_PROGRESS: 'in_progress',
+  CLOSED: 'closed',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type AccessReviewStatusType = (typeof AccessReviewStatus)[keyof typeof AccessReviewStatus];
+
+export const AccessReviewDecision = {
+  PENDING: 'pending',
+  KEEP: 'keep',
+  REMOVE: 'remove',
+  CHANGE: 'change',
+} as const;
+
+export type AccessReviewDecisionType = (typeof AccessReviewDecision)[keyof typeof AccessReviewDecision];
+
+// =============================================================================
+// SERVICE ACCOUNT & API KEY STATUS
+// =============================================================================
+
+export const ServiceAccountStatus = {
+  ACTIVE: 'active',
+  DISABLED: 'disabled',
+  DELETED: 'deleted',
+} as const;
+
+export type ServiceAccountStatusType = (typeof ServiceAccountStatus)[keyof typeof ServiceAccountStatus];
+
+export const ApiKeyStatus = {
+  ACTIVE: 'active',
+  REVOKED: 'revoked',
+  EXPIRED: 'expired',
+} as const;
+
+export type ApiKeyStatusType = (typeof ApiKeyStatus)[keyof typeof ApiKeyStatus];
+
+// =============================================================================
+// IAM AUDIT ACTIONS (extends base AuditAction)
+// =============================================================================
+
+export const IamAuditAction = {
+  // User actions
+  USER_CREATED: 'iam.user.created',
+  USER_UPDATED: 'iam.user.updated',
+  USER_DELETED: 'iam.user.deleted',
+  USER_INVITED: 'iam.user.invited',
+  USER_PASSWORD_RESET: 'iam.user.password_reset',
+  USER_ROLE_CHANGED: 'iam.user.role_changed',
+  USER_MFA_ENABLED: 'iam.user.mfa_enabled',
+  USER_MFA_DISABLED: 'iam.user.mfa_disabled',
+  USER_LOCKED: 'iam.user.locked',
+  USER_UNLOCKED: 'iam.user.unlocked',
+
+  // Role actions
+  ROLE_CREATED: 'iam.role.created',
+  ROLE_UPDATED: 'iam.role.updated',
+  ROLE_DELETED: 'iam.role.deleted',
+  ROLE_ASSIGNED: 'iam.role.assigned',
+  ROLE_UNASSIGNED: 'iam.role.unassigned',
+
+  // Group actions
+  GROUP_CREATED: 'iam.group.created',
+  GROUP_UPDATED: 'iam.group.updated',
+  GROUP_DELETED: 'iam.group.deleted',
+  GROUP_MEMBER_ADDED: 'iam.group.member_added',
+  GROUP_MEMBER_REMOVED: 'iam.group.member_removed',
+
+  // Access request actions
+  ACCESS_REQUEST_CREATED: 'iam.access_request.created',
+  ACCESS_REQUEST_APPROVED: 'iam.access_request.approved',
+  ACCESS_REQUEST_REJECTED: 'iam.access_request.rejected',
+  ACCESS_REQUEST_EXPIRED: 'iam.access_request.expired',
+
+  // API key actions
+  API_KEY_CREATED: 'iam.api_key.created',
+  API_KEY_REVOKED: 'iam.api_key.revoked',
+  API_KEY_USED: 'iam.api_key.used',
+
+  // Service account actions
+  SERVICE_ACCOUNT_CREATED: 'iam.service_account.created',
+  SERVICE_ACCOUNT_UPDATED: 'iam.service_account.updated',
+  SERVICE_ACCOUNT_DISABLED: 'iam.service_account.disabled',
+
+  // Access review actions
+  ACCESS_REVIEW_CREATED: 'iam.access_review.created',
+  ACCESS_REVIEW_CLOSED: 'iam.access_review.closed',
+  ACCESS_REVIEW_DECISION: 'iam.access_review.decision',
+
+  // Policy actions
+  POLICY_UPDATED: 'iam.policy.updated',
+  SETTINGS_UPDATED: 'iam.settings.updated',
+} as const;
+
+export type IamAuditActionType = (typeof IamAuditAction)[keyof typeof IamAuditAction];

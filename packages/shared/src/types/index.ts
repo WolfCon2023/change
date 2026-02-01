@@ -19,6 +19,14 @@ import type {
   USStateType,
   AuditActionType,
   CohortStatusType,
+  IamPermissionType,
+  SystemRoleType,
+  AccessRequestStatusType,
+  AccessReviewStatusType,
+  AccessReviewDecisionType,
+  ServiceAccountStatusType,
+  ApiKeyStatusType,
+  IamAuditActionType,
 } from '../constants/index.js';
 
 // =============================================================================
@@ -634,4 +642,273 @@ export interface AuditLogFilters extends PaginationParams {
   resourceId?: string;
   startDate?: Date;
   endDate?: Date;
+}
+
+// =============================================================================
+// IAM TYPES (Admin Portal)
+// =============================================================================
+
+// Enhanced User with IAM fields
+export interface UserWithIam extends User {
+  mfaEnabled: boolean;
+  mfaEnforced: boolean;
+  iamRoles: string[]; // IamRole IDs
+  groups: string[]; // Group IDs
+  lockedAt?: Date;
+  lockReason?: string;
+  failedLoginAttempts: number;
+  passwordChangedAt?: Date;
+  mustChangePassword: boolean;
+}
+
+// IAM Role (custom roles with permissions)
+export interface IamRole extends BaseEntity {
+  tenantId?: string; // Null for global roles
+  name: string;
+  description?: string;
+  isSystem: boolean; // System roles cannot be modified
+  systemRole?: SystemRoleType; // Link to system role type
+  permissions: IamPermissionType[];
+  isActive: boolean;
+}
+
+export interface IamRoleCreateRequest {
+  name: string;
+  description?: string;
+  permissions: IamPermissionType[];
+}
+
+export interface IamRoleUpdateRequest {
+  name?: string;
+  description?: string;
+  permissions?: IamPermissionType[];
+  isActive?: boolean;
+}
+
+// Group
+export interface Group extends TenantScopedEntity {
+  name: string;
+  description?: string;
+  members: string[]; // User IDs
+  roles: string[]; // IamRole IDs
+  isActive: boolean;
+}
+
+export interface GroupCreateRequest {
+  name: string;
+  description?: string;
+  members?: string[];
+  roles?: string[];
+}
+
+export interface GroupUpdateRequest {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface GroupMemberUpdateRequest {
+  action: 'add' | 'remove';
+  userIds: string[];
+}
+
+export interface GroupRoleUpdateRequest {
+  action: 'add' | 'remove';
+  roleIds: string[];
+}
+
+// Access Request
+export interface AccessRequest extends TenantScopedEntity {
+  requestorId: string;
+  requestorEmail: string;
+  requestedRoleIds: string[];
+  requestedPermissions: IamPermissionType[];
+  reason: string;
+  status: AccessRequestStatusType;
+  approverId?: string;
+  approverEmail?: string;
+  approverNotes?: string;
+  decidedAt?: Date;
+  expiresAt?: Date;
+  effectiveUntil?: Date; // For time-limited access
+}
+
+export interface AccessRequestCreateRequest {
+  requestedRoleIds?: string[];
+  requestedPermissions?: IamPermissionType[];
+  reason: string;
+  effectiveUntil?: Date;
+}
+
+export interface AccessRequestDecisionRequest {
+  decision: 'approve' | 'reject';
+  notes?: string;
+}
+
+// Service Account
+export interface ServiceAccount extends TenantScopedEntity {
+  name: string;
+  description?: string;
+  status: ServiceAccountStatusType;
+  createdBy: string;
+  roles: string[]; // IamRole IDs
+  lastUsedAt?: Date;
+}
+
+export interface ServiceAccountCreateRequest {
+  name: string;
+  description?: string;
+  roles?: string[];
+}
+
+export interface ServiceAccountUpdateRequest {
+  name?: string;
+  description?: string;
+  status?: ServiceAccountStatusType;
+  roles?: string[];
+}
+
+// API Key
+export interface ApiKey extends TenantScopedEntity {
+  ownerType: 'user' | 'service_account';
+  ownerId: string;
+  name: string;
+  keyPrefix: string; // First 8 chars for identification
+  keyHash: string; // Hashed key (never store plaintext)
+  scopes: IamPermissionType[];
+  lastUsedAt?: Date;
+  lastUsedIp?: string;
+  expiresAt?: Date;
+  createdBy: string;
+  revokedAt?: Date;
+  revokedBy?: string;
+  revokeReason?: string;
+}
+
+export interface ApiKeyCreateRequest {
+  name: string;
+  ownerType?: 'user' | 'service_account';
+  ownerId?: string; // Required if ownerType is service_account
+  scopes: IamPermissionType[];
+  expiresAt?: Date;
+}
+
+export interface ApiKeyCreateResponse {
+  apiKey: Omit<ApiKey, 'keyHash'>;
+  plainTextKey: string; // Only returned once on creation
+}
+
+// Access Review
+export interface AccessReview extends TenantScopedEntity {
+  name: string;
+  description?: string;
+  status: AccessReviewStatusType;
+  dueAt: Date;
+  createdBy: string;
+  closedAt?: Date;
+  closedBy?: string;
+  itemCount: number;
+  completedItemCount: number;
+}
+
+export interface AccessReviewCreateRequest {
+  name: string;
+  description?: string;
+  dueAt: Date;
+  userIds?: string[]; // Specific users to review, or all if empty
+}
+
+// Access Review Item
+export interface AccessReviewItem extends TenantScopedEntity {
+  reviewId: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  currentRoles: Array<{ id: string; name: string }>;
+  currentPermissions: IamPermissionType[];
+  currentGroups: Array<{ id: string; name: string }>;
+  decision: AccessReviewDecisionType;
+  newRoles?: string[]; // If decision is 'change'
+  reviewerId?: string;
+  reviewerEmail?: string;
+  reviewedAt?: Date;
+  notes?: string;
+}
+
+export interface AccessReviewItemDecisionRequest {
+  decision: AccessReviewDecisionType;
+  newRoles?: string[];
+  notes?: string;
+}
+
+// IAM Audit Log (extended)
+export interface IamAuditLog extends BaseEntity {
+  tenantId?: string;
+  actorId: string;
+  actorEmail: string;
+  actorType: 'user' | 'service_account' | 'system';
+  action: IamAuditActionType;
+  targetType: string;
+  targetId: string;
+  targetName?: string;
+  summary: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  ip?: string;
+  userAgent?: string;
+  requestId?: string;
+}
+
+export interface IamAuditLogFilters extends PaginationParams {
+  actorId?: string;
+  actorEmail?: string;
+  action?: IamAuditActionType;
+  targetType?: string;
+  targetId?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
+// IAM Security Settings
+export interface IamSecuritySettings {
+  tenantId?: string; // Null for global settings
+  sessionTimeoutMinutes: number;
+  maxFailedLoginAttempts: number;
+  lockoutDurationMinutes: number;
+  passwordMinLength: number;
+  passwordRequireUppercase: boolean;
+  passwordRequireLowercase: boolean;
+  passwordRequireNumber: boolean;
+  passwordRequireSpecial: boolean;
+  passwordExpiryDays: number;
+  mfaRequired: boolean;
+  mfaGracePeriodDays: number;
+  apiKeyMaxAgedays: number;
+  accessReviewFrequencyDays: number;
+}
+
+// IAM Dashboard Stats
+export interface IamDashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  lockedUsers: number;
+  mfaEnabledUsers: number;
+  mfaCoverage: number; // Percentage
+  totalRoles: number;
+  totalGroups: number;
+  pendingAccessRequests: number;
+  openAccessReviews: number;
+  recentIamChanges: IamAuditLog[];
+  usersWithoutMfa: Array<{ id: string; email: string; name: string }>;
+  expiringApiKeys: Array<{ id: string; name: string; expiresAt: Date }>;
+}
+
+// User filters for admin
+export interface UserFilters extends PaginationParams {
+  email?: string;
+  name?: string;
+  role?: UserRoleType;
+  isActive?: boolean;
+  mfaEnabled?: boolean;
+  search?: string;
 }
