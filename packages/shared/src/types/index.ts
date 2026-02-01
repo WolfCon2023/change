@@ -27,6 +27,9 @@ import type {
   ServiceAccountStatusType,
   ApiKeyStatusType,
   IamAuditActionType,
+  PrimaryRoleType,
+  OperationalPermissionType,
+  AdvisorAssignmentStatusType,
 } from '../constants/index.js';
 
 // =============================================================================
@@ -61,8 +64,9 @@ export interface User extends BaseEntity {
   passwordHash?: string; // Excluded from API responses
   firstName: string;
   lastName: string;
-  role: UserRoleType;
-  tenantId?: string; // Null for platform-level users (advisors, admins)
+  role: UserRoleType; // Legacy role field (deprecated, kept for compatibility)
+  primaryRole?: PrimaryRoleType; // New simplified role (IT_ADMIN, MANAGER, ADVISOR, CUSTOMER)
+  tenantId?: string; // Null for platform-level users (advisors, IT admins)
   isActive: boolean;
   lastLoginAt?: Date;
   emailVerified: boolean;
@@ -487,11 +491,13 @@ export interface AdvisorAssignment extends BaseEntity {
   tenantId: string;
   businessProfileId?: string;
   cohortId?: string;
+  status: AdvisorAssignmentStatusType;
   assignedAt: Date;
   unassignedAt?: Date;
   isActive: boolean;
   isPrimary: boolean;
   notes?: string;
+  createdBy?: string;
 }
 
 export interface AdvisorDashboardSummary {
@@ -650,6 +656,7 @@ export interface AuditLogFilters extends PaginationParams {
 
 // Enhanced User with IAM fields
 export interface UserWithIam extends User {
+  primaryRole: PrimaryRoleType; // Required for IAM users
   mfaEnabled: boolean;
   mfaEnforced: boolean;
   iamRoles: string[]; // IamRole IDs

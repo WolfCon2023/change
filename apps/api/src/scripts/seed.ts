@@ -20,6 +20,7 @@ import {
   IamRole,
   Group,
   IamAuditLog,
+  AdvisorAssignment,
 } from '../db/models/index.js';
 import {
   UserRole,
@@ -38,6 +39,9 @@ import {
   SystemRole,
   SystemRolePermissions,
   IamAuditAction,
+  PrimaryRole,
+  PrimaryRolePermissions,
+  AdvisorAssignmentStatus,
 } from '@change/shared';
 
 async function clearDatabase(): Promise<void> {
@@ -58,6 +62,7 @@ async function clearDatabase(): Promise<void> {
     IamRole.deleteMany({}),
     Group.deleteMany({}),
     IamAuditLog.deleteMany({}),
+    AdvisorAssignment.deleteMany({}),
   ]);
 }
 
@@ -65,12 +70,14 @@ async function seedData(): Promise<void> {
   console.log('🌱 Seeding database...');
 
   // ==========================================================================
-  // 1. Create System IAM Roles
+  // 1. Create System IAM Roles (Legacy + New 4-Role Model)
   // ==========================================================================
   console.log('   Creating system IAM roles...');
+  
+  // Legacy roles (kept for backward compatibility)
   const globalAdminRole = await IamRole.create({
     name: 'Global Admin',
-    description: 'Full access to all IAM features across all tenants',
+    description: 'Full access to all IAM features across all tenants (legacy)',
     isSystem: true,
     systemRole: SystemRole.GLOBAL_ADMIN,
     permissions: SystemRolePermissions[SystemRole.GLOBAL_ADMIN],
@@ -79,7 +86,7 @@ async function seedData(): Promise<void> {
 
   const tenantAdminRole = await IamRole.create({
     name: 'Tenant Admin',
-    description: 'Full IAM access within a tenant',
+    description: 'Full IAM access within a tenant (legacy)',
     isSystem: true,
     systemRole: SystemRole.TENANT_ADMIN,
     permissions: SystemRolePermissions[SystemRole.TENANT_ADMIN],
@@ -88,42 +95,81 @@ async function seedData(): Promise<void> {
 
   const advisorAdminRole = await IamRole.create({
     name: 'Advisor Admin',
-    description: 'Limited IAM access for advisors',
+    description: 'Limited IAM access for advisors (legacy)',
     isSystem: true,
     systemRole: SystemRole.ADVISOR_ADMIN,
     permissions: SystemRolePermissions[SystemRole.ADVISOR_ADMIN],
     isActive: true,
   });
 
-  const auditorRole = await IamRole.create({
+  await IamRole.create({
     name: 'Auditor',
-    description: 'Read-only access to audit logs and reviews',
+    description: 'Read-only access to audit logs and reviews (legacy)',
     isSystem: true,
     systemRole: SystemRole.AUDITOR,
     permissions: SystemRolePermissions[SystemRole.AUDITOR],
     isActive: true,
   });
-  console.log('   ✓ System IAM roles: 4 created');
+
+  // New simplified 4-role model
+  const itAdminRole = await IamRole.create({
+    name: 'IT Admin',
+    description: 'Full platform access including IAM management, audit logs, and cross-tenant operations',
+    isSystem: true,
+    systemRole: SystemRole.IT_ADMIN,
+    permissions: PrimaryRolePermissions[PrimaryRole.IT_ADMIN].iam,
+    isActive: true,
+  });
+
+  const managerRole = await IamRole.create({
+    name: 'Manager',
+    description: 'Manage users and operations within their tenant, invite users, manage tasks and documents',
+    isSystem: true,
+    systemRole: SystemRole.MANAGER,
+    permissions: PrimaryRolePermissions[PrimaryRole.MANAGER].iam,
+    isActive: true,
+  });
+
+  const advisorRole = await IamRole.create({
+    name: 'Advisor',
+    description: 'Access assigned tenants only, approve tasks and documents, no IAM management',
+    isSystem: true,
+    systemRole: SystemRole.ADVISOR,
+    permissions: PrimaryRolePermissions[PrimaryRole.ADVISOR].iam,
+    isActive: true,
+  });
+
+  const customerRole = await IamRole.create({
+    name: 'Customer',
+    description: 'Access own tenant only, manage onboarding, tasks, and documents',
+    isSystem: true,
+    systemRole: SystemRole.CUSTOMER,
+    permissions: PrimaryRolePermissions[PrimaryRole.CUSTOMER].iam,
+    isActive: true,
+  });
+
+  console.log('   ✓ System IAM roles: 8 created (4 legacy + 4 new)');
 
   // ==========================================================================
-  // 2. Create System Admin User (no tenant)
+  // 2. Create IT Admin User (no tenant - platform level)
   // ==========================================================================
-  console.log('   Creating system admin...');
+  console.log('   Creating IT admin...');
   const systemAdmin = await User.create({
     email: config.seed.adminEmail,
     passwordHash: config.seed.adminPassword,
     firstName: 'System',
     lastName: 'Admin',
-    role: UserRole.SYSTEM_ADMIN,
+    role: UserRole.SYSTEM_ADMIN, // Legacy role
+    primaryRole: PrimaryRole.IT_ADMIN, // New role
     isActive: true,
     emailVerified: true,
     mfaEnabled: false,
     mfaEnforced: false,
-    iamRoles: [globalAdminRole._id],
+    iamRoles: [itAdminRole._id, globalAdminRole._id],
     failedLoginAttempts: 0,
     mustChangePassword: false,
   });
-  console.log(`   ✓ System admin: ${systemAdmin.email}`);
+  console.log(`   ✓ IT Admin: ${systemAdmin.email}`);
 
   // ==========================================================================
   // 3. Create Demo Tenant
@@ -147,7 +193,7 @@ async function seedData(): Promise<void> {
   console.log(`   ✓ Demo tenant: ${demoTenant.name} (${demoTenant.slug})`);
 
   // ==========================================================================
-  // 4. Create Advisor User
+  // 4. Create Advisor User (platform level, assigned to tenants)
   // ==========================================================================
   console.log('   Creating advisor user...');
   const advisor = await User.create({
@@ -155,55 +201,144 @@ async function seedData(): Promise<void> {
     passwordHash: 'Advisor123!',
     firstName: 'Sarah',
     lastName: 'Johnson',
-    role: UserRole.ADVISOR,
+    role: UserRole.ADVISOR, // Legacy role
+    primaryRole: PrimaryRole.ADVISOR, // New role
     isActive: true,
     emailVerified: true,
     mfaEnabled: false,
     mfaEnforced: false,
-    iamRoles: [advisorAdminRole._id],
+    iamRoles: [advisorRole._id, advisorAdminRole._id],
     failedLoginAttempts: 0,
     mustChangePassword: false,
   });
   console.log(`   ✓ Advisor: ${advisor.email}`);
 
   // ==========================================================================
-  // 5. Create Demo Client User
+  // 5. Create Demo Customer User
   // ==========================================================================
-  console.log('   Creating demo client user...');
+  console.log('   Creating demo customer user...');
   const clientUser = await User.create({
     email: 'demo@example.com',
     passwordHash: 'Demo123!',
     firstName: 'John',
     lastName: 'Doe',
-    role: UserRole.CLIENT_OWNER,
+    role: UserRole.CLIENT_OWNER, // Legacy role
+    primaryRole: PrimaryRole.CUSTOMER, // New role
     tenantId: demoTenant._id,
     isActive: true,
     emailVerified: true,
     mfaEnabled: false,
     mfaEnforced: false,
+    iamRoles: [customerRole._id],
     failedLoginAttempts: 0,
     mustChangePassword: false,
   });
-  console.log(`   ✓ Client user: ${clientUser.email}`);
+  console.log(`   ✓ Customer: ${clientUser.email}`);
 
   // ==========================================================================
-  // 6. Create Demo Group
+  // 5b. Create Demo Manager User
   // ==========================================================================
-  console.log('   Creating demo group...');
-  const demoGroup = await Group.create({
+  console.log('   Creating demo manager user...');
+  const managerUser = await User.create({
+    email: 'manager@example.com',
+    passwordHash: 'Manager123!',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    role: UserRole.PROGRAM_ADMIN, // Legacy role
+    primaryRole: PrimaryRole.MANAGER, // New role
     tenantId: demoTenant._id,
-    name: 'Business Owners',
-    description: 'Group for all business owners in the tenant',
-    members: [clientUser._id],
-    roles: [tenantAdminRole._id],
+    isActive: true,
+    emailVerified: true,
+    mfaEnabled: false,
+    mfaEnforced: false,
+    iamRoles: [managerRole._id, tenantAdminRole._id],
+    failedLoginAttempts: 0,
+    mustChangePassword: false,
+  });
+  console.log(`   ✓ Manager: ${managerUser.email}`);
+
+  // ==========================================================================
+  // 6. Create Platform Groups (no tenant)
+  // ==========================================================================
+  console.log('   Creating platform groups...');
+  const itAdminsGroup = await Group.create({
+    name: 'IT Admins',
+    description: 'Platform-wide IT administrators',
+    members: [systemAdmin._id],
+    roles: [itAdminRole._id],
     isActive: true,
     createdBy: systemAdmin._id,
   });
 
-  // Update client user with group
-  clientUser.groups = [demoGroup._id];
+  const advisorsGroup = await Group.create({
+    name: 'Advisors',
+    description: 'Platform-wide advisors',
+    members: [advisor._id],
+    roles: [advisorRole._id],
+    isActive: true,
+    createdBy: systemAdmin._id,
+  });
+
+  await Group.create({
+    name: 'Managers',
+    description: 'All tenant managers',
+    members: [],
+    roles: [managerRole._id],
+    isActive: true,
+    createdBy: systemAdmin._id,
+  });
+  console.log('   ✓ Platform groups: 3 created');
+
+  // ==========================================================================
+  // 6b. Create Tenant Groups
+  // ==========================================================================
+  console.log('   Creating tenant groups...');
+  const customersGroup = await Group.create({
+    tenantId: demoTenant._id,
+    name: 'Customers',
+    description: 'All customers in this tenant',
+    members: [clientUser._id],
+    roles: [customerRole._id],
+    isActive: true,
+    createdBy: systemAdmin._id,
+  });
+
+  const customerManagersGroup = await Group.create({
+    tenantId: demoTenant._id,
+    name: 'Customer Managers',
+    description: 'Users who can manage other customers in this tenant',
+    members: [managerUser._id],
+    roles: [managerRole._id],
+    isActive: true,
+    createdBy: systemAdmin._id,
+  });
+
+  // Update users with groups
+  clientUser.groups = [customersGroup._id];
   await clientUser.save();
-  console.log(`   ✓ Group: ${demoGroup.name}`);
+  managerUser.groups = [customerManagersGroup._id];
+  await managerUser.save();
+  systemAdmin.groups = [itAdminsGroup._id];
+  await systemAdmin.save();
+  advisor.groups = [advisorsGroup._id];
+  await advisor.save();
+  console.log('   ✓ Tenant groups: 2 created');
+
+  // ==========================================================================
+  // 6c. Create Advisor Assignment (assign advisor to demo tenant)
+  // ==========================================================================
+  console.log('   Creating advisor assignment...');
+  const advisorAssignment = await AdvisorAssignment.create({
+    advisorId: advisor._id,
+    tenantId: demoTenant._id,
+    status: AdvisorAssignmentStatus.ACTIVE,
+    assignedAt: new Date(),
+    isActive: true,
+    isPrimary: true,
+    notes: 'Primary advisor for demo tenant',
+    createdBy: systemAdmin._id,
+  });
+  console.log(`   ✓ Advisor assigned to: ${demoTenant.name}`);
 
   // ==========================================================================
   // 7. Create Demo Cohort
@@ -597,12 +732,22 @@ Sole Member`,
   // ==========================================================================
   console.log('\n📊 Seed Summary:');
   console.log('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`   System Admin:     ${systemAdmin.email} / ${config.seed.adminPassword}`);
-  console.log(`   Advisor:          ${advisor.email} / Advisor123!`);
-  console.log(`   Demo Client:      ${clientUser.email} / Demo123!`);
-  console.log(`   Demo Tenant:      ${demoTenant.name}`);
-  console.log(`   Demo Business:    ${businessProfile.businessName}`);
-  console.log(`   Demo Cohort:      ${cohort.name}`);
+  console.log('   Users (4 Role Model):');
+  console.log(`     IT Admin:     ${systemAdmin.email} / ${config.seed.adminPassword}`);
+  console.log(`     Advisor:      ${advisor.email} / Advisor123!`);
+  console.log(`     Manager:      ${managerUser.email} / Manager123!`);
+  console.log(`     Customer:     ${clientUser.email} / Demo123!`);
+  console.log('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('   Tenant & Business:');
+  console.log(`     Demo Tenant:  ${demoTenant.name}`);
+  console.log(`     Business:     ${businessProfile.businessName}`);
+  console.log(`     Cohort:       ${cohort.name}`);
+  console.log('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('   Roles:');
+  console.log('     IT_ADMIN  - Full platform access, IAM management');
+  console.log('     MANAGER   - Tenant operations, user invites');
+  console.log('     ADVISOR   - Assigned tenants, task/doc approval');
+  console.log('     CUSTOMER  - Own tenant access only');
   console.log('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 

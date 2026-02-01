@@ -13,7 +13,7 @@ import { PermissionGate } from '@/components/admin/PermissionGate';
 import { useUsers, useLockUser, useUnlockUser, useResetPassword } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
-import { IamPermission } from '@change/shared';
+import { IamPermission, PrimaryRole, PrimaryRoleLabels } from '@change/shared';
 
 interface User {
   id: string;
@@ -21,12 +21,34 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  primaryRole?: string;
   isActive: boolean;
   mfaEnabled: boolean;
   lockedAt?: string;
   lastLoginAt?: string;
   iamRoles?: Array<{ name: string }>;
   groups?: Array<{ name: string }>;
+}
+
+// Get display label for primary role
+function getRoleLabel(role?: string): string {
+  if (!role) return 'Unknown';
+  return PrimaryRoleLabels[role as keyof typeof PrimaryRoleLabels] || role.replace(/_/g, ' ');
+}
+
+// Get badge variant based on role
+function getRoleBadgeVariant(role?: string): 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' {
+  switch (role) {
+    case PrimaryRole.IT_ADMIN:
+      return 'destructive';
+    case PrimaryRole.MANAGER:
+      return 'info';
+    case PrimaryRole.ADVISOR:
+      return 'warning';
+    case PrimaryRole.CUSTOMER:
+    default:
+      return 'outline';
+  }
 }
 
 export function UsersPage() {
@@ -55,10 +77,12 @@ export function UsersPage() {
       ),
     },
     {
-      key: 'role',
+      key: 'primaryRole',
       header: 'Role',
       render: (user: User) => (
-        <Badge variant="outline">{user.role.replace(/_/g, ' ')}</Badge>
+        <Badge variant={getRoleBadgeVariant(user.primaryRole)}>
+          {getRoleLabel(user.primaryRole)}
+        </Badge>
       ),
     },
     {

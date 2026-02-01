@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { UserRole, type UserRoleType } from '@change/shared';
+import { UserRole, PrimaryRole, type UserRoleType, type PrimaryRoleType } from '@change/shared';
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -8,7 +8,8 @@ export interface IUser extends Document {
   passwordHash: string;
   firstName: string;
   lastName: string;
-  role: UserRoleType;
+  role: UserRoleType; // Legacy role (deprecated, kept for compatibility)
+  primaryRole: PrimaryRoleType; // New simplified role
   tenantId?: mongoose.Types.ObjectId;
   isActive: boolean;
   lastLoginAt?: Date;
@@ -74,6 +75,12 @@ const userSchema = new Schema<IUser>(
       required: true,
       enum: Object.values(UserRole),
       default: UserRole.CLIENT_OWNER,
+      index: true,
+    },
+    primaryRole: {
+      type: String,
+      enum: Object.values(PrimaryRole),
+      default: PrimaryRole.CUSTOMER,
       index: true,
     },
     tenantId: {

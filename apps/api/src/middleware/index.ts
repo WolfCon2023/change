@@ -51,8 +51,11 @@ export {
   requireAnyPermission,
   requireAllPermissions,
   requireCrossTenantAccess,
+  requireTenantAccess,
   hasPermission,
   hasAnyPermission,
   hasAllPermissions,
   getUserPermissions,
+  canAccessTenant as canAccessTenantByRole,
+  getAccessibleTenants,
 } from './iam-auth.js';

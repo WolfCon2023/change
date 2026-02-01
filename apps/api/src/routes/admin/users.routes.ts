@@ -13,15 +13,21 @@ import {
   IamAuditAction,
   UserRole,
   PaginationDefaults,
+  PrimaryRole,
+  type PrimaryRoleType,
+  ManagerAssignableRoles,
+  SystemRole,
 } from '@change/shared';
 import {
   authenticate,
   loadIamPermissions,
   requirePermission,
   requireAnyPermission,
+  requireTenantAccess,
   validate,
   NotFoundError,
   ConflictError,
+  ForbiddenError,
 } from '../../middleware/index.js';
 import { User, IamRole, Group } from '../../db/models/index.js';
 import { logIamActionFromRequest, computeDiff } from '../../services/index.js';
@@ -49,6 +55,7 @@ const createUserSchema = z.object({
     firstName: z.string().min(1).max(100),
     lastName: z.string().min(1).max(100),
     role: z.nativeEnum(UserRole).optional(),
+    primaryRole: z.nativeEnum(PrimaryRole).optional(),
     iamRoleIds: z.array(z.string()).optional(),
     groupIds: z.array(z.string()).optional(),
     mfaEnforced: z.boolean().optional(),
@@ -64,11 +71,52 @@ const updateUserSchema = z.object({
     firstName: z.string().min(1).max(100).optional(),
     lastName: z.string().min(1).max(100).optional(),
     role: z.nativeEnum(UserRole).optional(),
+    primaryRole: z.nativeEnum(PrimaryRole).optional(),
     isActive: z.boolean().optional(),
     mfaEnforced: z.boolean().optional(),
     mustChangePassword: z.boolean().optional(),
   }),
 });
+
+/**
+ * Check if the requesting user can assign a specific primary role
+ * - IT_ADMIN can assign any role
+ * - MANAGER can only assign CUSTOMER or MANAGER (not IT_ADMIN or ADVISOR)
+ * - Others cannot assign roles
+ */
+function canAssignRole(actorPrimaryRole: PrimaryRoleType | undefined, targetRole: PrimaryRoleType): boolean {
+  if (actorPrimaryRole === PrimaryRole.IT_ADMIN) {
+    return true;
+  }
+  if (actorPrimaryRole === PrimaryRole.MANAGER) {
+    return ManagerAssignableRoles.includes(targetRole);
+  }
+  return false;
+}
+
+/**
+ * Check if removing a role would leave no IT_ADMINs
+ */
+async function wouldRemoveLastItAdmin(userId: string, newRole: PrimaryRoleType): Promise<boolean> {
+  if (newRole === PrimaryRole.IT_ADMIN) {
+    return false; // Not removing IT_ADMIN
+  }
+  
+  // Check if user being modified is currently an IT_ADMIN
+  const user = await User.findById(userId);
+  if (!user || user.primaryRole !== PrimaryRole.IT_ADMIN) {
+    return false;
+  }
+  
+  // Count other IT_ADMINs
+  const otherItAdmins = await User.countDocuments({
+    _id: { $ne: userId },
+    primaryRole: PrimaryRole.IT_ADMIN,
+    isActive: true,
+  });
+  
+  return otherItAdmins === 0;
+}
 
 const setRolesSchema = z.object({
   params: z.object({
@@ -214,6 +262,7 @@ router.post(
   '/tenants/:tenantId/users',
   authenticate,
   loadIamPermissions,
+  requireTenantAccess('tenantId'),
   requirePermission(IamPermission.IAM_USER_WRITE),
   validate(createUserSchema),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -225,11 +274,23 @@ router.post(
         firstName,
         lastName,
         role,
+        primaryRole,
         iamRoleIds,
         groupIds,
         mfaEnforced,
         mustChangePassword,
       } = req.body;
+
+      // Determine the target primary role
+      const targetPrimaryRole = primaryRole || PrimaryRole.CUSTOMER;
+
+      // Check privilege escalation
+      if (!canAssignRole(req.primaryRole, targetPrimaryRole)) {
+        throw new ForbiddenError(
+          `You cannot assign the ${targetPrimaryRole} role. ` +
+          'Managers can only assign Customer or Manager roles.'
+        );
+      }
 
       // Check if email already exists
       const existing = await User.findOne({ email: email.toLowerCase() });
@@ -247,6 +308,7 @@ router.post(
         firstName,
         lastName,
         role: role || UserRole.CLIENT_CONTRIBUTOR,
+        primaryRole: targetPrimaryRole,
         tenantId,
         iamRoles: iamRoleIds || [],
         groups: groupIds || [],
@@ -264,7 +326,7 @@ router.post(
         `Created user ${email}`,
         {
           targetName: `${firstName} ${lastName}`,
-          after: { email, firstName, lastName, role: user.role },
+          after: { email, firstName, lastName, role: user.role, primaryRole: user.primaryRole },
         }
       );
 
@@ -290,6 +352,7 @@ router.put(
   '/tenants/:tenantId/users/:userId',
   authenticate,
   loadIamPermissions,
+  requireTenantAccess('tenantId'),
   requirePermission(IamPermission.IAM_USER_WRITE),
   validate(updateUserSchema),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -297,15 +360,39 @@ router.put(
       const { tenantId, userId } = req.params;
       const updates = req.body;
 
+      // Prevent users from modifying their own role
+      if (userId === req.user?.userId && updates.primaryRole) {
+        throw new ForbiddenError('You cannot modify your own role');
+      }
+
       const user = await User.findOne({ _id: userId, tenantId });
       if (!user) {
         throw new NotFoundError('User not found');
+      }
+
+      // Check privilege escalation for role changes
+      if (updates.primaryRole && updates.primaryRole !== user.primaryRole) {
+        if (!canAssignRole(req.primaryRole, updates.primaryRole)) {
+          throw new ForbiddenError(
+            `You cannot assign the ${updates.primaryRole} role. ` +
+            'Managers can only assign Customer or Manager roles.'
+          );
+        }
+
+        // Prevent removing the last IT_ADMIN
+        if (await wouldRemoveLastItAdmin(userId, updates.primaryRole)) {
+          throw new ForbiddenError(
+            'Cannot remove the last IT Admin from the platform. ' +
+            'Assign another IT Admin first.'
+          );
+        }
       }
 
       const beforeState = {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        primaryRole: user.primaryRole,
         isActive: user.isActive,
         mfaEnforced: user.mfaEnforced,
       };
@@ -318,6 +405,7 @@ router.put(
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        primaryRole: user.primaryRole,
         isActive: user.isActive,
         mfaEnforced: user.mfaEnforced,
       };

@@ -472,6 +472,85 @@ export const PaginationDefaults = {
 } as const;
 
 // =============================================================================
+// PRIMARY ROLES (Simplified 4-Role Model)
+// =============================================================================
+
+export const PrimaryRole = {
+  IT_ADMIN: 'it_admin',
+  MANAGER: 'manager',
+  ADVISOR: 'advisor',
+  CUSTOMER: 'customer',
+} as const;
+
+export type PrimaryRoleType = (typeof PrimaryRole)[keyof typeof PrimaryRole];
+
+// Primary role display names
+export const PrimaryRoleLabels: Record<PrimaryRoleType, string> = {
+  [PrimaryRole.IT_ADMIN]: 'IT Admin',
+  [PrimaryRole.MANAGER]: 'Manager',
+  [PrimaryRole.ADVISOR]: 'Advisor',
+  [PrimaryRole.CUSTOMER]: 'Customer',
+};
+
+// Primary role descriptions
+export const PrimaryRoleDescriptions: Record<PrimaryRoleType, string> = {
+  [PrimaryRole.IT_ADMIN]: 'Full platform access including IAM management, audit logs, and cross-tenant operations',
+  [PrimaryRole.MANAGER]: 'Manage users and operations within their tenant, invite users, manage tasks and documents',
+  [PrimaryRole.ADVISOR]: 'Access assigned tenants only, approve tasks and documents, no IAM management',
+  [PrimaryRole.CUSTOMER]: 'Access own tenant only, manage onboarding, tasks, and documents',
+};
+
+// Map legacy UserRole to PrimaryRole
+export const LegacyRoleToPrimaryRole: Record<string, PrimaryRoleType> = {
+  [UserRole.SYSTEM_ADMIN]: PrimaryRole.IT_ADMIN,
+  [UserRole.PROGRAM_ADMIN]: PrimaryRole.MANAGER,
+  [UserRole.ADVISOR]: PrimaryRole.ADVISOR,
+  [UserRole.CLIENT_OWNER]: PrimaryRole.CUSTOMER,
+  [UserRole.CLIENT_ADMIN]: PrimaryRole.CUSTOMER,
+  [UserRole.CLIENT_CONTRIBUTOR]: PrimaryRole.CUSTOMER,
+  [UserRole.EXTERNAL_PARTNER]: PrimaryRole.CUSTOMER,
+};
+
+// =============================================================================
+// OPERATIONAL PERMISSIONS (Non-IAM)
+// =============================================================================
+
+export const OperationalPermission = {
+  // User operations (tenant-scoped, different from IAM)
+  USERS_INVITE: 'users.invite',
+  USERS_UPDATE: 'users.update',
+
+  // Tasks
+  TASKS_READ: 'tasks.read',
+  TASKS_MANAGE: 'tasks.manage',
+  TASKS_APPROVE: 'tasks.approve',
+
+  // Documents
+  DOCUMENTS_READ: 'documents.read',
+  DOCUMENTS_UPLOAD: 'documents.upload',
+  DOCUMENTS_APPROVE: 'documents.approve',
+
+  // Dashboards and Reports
+  DASHBOARDS_READ: 'dashboards.read',
+  REPORTS_READ: 'reports.read',
+
+  // Onboarding
+  ONBOARDING_READ: 'onboarding.read',
+  ONBOARDING_UPDATE: 'onboarding.update',
+
+  // Customer access (for advisors)
+  CUSTOMERS_READ: 'customers.read',
+
+  // Messaging
+  MESSAGES_SEND: 'messages.send',
+
+  // Issues (optional)
+  ISSUES_MANAGE: 'issues.manage',
+} as const;
+
+export type OperationalPermissionType = (typeof OperationalPermission)[keyof typeof OperationalPermission];
+
+// =============================================================================
 // IAM PERMISSIONS (Admin Portal)
 // =============================================================================
 
@@ -612,11 +691,16 @@ export const SystemRole = {
   TENANT_ADMIN: 'tenant_admin',
   ADVISOR_ADMIN: 'advisor_admin',
   AUDITOR: 'auditor',
+  // New simplified roles
+  IT_ADMIN: 'it_admin',
+  MANAGER: 'manager',
+  ADVISOR: 'advisor',
+  CUSTOMER: 'customer',
 } as const;
 
 export type SystemRoleType = (typeof SystemRole)[keyof typeof SystemRole];
 
-// Permissions for each system role
+// Legacy system role permissions (backward compatibility)
 export const SystemRolePermissions: Record<SystemRoleType, IamPermissionType[]> = {
   [SystemRole.GLOBAL_ADMIN]: Object.values(IamPermission), // All permissions
   [SystemRole.TENANT_ADMIN]: [
@@ -667,7 +751,109 @@ export const SystemRolePermissions: Record<SystemRoleType, IamPermissionType[]> 
     IamPermission.IAM_ACCESS_REVIEW_READ,
     IamPermission.IAM_ACCESS_REQUEST_READ,
   ],
+  // New simplified roles - IAM permissions only (operational permissions handled separately)
+  [SystemRole.IT_ADMIN]: Object.values(IamPermission), // All IAM permissions
+  [SystemRole.MANAGER]: [
+    IamPermission.IAM_USER_READ,
+    IamPermission.IAM_USER_INVITE,
+    IamPermission.IAM_ROLE_READ,
+    IamPermission.IAM_GROUP_READ,
+  ],
+  [SystemRole.ADVISOR]: [
+    IamPermission.IAM_USER_READ,
+  ],
+  [SystemRole.CUSTOMER]: [
+    IamPermission.IAM_ACCESS_REQUEST_CREATE,
+  ],
 };
+
+// =============================================================================
+// PRIMARY ROLE PERMISSIONS (Combined IAM + Operational)
+// =============================================================================
+
+// IT_ADMIN: Full IAM access + all operational permissions
+export const ItAdminPermissions = {
+  iam: Object.values(IamPermission),
+  operational: Object.values(OperationalPermission),
+};
+
+// MANAGER: Limited IAM + tenant operations
+export const ManagerPermissions = {
+  iam: [
+    IamPermission.IAM_USER_READ,
+    IamPermission.IAM_USER_INVITE,
+    IamPermission.IAM_ROLE_READ,
+    IamPermission.IAM_GROUP_READ,
+  ] as IamPermissionType[],
+  operational: [
+    OperationalPermission.USERS_INVITE,
+    OperationalPermission.USERS_UPDATE,
+    OperationalPermission.TASKS_READ,
+    OperationalPermission.TASKS_MANAGE,
+    OperationalPermission.DOCUMENTS_READ,
+    OperationalPermission.DOCUMENTS_UPLOAD,
+    OperationalPermission.DASHBOARDS_READ,
+    OperationalPermission.REPORTS_READ,
+    OperationalPermission.ISSUES_MANAGE,
+  ] as OperationalPermissionType[],
+};
+
+// ADVISOR: Read assigned tenants, approve tasks/docs
+export const AdvisorPermissions = {
+  iam: [
+    IamPermission.IAM_USER_READ,
+  ] as IamPermissionType[],
+  operational: [
+    OperationalPermission.CUSTOMERS_READ,
+    OperationalPermission.TASKS_READ,
+    OperationalPermission.TASKS_APPROVE,
+    OperationalPermission.DOCUMENTS_READ,
+    OperationalPermission.DOCUMENTS_APPROVE,
+    OperationalPermission.DASHBOARDS_READ,
+    OperationalPermission.REPORTS_READ,
+    OperationalPermission.ISSUES_MANAGE,
+  ] as OperationalPermissionType[],
+};
+
+// CUSTOMER: Own tenant operations only
+export const CustomerPermissions = {
+  iam: [
+    IamPermission.IAM_ACCESS_REQUEST_CREATE,
+  ] as IamPermissionType[],
+  operational: [
+    OperationalPermission.ONBOARDING_READ,
+    OperationalPermission.ONBOARDING_UPDATE,
+    OperationalPermission.TASKS_READ,
+    OperationalPermission.TASKS_MANAGE,
+    OperationalPermission.DOCUMENTS_READ,
+    OperationalPermission.DOCUMENTS_UPLOAD,
+    OperationalPermission.DASHBOARDS_READ,
+    OperationalPermission.MESSAGES_SEND,
+  ] as OperationalPermissionType[],
+};
+
+// Combined permissions by primary role
+export const PrimaryRolePermissions: Record<PrimaryRoleType, {
+  iam: IamPermissionType[];
+  operational: OperationalPermissionType[];
+}> = {
+  [PrimaryRole.IT_ADMIN]: ItAdminPermissions,
+  [PrimaryRole.MANAGER]: ManagerPermissions,
+  [PrimaryRole.ADVISOR]: AdvisorPermissions,
+  [PrimaryRole.CUSTOMER]: CustomerPermissions,
+};
+
+// Roles that can be assigned by a Manager (privilege escalation prevention)
+export const ManagerAssignableRoles: PrimaryRoleType[] = [
+  PrimaryRole.CUSTOMER,
+  PrimaryRole.MANAGER,
+];
+
+// Roles that require cross-tenant access
+export const CrossTenantRoles: PrimaryRoleType[] = [
+  PrimaryRole.IT_ADMIN,
+  PrimaryRole.ADVISOR,
+];
 
 // =============================================================================
 // ACCESS REQUEST STATUS
@@ -784,3 +970,69 @@ export const IamAuditAction = {
 } as const;
 
 export type IamAuditActionType = (typeof IamAuditAction)[keyof typeof IamAuditAction];
+
+// =============================================================================
+// ADVISOR ASSIGNMENT STATUS
+// =============================================================================
+
+export const AdvisorAssignmentStatus = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+  PENDING: 'pending',
+} as const;
+
+export type AdvisorAssignmentStatusType = (typeof AdvisorAssignmentStatus)[keyof typeof AdvisorAssignmentStatus];
+
+// =============================================================================
+// OPERATIONAL PERMISSION CATALOG (for UI)
+// =============================================================================
+
+export const OperationalPermissionCategory = {
+  USER_OPERATIONS: 'User Operations',
+  TASKS: 'Tasks',
+  DOCUMENTS: 'Documents',
+  DASHBOARDS: 'Dashboards and Reports',
+  ONBOARDING: 'Onboarding',
+  CUSTOMERS: 'Customer Access',
+  MESSAGING: 'Messaging',
+  ISSUES: 'Issues',
+} as const;
+
+export type OperationalPermissionCategoryType = (typeof OperationalPermissionCategory)[keyof typeof OperationalPermissionCategory];
+
+export const OperationalPermissionCatalog: Array<{
+  key: OperationalPermissionType;
+  description: string;
+  category: OperationalPermissionCategoryType;
+}> = [
+  // User Operations
+  { key: OperationalPermission.USERS_INVITE, description: 'Invite new users to tenant', category: OperationalPermissionCategory.USER_OPERATIONS },
+  { key: OperationalPermission.USERS_UPDATE, description: 'Update user profiles within tenant', category: OperationalPermissionCategory.USER_OPERATIONS },
+
+  // Tasks
+  { key: OperationalPermission.TASKS_READ, description: 'View tasks and checklists', category: OperationalPermissionCategory.TASKS },
+  { key: OperationalPermission.TASKS_MANAGE, description: 'Create and update tasks', category: OperationalPermissionCategory.TASKS },
+  { key: OperationalPermission.TASKS_APPROVE, description: 'Approve or reject tasks', category: OperationalPermissionCategory.TASKS },
+
+  // Documents
+  { key: OperationalPermission.DOCUMENTS_READ, description: 'View documents', category: OperationalPermissionCategory.DOCUMENTS },
+  { key: OperationalPermission.DOCUMENTS_UPLOAD, description: 'Upload documents', category: OperationalPermissionCategory.DOCUMENTS },
+  { key: OperationalPermission.DOCUMENTS_APPROVE, description: 'Approve or reject documents', category: OperationalPermissionCategory.DOCUMENTS },
+
+  // Dashboards
+  { key: OperationalPermission.DASHBOARDS_READ, description: 'View dashboards', category: OperationalPermissionCategory.DASHBOARDS },
+  { key: OperationalPermission.REPORTS_READ, description: 'View reports', category: OperationalPermissionCategory.DASHBOARDS },
+
+  // Onboarding
+  { key: OperationalPermission.ONBOARDING_READ, description: 'View onboarding progress', category: OperationalPermissionCategory.ONBOARDING },
+  { key: OperationalPermission.ONBOARDING_UPDATE, description: 'Update onboarding information', category: OperationalPermissionCategory.ONBOARDING },
+
+  // Customer Access
+  { key: OperationalPermission.CUSTOMERS_READ, description: 'View customer information (for advisors)', category: OperationalPermissionCategory.CUSTOMERS },
+
+  // Messaging
+  { key: OperationalPermission.MESSAGES_SEND, description: 'Send messages', category: OperationalPermissionCategory.MESSAGING },
+
+  // Issues
+  { key: OperationalPermission.ISSUES_MANAGE, description: 'Manage issues and tickets', category: OperationalPermissionCategory.ISSUES },
+];
