@@ -67,22 +67,16 @@ const createUserSchema = z.object({
   }),
 });
 
-const updateUserSchema = z.object({
-  params: z.object({
-    tenantId: z.string(),
-    userId: z.string(),
-  }),
-  body: z.object({
-    email: z.string().email().optional(),
-    phoneNumber: z.string().max(20).optional(),
-    firstName: z.string().min(1).max(100).optional(),
-    lastName: z.string().min(1).max(100).optional(),
-    role: z.nativeEnum(UserRole).optional(),
-    primaryRole: z.nativeEnum(PrimaryRole).optional(),
-    isActive: z.boolean().optional(),
-    mfaEnforced: z.boolean().optional(),
-    mustChangePassword: z.boolean().optional(),
-  }),
+const updateUserBodySchema = z.object({
+  email: z.string().email().optional(),
+  phoneNumber: z.string().max(20).optional(),
+  firstName: z.string().min(1).max(100).optional(),
+  lastName: z.string().min(1).max(100).optional(),
+  role: z.nativeEnum(UserRole).optional(),
+  primaryRole: z.nativeEnum(PrimaryRole).optional(),
+  isActive: z.boolean().optional(),
+  mfaEnforced: z.boolean().optional(),
+  mustChangePassword: z.boolean().optional(),
 });
 
 /**
@@ -125,24 +119,12 @@ async function wouldRemoveLastItAdmin(userId: string, newRole: PrimaryRoleType):
   return otherItAdmins === 0;
 }
 
-const setRolesSchema = z.object({
-  params: z.object({
-    tenantId: z.string(),
-    userId: z.string(),
-  }),
-  body: z.object({
-    iamRoleIds: z.array(z.string()),
-  }),
+const setRolesBodySchema = z.object({
+  iamRoleIds: z.array(z.string()),
 });
 
-const setGroupsSchema = z.object({
-  params: z.object({
-    tenantId: z.string(),
-    userId: z.string(),
-  }),
-  body: z.object({
-    groupIds: z.array(z.string()),
-  }),
+const setGroupsBodySchema = z.object({
+  groupIds: z.array(z.string()),
 });
 
 /**
@@ -414,7 +396,7 @@ router.put(
   loadIamPermissions,
   requireTenantAccess('tenantId'),
   requirePermission(IamPermission.IAM_USER_WRITE),
-  validate(updateUserSchema),
+  validate(updateUserBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId, userId } = req.params;
@@ -606,7 +588,7 @@ router.post(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_ROLE_ASSIGN),
-  validate(setRolesSchema),
+  validate(setRolesBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId, userId } = req.params;
@@ -684,7 +666,7 @@ router.post(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_GROUP_MANAGE_MEMBERS),
-  validate(setGroupsSchema),
+  validate(setGroupsBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId, userId } = req.params;
