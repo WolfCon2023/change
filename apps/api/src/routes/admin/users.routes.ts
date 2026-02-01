@@ -69,6 +69,7 @@ const createUserSchema = z.object({
 
 const updateUserSchema = z.object({
   params: z.object({
+    tenantId: z.string(),
     userId: z.string(),
   }),
   body: z.object({
@@ -126,6 +127,7 @@ async function wouldRemoveLastItAdmin(userId: string, newRole: PrimaryRoleType):
 
 const setRolesSchema = z.object({
   params: z.object({
+    tenantId: z.string(),
     userId: z.string(),
   }),
   body: z.object({
@@ -135,6 +137,7 @@ const setRolesSchema = z.object({
 
 const setGroupsSchema = z.object({
   params: z.object({
+    tenantId: z.string(),
     userId: z.string(),
   }),
   body: z.object({
