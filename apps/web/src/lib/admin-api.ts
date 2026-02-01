@@ -129,10 +129,11 @@ export function useCreateUser(tenantId: string) {
   });
 }
 
-export function useUpdateUser(tenantId: string, userId: string) {
+export function useUpdateUser(tenantId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: {
+      userId: string;
       email?: string;
       phoneNumber?: string;
       firstName?: string;
@@ -142,12 +143,13 @@ export function useUpdateUser(tenantId: string, userId: string) {
       isActive?: boolean;
       mfaEnforced?: boolean;
     }) => {
-      const res = await api.put<ApiResponse<unknown>>(`/admin/tenants/${tenantId}/users/${userId}`, data);
+      const { userId, ...updateData } = data;
+      const res = await api.put<ApiResponse<unknown>>(`/admin/tenants/${tenantId}/users/${userId}`, updateData);
       return res.data.data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users', tenantId] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users', tenantId, userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users', tenantId, variables.userId] });
     },
   });
 }

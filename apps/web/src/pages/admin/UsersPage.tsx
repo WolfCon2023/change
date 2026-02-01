@@ -89,7 +89,7 @@ export function UsersPage() {
 
   const { data, isLoading, refetch } = useUsers(tenantId, { page, search: search || undefined });
   const createUser = useCreateUser(tenantId);
-  const updateUser = useUpdateUser(tenantId, selectedUser?.id || '');
+  const updateUser = useUpdateUser(tenantId);
   const lockUser = useLockUser(tenantId, selectedUser?.id || '');
   const unlockUser = useUnlockUser(tenantId, selectedUser?.id || '');
   const resetPassword = useResetPassword(tenantId, selectedUser?.id || '');
@@ -245,6 +245,7 @@ export function UsersPage() {
 
     try {
       await updateUser.mutateAsync({
+        userId: selectedUser.id,
         email: formData.email,
         phoneNumber: formData.phoneNumber || undefined,
         firstName: formData.firstName,
