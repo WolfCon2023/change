@@ -80,28 +80,29 @@ router.get(
       );
       const search = req.query.search as string;
 
-      // Build filter based on role
-      const filter: Record<string, unknown> = {};
-      
+      // Build base filter
       // IT_ADMIN can see tenant groups AND platform groups
+      let baseFilter: Record<string, unknown>;
+      
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        filter.$or = [
-          { tenantId },
-          { isPlatformGroup: true },
-          { tenantId: { $exists: false } },
-          { tenantId: null },
-        ];
+        baseFilter = {
+          $or: [
+            { tenantId: tenantId },
+            { isPlatformGroup: true },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
       } else {
-        filter.tenantId = tenantId;
+        baseFilter = { tenantId: tenantId };
       }
       
+      // Combine with search if provided
+      let filter: Record<string, unknown>;
       if (search) {
-        if (filter.$or) {
-          filter.$and = [{ $or: filter.$or }, { name: { $regex: search, $options: 'i' } }];
-          delete filter.$or;
-        } else {
-          filter.name = { $regex: search, $options: 'i' };
-        }
+        filter = { $and: [baseFilter, { name: { $regex: search, $options: 'i' } }] };
+      } else {
+        filter = baseFilter;
       }
 
       const skip = (page - 1) * limit;

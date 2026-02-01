@@ -161,48 +161,52 @@ router.get(
         sortOrder?: string;
       };
 
-      // Build filter based on role
-      const filter: Record<string, unknown> = {};
-      
+      // Build base filter
       // IT_ADMIN can see all users (platform users without tenantId + tenant users)
+      // Others only see their tenant's users
+      let baseFilter: Record<string, unknown>;
+      
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
         // Show users from this tenant OR platform users (no tenantId)
-        filter.$or = [
-          { tenantId },
-          { tenantId: { $exists: false } },
-          { tenantId: null },
-        ];
+        baseFilter = {
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: { $exists: false } },
+            { tenantId: null },
+          ],
+        };
       } else {
-        // Others only see their tenant's users
-        filter.tenantId = tenantId;
+        baseFilter = { tenantId: tenantId };
       }
 
+      // Build additional filters
+      const additionalFilters: Record<string, unknown>[] = [];
+      
       if (search) {
-        // Need to combine with existing $or if present
-        const searchCondition = {
+        additionalFilters.push({
           $or: [
             { email: { $regex: search, $options: 'i' } },
             { firstName: { $regex: search, $options: 'i' } },
             { lastName: { $regex: search, $options: 'i' } },
           ],
-        };
-        if (filter.$or) {
-          // Combine tenant filter with search filter using $and
-          const tenantCondition = filter.$or;
-          delete filter.$or;
-          filter.$and = [{ $or: tenantCondition }, searchCondition];
-        } else {
-          filter.$or = searchCondition.$or;
-        }
+        });
       }
       if (role) {
-        filter.role = role;
+        additionalFilters.push({ role: role });
       }
       if (isActive !== undefined) {
-        filter.isActive = isActive;
+        additionalFilters.push({ isActive: isActive });
       }
       if (mfaEnabled !== undefined) {
-        filter.mfaEnabled = mfaEnabled;
+        additionalFilters.push({ mfaEnabled: mfaEnabled });
+      }
+      
+      // Combine all filters
+      let filter: Record<string, unknown>;
+      if (additionalFilters.length > 0) {
+        filter = { $and: [baseFilter, ...additionalFilters] };
+      } else {
+        filter = baseFilter;
       }
 
       // Build sort
