@@ -25,7 +25,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { IamPermission, PrimaryRole, PrimaryRoleLabels } from '@change/shared';
 
 interface User {
-  id: string;
+  id?: string;
+  _id?: string;
   email: string;
   phoneNumber?: string;
   firstName: string;
@@ -37,8 +38,13 @@ interface User {
   mfaEnforced?: boolean;
   lockedAt?: string;
   lastLoginAt?: string;
-  iamRoles?: Array<{ id: string; name: string }>;
-  groups?: Array<{ id: string; name: string }>;
+  iamRoles?: Array<{ id?: string; _id?: string; name: string }>;
+  groups?: Array<{ id?: string; _id?: string; name: string }>;
+}
+
+// Helper to get user ID (handles both id and _id)
+function getUserId(user: User): string {
+  return user.id || user._id || '';
 }
 
 // Get display label for primary role
@@ -90,9 +96,9 @@ export function UsersPage() {
   const { data, isLoading, refetch } = useUsers(tenantId, { page, search: search || undefined });
   const createUser = useCreateUser(tenantId);
   const updateUser = useUpdateUser(tenantId);
-  const lockUser = useLockUser(tenantId, selectedUser?.id || '');
-  const unlockUser = useUnlockUser(tenantId, selectedUser?.id || '');
-  const resetPassword = useResetPassword(tenantId, selectedUser?.id || '');
+  const lockUser = useLockUser(tenantId, selectedUser ? getUserId(selectedUser) : '');
+  const unlockUser = useUnlockUser(tenantId, selectedUser ? getUserId(selectedUser) : '');
+  const resetPassword = useResetPassword(tenantId, selectedUser ? getUserId(selectedUser) : '');
 
   const columns = [
     {
@@ -245,7 +251,7 @@ export function UsersPage() {
 
     try {
       await updateUser.mutateAsync({
-        userId: selectedUser.id,
+        userId: getUserId(selectedUser),
         email: formData.email,
         phoneNumber: formData.phoneNumber || undefined,
         firstName: formData.firstName,
