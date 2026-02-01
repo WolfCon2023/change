@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { IamPermission, IamAuditAction, PaginationDefaults } from '@change/shared';
+import { IamPermission, IamAuditAction, PaginationDefaults, PrimaryRole } from '@change/shared';
 import {
   authenticate,
   loadIamPermissions,
@@ -63,7 +63,7 @@ const manageRolesSchema = z.object({
 
 /**
  * GET /admin/tenants/:tenantId/groups
- * List groups
+ * List groups (IT_ADMIN sees all including platform groups)
  */
 router.get(
   '/tenants/:tenantId/groups',
@@ -80,9 +80,28 @@ router.get(
       );
       const search = req.query.search as string;
 
-      const filter: Record<string, unknown> = { tenantId };
+      // Build filter based on role
+      const filter: Record<string, unknown> = {};
+      
+      // IT_ADMIN can see tenant groups AND platform groups
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        filter.$or = [
+          { tenantId },
+          { isPlatformGroup: true },
+          { tenantId: { $exists: false } },
+          { tenantId: null },
+        ];
+      } else {
+        filter.tenantId = tenantId;
+      }
+      
       if (search) {
-        filter.name = { $regex: search, $options: 'i' };
+        if (filter.$or) {
+          filter.$and = [{ $or: filter.$or }, { name: { $regex: search, $options: 'i' } }];
+          delete filter.$or;
+        } else {
+          filter.name = { $regex: search, $options: 'i' };
+        }
       }
 
       const skip = (page - 1) * limit;

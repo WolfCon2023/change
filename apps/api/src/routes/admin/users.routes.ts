@@ -139,6 +139,7 @@ const setGroupsSchema = z.object({
 /**
  * GET /admin/tenants/:tenantId/users
  * List users with filtering and pagination
+ * IT_ADMIN sees all users (platform + tenant), others see only tenant users
  */
 router.get(
   '/tenants/:tenantId/users',
@@ -160,15 +161,39 @@ router.get(
         sortOrder?: string;
       };
 
-      // Build filter
-      const filter: Record<string, unknown> = { tenantId };
+      // Build filter based on role
+      const filter: Record<string, unknown> = {};
+      
+      // IT_ADMIN can see all users (platform users without tenantId + tenant users)
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        // Show users from this tenant OR platform users (no tenantId)
+        filter.$or = [
+          { tenantId },
+          { tenantId: { $exists: false } },
+          { tenantId: null },
+        ];
+      } else {
+        // Others only see their tenant's users
+        filter.tenantId = tenantId;
+      }
 
       if (search) {
-        filter.$or = [
-          { email: { $regex: search, $options: 'i' } },
-          { firstName: { $regex: search, $options: 'i' } },
-          { lastName: { $regex: search, $options: 'i' } },
-        ];
+        // Need to combine with existing $or if present
+        const searchCondition = {
+          $or: [
+            { email: { $regex: search, $options: 'i' } },
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+          ],
+        };
+        if (filter.$or) {
+          // Combine tenant filter with search filter using $and
+          const tenantCondition = filter.$or;
+          delete filter.$or;
+          filter.$and = [{ $or: tenantCondition }, searchCondition];
+        } else {
+          filter.$or = searchCondition.$or;
+        }
       }
       if (role) {
         filter.role = role;
