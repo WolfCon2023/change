@@ -4,12 +4,13 @@
  */
 
 import { create } from 'zustand';
-import type { IamPermissionType } from '@change/shared';
+import type { IamPermissionType, PrimaryRoleType } from '@change/shared';
 
 interface AdminContext {
   permissions: IamPermissionType[];
   roles: Array<{ id: string; name: string; permissions: IamPermissionType[] }>;
   currentTenantId: string | null;
+  primaryRole?: PrimaryRoleType;
 }
 
 interface AdminState {

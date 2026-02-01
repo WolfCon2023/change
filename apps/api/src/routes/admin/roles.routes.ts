@@ -13,6 +13,7 @@ import {
   SystemRolePermissions,
   SystemRole,
   PaginationDefaults,
+  PrimaryRole,
 } from '@change/shared';
 import {
   authenticate,
@@ -276,9 +277,9 @@ router.put(
         throw new NotFoundError('Role not found');
       }
 
-      // Prevent modification of system roles
-      if (role.isSystem) {
-        throw new ForbiddenError('Cannot modify system roles');
+      // Only IT_ADMIN can modify system roles
+      if (role.isSystem && req.primaryRole !== PrimaryRole.IT_ADMIN) {
+        throw new ForbiddenError('Only IT Admin can modify system roles');
       }
 
       const beforeState = {

@@ -39,6 +39,8 @@ export function useAdminContext() {
         permissions: string[];
         roles: Array<{ id: string; name: string; permissions: string[] }>;
         tenantId: string;
+        primaryRole?: string;
+        accessibleTenants?: string[];
       }>>('/admin/me');
       return res.data.data;
     },

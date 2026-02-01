@@ -14,7 +14,7 @@ import { PermissionGate } from '@/components/admin/PermissionGate';
 import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePermissionCatalog } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
-import { IamPermission } from '@change/shared';
+import { IamPermission, PrimaryRole } from '@change/shared';
 
 interface Role {
   id: string;
@@ -30,6 +30,8 @@ type ModalMode = 'create' | 'edit' | 'view' | 'delete' | null;
 export function RolesPage() {
   const { context } = useAdminStore();
   const tenantId = context?.currentTenantId || '';
+  const primaryRole = context?.primaryRole;
+  const isItAdmin = primaryRole === PrimaryRole.IT_ADMIN;
   const { toast } = useToast();
 
   const [page, setPage] = useState(1);
@@ -97,7 +99,8 @@ export function RolesPage() {
       render: (role: Role) => (
         <PermissionGate permission={IamPermission.IAM_ROLE_WRITE}>
           <div className="flex items-center gap-1">
-            {role.isSystem ? (
+            {/* IT_ADMIN can edit system roles, others can only view */}
+            {role.isSystem && !isItAdmin ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -122,17 +125,20 @@ export function RolesPage() {
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDeleteModal(role);
-                  }}
-                  title="Delete role"
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
+                {/* System roles cannot be deleted */}
+                {!role.isSystem && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteModal(role);
+                    }}
+                    title="Delete role"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -288,6 +294,15 @@ export function RolesPage() {
                 <p className="text-sm text-blue-800">
                   <Lock className="h-4 w-4 inline mr-1" />
                   System roles cannot be modified. They are managed by the platform.
+                </p>
+              </div>
+            )}
+
+            {modalMode === 'edit' && selectedRole?.isSystem && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-amber-800">
+                  <Shield className="h-4 w-4 inline mr-1" />
+                  You are editing a system role. Changes will affect all users with this role.
                 </p>
               </div>
             )}

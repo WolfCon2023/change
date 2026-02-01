@@ -88,6 +88,7 @@ export function AdminLayout() {
         permissions: adminContext.permissions as IamPermissionType[],
         roles: adminContext.roles as Array<{ id: string; name: string; permissions: IamPermissionType[] }>,
         currentTenantId: adminContext.tenantId,
+        primaryRole: (adminContext as { primaryRole?: string }).primaryRole as import('@change/shared').PrimaryRoleType,
       });
     }
   }, [adminContext, setContext]);
