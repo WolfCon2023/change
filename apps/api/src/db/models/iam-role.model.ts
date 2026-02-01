@@ -44,7 +44,12 @@ const iamRoleSchema = new Schema<IIamRole>(
     },
     systemRole: {
       type: String,
-      enum: ['global_admin', 'tenant_admin', 'advisor_admin', 'auditor'],
+      enum: [
+        // Legacy roles
+        'global_admin', 'tenant_admin', 'advisor_admin', 'auditor',
+        // New 4-role model
+        'it_admin', 'manager', 'advisor', 'customer',
+      ],
     },
     permissions: [{
       type: String,

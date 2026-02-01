@@ -267,6 +267,7 @@ async function seedData(): Promise<void> {
     members: [systemAdmin._id],
     roles: [itAdminRole._id],
     isActive: true,
+    isPlatformGroup: true,
     createdBy: systemAdmin._id,
   });
 
@@ -276,6 +277,7 @@ async function seedData(): Promise<void> {
     members: [advisor._id],
     roles: [advisorRole._id],
     isActive: true,
+    isPlatformGroup: true,
     createdBy: systemAdmin._id,
   });
 
@@ -285,6 +287,7 @@ async function seedData(): Promise<void> {
     members: [],
     roles: [managerRole._id],
     isActive: true,
+    isPlatformGroup: true,
     createdBy: systemAdmin._id,
   });
   console.log('   ✓ Platform groups: 3 created');
@@ -707,10 +710,10 @@ Sole Member`,
       actorType: 'user',
       action: IamAuditAction.GROUP_CREATED,
       targetType: 'Group',
-      targetId: demoGroup._id.toString(),
-      targetName: demoGroup.name,
-      summary: `Created group ${demoGroup.name}`,
-      after: { name: demoGroup.name, memberCount: 1 },
+      targetId: customersGroup._id.toString(),
+      targetName: customersGroup.name,
+      summary: `Created group ${customersGroup.name}`,
+      after: { name: customersGroup.name, memberCount: 1 },
     },
     {
       tenantId: demoTenant._id,
@@ -719,9 +722,9 @@ Sole Member`,
       actorType: 'user',
       action: IamAuditAction.GROUP_MEMBER_ADDED,
       targetType: 'Group',
-      targetId: demoGroup._id.toString(),
-      targetName: demoGroup.name,
-      summary: `Added ${clientUser.email} to group ${demoGroup.name}`,
+      targetId: customersGroup._id.toString(),
+      targetName: customersGroup.name,
+      summary: `Added ${clientUser.email} to group ${customersGroup.name}`,
       after: { addedUser: clientUser.email },
     },
   ]);

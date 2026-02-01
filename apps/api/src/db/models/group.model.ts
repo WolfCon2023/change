@@ -7,12 +7,13 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IGroup extends Document {
   _id: Types.ObjectId;
-  tenantId: Types.ObjectId;
+  tenantId?: Types.ObjectId; // Optional for platform-level groups
   name: string;
   description?: string;
   members: Types.ObjectId[]; // User IDs
   roles: Types.ObjectId[]; // IamRole IDs
   isActive: boolean;
+  isPlatformGroup: boolean; // True for groups without tenantId
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -23,8 +24,12 @@ const groupSchema = new Schema<IGroup>(
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
-      required: true,
+      sparse: true, // Allow null for platform-level groups
       index: true,
+    },
+    isPlatformGroup: {
+      type: Boolean,
+      default: false,
     },
     name: {
       type: String,
@@ -61,8 +66,16 @@ const groupSchema = new Schema<IGroup>(
   }
 );
 
-// Compound index for unique group names within a tenant
-groupSchema.index({ tenantId: 1, name: 1 }, { unique: true });
+// Compound index for unique group names within a tenant (or globally for platform groups)
+groupSchema.index(
+  { tenantId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { tenantId: { $exists: true } } }
+);
+// Unique platform group names
+groupSchema.index(
+  { isPlatformGroup: 1, name: 1 },
+  { unique: true, partialFilterExpression: { isPlatformGroup: true } }
+);
 
 // Index for querying active groups
 groupSchema.index({ tenantId: 1, isActive: 1 });
@@ -75,7 +88,7 @@ groupSchema.set('toJSON', {
   virtuals: true,
   transform: (_doc, ret) => {
     ret.id = ret._id.toString();
-    ret.tenantId = ret.tenantId.toString();
+    if (ret.tenantId) ret.tenantId = ret.tenantId.toString();
     ret.members = ret.members.map((m: Types.ObjectId) => m.toString());
     ret.roles = ret.roles.map((r: Types.ObjectId) => r.toString());
     ret.createdBy = ret.createdBy.toString();
