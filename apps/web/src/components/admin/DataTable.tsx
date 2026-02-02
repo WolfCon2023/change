@@ -104,34 +104,36 @@ export function DataTable<T>({
         </table>
       </div>
 
-      {pagination && pagination.totalPages > 1 && (
+      {pagination && pagination.total > 0 && (
         <div className="px-4 py-3 border-t flex items-center justify-between">
           <div className="text-sm text-gray-500">
             Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
             {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
             {pagination.total} results
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange?.(pagination.page - 1)}
-              disabled={!pagination.hasPrev}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-gray-600">
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange?.(pagination.page + 1)}
-              disabled={!pagination.hasNext}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(pagination.page - 1)}
+                disabled={!pagination.hasPrev}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-gray-600">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(pagination.page + 1)}
+                disabled={!pagination.hasNext}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

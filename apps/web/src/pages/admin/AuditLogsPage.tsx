@@ -42,6 +42,12 @@ export function AuditLogsPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
+  // Reset page to 1 when filters change
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setPage(1); // Reset to first page when filtering
+  };
+
   const { data, isLoading } = useAuditLogs(tenantId, {
     page,
     actorEmail: filters.actorEmail || undefined,
@@ -148,7 +154,7 @@ export function AuditLogsPage() {
               <label className="text-sm text-gray-500">Actor Email</label>
               <Input
                 value={filters.actorEmail}
-                onChange={(e) => setFilters((prev) => ({ ...prev, actorEmail: e.target.value }))}
+                onChange={(e) => handleFilterChange({ ...filters, actorEmail: e.target.value })}
                 placeholder="Filter by email"
               />
             </div>
@@ -156,7 +162,7 @@ export function AuditLogsPage() {
               <label className="text-sm text-gray-500">Action</label>
               <Input
                 value={filters.action}
-                onChange={(e) => setFilters((prev) => ({ ...prev, action: e.target.value }))}
+                onChange={(e) => handleFilterChange({ ...filters, action: e.target.value })}
                 placeholder="Filter by action"
               />
             </div>
@@ -165,7 +171,7 @@ export function AuditLogsPage() {
               <Input
                 type="date"
                 value={filters.startDate}
-                onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                onChange={(e) => handleFilterChange({ ...filters, startDate: e.target.value })}
               />
             </div>
             <div>
@@ -173,7 +179,7 @@ export function AuditLogsPage() {
               <Input
                 type="date"
                 value={filters.endDate}
-                onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                onChange={(e) => handleFilterChange({ ...filters, endDate: e.target.value })}
               />
             </div>
           </div>
@@ -181,7 +187,7 @@ export function AuditLogsPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setFilters({ actorEmail: '', action: '', targetType: '', startDate: '', endDate: '' })}
+              onClick={() => handleFilterChange({ actorEmail: '', action: '', targetType: '', startDate: '', endDate: '' })}
             >
               Clear Filters
             </Button>
