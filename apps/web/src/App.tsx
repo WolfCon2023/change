@@ -22,6 +22,7 @@ import {
   UsersPage,
   RolesPage,
   GroupsPage,
+  AdvisorAssignmentsPage,
   AccessRequestsPage,
   ApiKeysPage,
   AuditLogsPage,
@@ -146,6 +147,7 @@ function App() {
           <Route path="users" element={<UsersPage />} />
           <Route path="roles" element={<RolesPage />} />
           <Route path="groups" element={<GroupsPage />} />
+          <Route path="advisor-assignments" element={<AdvisorAssignmentsPage />} />
           <Route path="access-requests" element={<AccessRequestsPage />} />
           <Route path="api-keys" element={<ApiKeysPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />

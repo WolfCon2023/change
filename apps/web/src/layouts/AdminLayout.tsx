@@ -16,15 +16,28 @@ import {
   LogOut,
   Menu,
   X,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { useAdminStore } from '@/stores/admin.store';
 import { useAdminContext } from '@/lib/admin-api';
-import { IamPermission } from '@change/shared';
-import type { IamPermissionType } from '@change/shared';
+import { IamPermission, PrimaryRole } from '@change/shared';
+import type { IamPermissionType, PrimaryRoleType } from '@change/shared';
 
-const navItems = [
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  end?: boolean;
+  permission?: IamPermissionType;
+  /** Require a specific role to see this nav item */
+  role?: PrimaryRoleType;
+  /** Require any of these roles to see this nav item */
+  roles?: PrimaryRoleType[];
+}
+
+const navItems: NavItem[] = [
   {
     label: 'Dashboard',
     href: '/admin',
@@ -48,6 +61,12 @@ const navItems = [
     href: '/admin/groups',
     icon: UserCog,
     permission: IamPermission.IAM_GROUP_READ,
+  },
+  {
+    label: 'Advisor Assignments',
+    href: '/admin/advisor-assignments',
+    icon: UserCheck,
+    role: PrimaryRole.IT_ADMIN,
   },
   {
     label: 'Access Requests',
@@ -106,9 +125,23 @@ export function AdminLayout() {
     );
   }
 
-  const filteredNavItems = navItems.filter(
-    (item) => !item.permission || hasPermission(item.permission)
-  );
+  const currentPrimaryRole = adminContext?.primaryRole as PrimaryRoleType | undefined;
+
+  const filteredNavItems = navItems.filter((item) => {
+    // Check role-based restriction first
+    if (item.role) {
+      return currentPrimaryRole === item.role;
+    }
+    if (item.roles && item.roles.length > 0) {
+      return currentPrimaryRole && item.roles.includes(currentPrimaryRole);
+    }
+    // Check permission-based restriction
+    if (item.permission) {
+      return hasPermission(item.permission);
+    }
+    // No restriction, show the item
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">

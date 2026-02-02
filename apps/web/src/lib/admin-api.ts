@@ -652,3 +652,117 @@ export function useCloseAccessReview(tenantId: string) {
     },
   });
 }
+
+// =============================================================================
+// ADVISOR ASSIGNMENTS
+// =============================================================================
+
+export interface AdvisorAssignment {
+  id: string;
+  advisorId: string;
+  advisor: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    name: string;
+  } | null;
+  tenantId: string;
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+  status: string;
+  isActive: boolean;
+  isPrimary: boolean;
+  notes?: string;
+  assignedAt: string;
+  unassignedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Advisor {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+}
+
+export interface TenantOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export function useAdvisorAssignments(params?: { advisorId?: string; tenantId?: string; isActive?: boolean }) {
+  return useQuery({
+    queryKey: ['admin', 'advisor-assignments', params],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<AdvisorAssignment[]>>('/admin/advisor-assignments', { params });
+      return res.data.data;
+    },
+  });
+}
+
+export function useAdvisors() {
+  return useQuery({
+    queryKey: ['admin', 'advisors'],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<Advisor[]>>('/admin/advisors');
+      return res.data.data;
+    },
+  });
+}
+
+export function useTenantsList() {
+  return useQuery({
+    queryKey: ['admin', 'tenants-list'],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<TenantOption[]>>('/admin/tenants-list');
+      return res.data.data;
+    },
+  });
+}
+
+export function useCreateAdvisorAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { advisorId: string; tenantId: string; isPrimary?: boolean; notes?: string }) => {
+      const res = await api.post<ApiResponse<AdvisorAssignment>>('/admin/advisor-assignments', data);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'advisor-assignments'] });
+    },
+  });
+}
+
+export function useUpdateAdvisorAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { assignmentId: string; isPrimary?: boolean; notes?: string; status?: string }) => {
+      const { assignmentId, ...updateData } = data;
+      const res = await api.put<ApiResponse<AdvisorAssignment>>(`/admin/advisor-assignments/${assignmentId}`, updateData);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'advisor-assignments'] });
+    },
+  });
+}
+
+export function useDeleteAdvisorAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (assignmentId: string) => {
+      const res = await api.delete<ApiResponse<{ message: string }>>(`/admin/advisor-assignments/${assignmentId}`);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'advisor-assignments'] });
+    },
+  });
+}

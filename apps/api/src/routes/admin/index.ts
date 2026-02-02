@@ -27,6 +27,7 @@ import apiKeysRoutes from './api-keys.routes.js';
 import auditLogsRoutes from './audit-logs.routes.js';
 import accessRequestsRoutes from './access-requests.routes.js';
 import accessReviewsRoutes from './access-reviews.routes.js';
+import advisorAssignmentsRoutes from './advisor-assignments.routes.js';
 
 const router = Router();
 
@@ -216,5 +217,6 @@ router.use(apiKeysRoutes);
 router.use(auditLogsRoutes);
 router.use(accessRequestsRoutes);
 router.use(accessReviewsRoutes);
+router.use(advisorAssignmentsRoutes);
 
 export default router;

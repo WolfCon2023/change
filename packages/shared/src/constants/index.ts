@@ -967,6 +967,11 @@ export const IamAuditAction = {
   // Policy actions
   POLICY_UPDATED: 'iam.policy.updated',
   SETTINGS_UPDATED: 'iam.settings.updated',
+
+  // Advisor assignment actions
+  ADVISOR_ASSIGNMENT_CREATED: 'iam.advisor_assignment.created',
+  ADVISOR_ASSIGNMENT_UPDATED: 'iam.advisor_assignment.updated',
+  ADVISOR_ASSIGNMENT_REMOVED: 'iam.advisor_assignment.removed',
 } as const;
 
 export type IamAuditActionType = (typeof IamAuditAction)[keyof typeof IamAuditAction];
