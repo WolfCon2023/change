@@ -201,6 +201,18 @@ export const createCampaignSchema = z.object({
 );
 
 /**
+ * Group Certification Schema
+ */
+export const groupCertificationSchema = z.object({
+  groupId: z.string().min(1),
+  groupName: z.string().min(1).max(200),
+  membershipCertified: z.boolean().optional(),
+  membershipCertifiedAt: z.string().datetime().optional().transform(v => v ? new Date(v) : undefined),
+  permissionsCertified: z.boolean().optional(),
+  permissionsCertifiedAt: z.string().datetime().optional().transform(v => v ? new Date(v) : undefined),
+});
+
+/**
  * Update Campaign Request Schema
  */
 export const updateCampaignSchema = z.object({
@@ -219,6 +231,7 @@ export const updateCampaignSchema = z.object({
   subjects: z.array(accessReviewCampaignSubjectSchema).optional(),
   approvals: accessReviewCampaignApprovalsSchema.optional(),
   workflow: accessReviewCampaignWorkflowSchema.partial().optional(),
+  groupCertifications: z.array(groupCertificationSchema).optional(),
 });
 
 /**

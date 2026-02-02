@@ -1077,6 +1077,21 @@ export interface AccessReviewCampaignWorkflow {
 }
 
 /**
+ * Group Certification
+ * Tracks certification status for a group in a campaign
+ */
+export interface GroupCertification {
+  groupId: string;
+  groupName: string;
+  membershipCertified?: boolean;
+  membershipCertifiedAt?: Date | string;
+  membershipCertifiedBy?: string;
+  permissionsCertified?: boolean;
+  permissionsCertifiedAt?: Date | string;
+  permissionsCertifiedBy?: string;
+}
+
+/**
  * Access Review Campaign
  * Main campaign document containing subjects and items
  */
@@ -1105,6 +1120,7 @@ export interface AccessReviewCampaign extends TenantScopedEntity {
   subjects: AccessReviewCampaignSubject[];
   approvals?: AccessReviewCampaignApprovals;
   workflow?: AccessReviewCampaignWorkflow;
+  groupCertifications?: GroupCertification[];
   // Stats (computed)
   totalSubjects?: number;
   completedSubjects?: number;
@@ -1157,6 +1173,7 @@ export interface AccessReviewCampaignUpdateRequest {
   subjects?: AccessReviewCampaignSubject[];
   approvals?: AccessReviewCampaignApprovals;
   workflow?: Partial<AccessReviewCampaignWorkflow>;
+  groupCertifications?: GroupCertification[];
 }
 
 /**

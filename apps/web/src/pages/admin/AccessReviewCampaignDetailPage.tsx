@@ -141,10 +141,6 @@ export function AccessReviewCampaignDetailPage() {
   
   // Group review state
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [groupCertifications, setGroupCertifications] = useState<Record<string, {
-    membershipCertified?: boolean;
-    permissionsCertified?: boolean;
-  }>>({});
 
   // Smart suggestions state
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -157,6 +153,20 @@ export function AccessReviewCampaignDetailPage() {
   const approveCampaign = useApproveAccessReviewCampaign(tenantId, campaignId);
   const { data: groupsData } = useGroups(tenantId, { limit: 100 });
   const availableGroups = groupsData?.data || [];
+
+  // Derive group certifications from campaign data (persisted)
+  const groupCertifications = useMemo(() => {
+    const certs: Record<string, { membershipCertified?: boolean; permissionsCertified?: boolean }> = {};
+    if (campaign?.groupCertifications) {
+      for (const cert of campaign.groupCertifications) {
+        certs[cert.groupId] = {
+          membershipCertified: cert.membershipCertified,
+          permissionsCertified: cert.permissionsCertified,
+        };
+      }
+    }
+    return certs;
+  }, [campaign?.groupCertifications]);
 
   // Generate smart suggestions based on item characteristics
   const generateSuggestions = useMemo((): SmartSuggestion[] => {
@@ -579,19 +589,44 @@ export function AccessReviewCampaignDetailPage() {
     setExpandedGroups(newExpanded);
   };
 
-  // Certify group membership or permissions
-  const handleGroupCertification = (groupId: string, type: 'membership' | 'permissions') => {
-    setGroupCertifications(prev => ({
-      ...prev,
-      [groupId]: {
-        ...prev[groupId],
-        [type === 'membership' ? 'membershipCertified' : 'permissionsCertified']: true,
-      },
-    }));
-    toast({
-      title: `Group ${type} certified`,
-      description: `${type.charAt(0).toUpperCase() + type.slice(1)} has been certified for this group.`,
-    });
+  // Certify group membership or permissions (persists to database)
+  const handleGroupCertification = async (groupId: string, groupName: string, type: 'membership' | 'permissions') => {
+    if (!campaign) return;
+    
+    // Build updated group certifications array
+    const existingCerts = campaign.groupCertifications || [];
+    const existingCertIndex = existingCerts.findIndex(c => c.groupId === groupId);
+    const existingCert = existingCertIndex >= 0 ? existingCerts[existingCertIndex] : null;
+    
+    const updatedCert = {
+      groupId,
+      groupName,
+      membershipCertified: type === 'membership' ? true : (existingCert?.membershipCertified || false),
+      membershipCertifiedAt: type === 'membership' ? new Date().toISOString() : existingCert?.membershipCertifiedAt,
+      permissionsCertified: type === 'permissions' ? true : (existingCert?.permissionsCertified || false),
+      permissionsCertifiedAt: type === 'permissions' ? new Date().toISOString() : existingCert?.permissionsCertifiedAt,
+    };
+    
+    let updatedCerts;
+    if (existingCertIndex >= 0) {
+      updatedCerts = [...existingCerts];
+      updatedCerts[existingCertIndex] = updatedCert;
+    } else {
+      updatedCerts = [...existingCerts, updatedCert];
+    }
+    
+    try {
+      await updateCampaign.mutateAsync({ groupCertifications: updatedCerts });
+      toast({
+        title: `Group ${type} certified`,
+        description: `${type.charAt(0).toUpperCase() + type.slice(1)} has been certified for ${groupName}.`,
+      });
+    } catch {
+      toast({
+        title: 'Failed to certify group',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -1317,10 +1352,10 @@ export function AccessReviewCampaignDetailPage() {
                                   <Button
                                     size="sm"
                                     variant={certification.membershipCertified ? "outline" : "default"}
-                                    disabled={certification.membershipCertified}
+                                    disabled={certification.membershipCertified || !canEdit}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleGroupCertification(group.id, 'membership');
+                                      handleGroupCertification(group.id, group.name, 'membership');
                                     }}
                                   >
                                     {certification.membershipCertified ? (
@@ -1356,10 +1391,10 @@ export function AccessReviewCampaignDetailPage() {
                                   <Button
                                     size="sm"
                                     variant={certification.permissionsCertified ? "outline" : "default"}
-                                    disabled={certification.permissionsCertified}
+                                    disabled={certification.permissionsCertified || !canEdit}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleGroupCertification(group.id, 'permissions');
+                                      handleGroupCertification(group.id, group.name, 'permissions');
                                     }}
                                   >
                                     {certification.permissionsCertified ? (

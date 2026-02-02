@@ -441,6 +441,20 @@ const accessReviewCampaignWorkflowSchema = new Schema<IAccessReviewCampaignWorkf
 // MAIN CAMPAIGN DOCUMENT
 // =============================================================================
 
+/**
+ * Group Certification (embedded in Campaign)
+ */
+export interface IGroupCertification {
+  groupId: string;
+  groupName: string;
+  membershipCertified?: boolean;
+  membershipCertifiedAt?: Date;
+  membershipCertifiedBy?: Types.ObjectId;
+  permissionsCertified?: boolean;
+  permissionsCertifiedAt?: Date;
+  permissionsCertifiedBy?: Types.ObjectId;
+}
+
 export interface IAccessReviewCampaign extends Document {
   _id: Types.ObjectId;
   tenantId: Types.ObjectId;
@@ -468,6 +482,7 @@ export interface IAccessReviewCampaign extends Document {
   subjects: IAccessReviewCampaignSubject[];
   approvals?: IAccessReviewCampaignApprovals;
   workflow?: IAccessReviewCampaignWorkflow;
+  groupCertifications?: IGroupCertification[];
   // Stats (computed)
   totalSubjects: number;
   completedSubjects: number;
@@ -571,6 +586,16 @@ const accessReviewCampaignSchema = new Schema<IAccessReviewCampaign>(
     subjects: [accessReviewCampaignSubjectSchema],
     approvals: accessReviewCampaignApprovalsSchema,
     workflow: accessReviewCampaignWorkflowSchema,
+    groupCertifications: [{
+      groupId: { type: String, required: true },
+      groupName: { type: String, required: true },
+      membershipCertified: Boolean,
+      membershipCertifiedAt: Date,
+      membershipCertifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      permissionsCertified: Boolean,
+      permissionsCertifiedAt: Date,
+      permissionsCertifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    }],
     totalSubjects: {
       type: Number,
       default: 0,
