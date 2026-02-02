@@ -516,50 +516,75 @@ router.post(
         });
       }
 
-      // Must require second-level approval
-      if (!campaign.approvals?.secondLevelRequired) {
-        return res.status(400).json({
-          success: false,
-          error: { 
-            code: 'NOT_REQUIRED', 
-            message: 'This campaign does not require second-level approval' 
-          },
-        });
-      }
-
       const before = { status: campaign.status };
 
-      // Update approvals
-      campaign.approvals.secondApproverName = approverName;
-      campaign.approvals.secondApproverEmail = approverEmail;
-      campaign.approvals.secondDecision = decision;
-      campaign.approvals.secondDecisionNotes = notes;
-      campaign.approvals.secondDecidedAt = new Date();
+      // Check if remediation is needed (any REVOKE or MODIFY decisions)
+      const needsRemediation = campaign.subjects.some(s =>
+        s.items.some(i =>
+          i.decision?.decisionType === CampaignDecisionType.REVOKE ||
+          i.decision?.decisionType === CampaignDecisionType.MODIFY
+        )
+      );
 
-      if (decision === SecondLevelDecision.APPROVED) {
-        campaign.approvedAt = new Date();
-        
-        // Check if remediation is needed (any REVOKE or MODIFY decisions)
-        const needsRemediation = campaign.subjects.some(s =>
-          s.items.some(i =>
-            i.decision?.decisionType === CampaignDecisionType.REVOKE ||
-            i.decision?.decisionType === CampaignDecisionType.MODIFY
-          )
-        );
+      // Handle campaigns that require second-level approval
+      if (campaign.approvals?.secondLevelRequired) {
+        // Update approvals
+        campaign.approvals.secondApproverName = approverName;
+        campaign.approvals.secondApproverEmail = approverEmail;
+        campaign.approvals.secondDecision = decision;
+        campaign.approvals.secondDecisionNotes = notes;
+        campaign.approvals.secondDecidedAt = new Date();
 
-        if (needsRemediation) {
-          // Keep in SUBMITTED for remediation tracking
-          if (campaign.workflow) {
-            campaign.workflow.remediationStatus = RemediationStatus.PENDING;
+        if (decision === SecondLevelDecision.APPROVED) {
+          campaign.approvedAt = new Date();
+          
+          if (needsRemediation) {
+            // Keep in SUBMITTED for remediation tracking
+            if (campaign.workflow) {
+              campaign.workflow.remediationStatus = RemediationStatus.PENDING;
+            }
+          } else {
+            // No remediation needed, complete the campaign
+            campaign.status = AccessReviewCampaignStatus.COMPLETED;
+            campaign.completedAt = new Date();
           }
         } else {
-          // No remediation needed, complete the campaign
-          campaign.status = AccessReviewCampaignStatus.COMPLETED;
-          campaign.completedAt = new Date();
+          // Rejected - return to IN_REVIEW status
+          campaign.status = AccessReviewCampaignStatus.IN_REVIEW;
         }
       } else {
-        // Rejected - return to IN_REVIEW status
-        campaign.status = AccessReviewCampaignStatus.IN_REVIEW;
+        // No second-level approval required - directly approve/complete
+        if (decision === SecondLevelDecision.APPROVED) {
+          campaign.approvedAt = new Date();
+          
+          // Initialize approvals if not present
+          if (!campaign.approvals) {
+            campaign.approvals = {
+              reviewerName: approverName,
+              reviewerEmail: approverEmail,
+              secondLevelRequired: false,
+            };
+          }
+          campaign.approvals.secondApproverName = approverName;
+          campaign.approvals.secondApproverEmail = approverEmail;
+          campaign.approvals.secondDecision = decision;
+          campaign.approvals.secondDecisionNotes = notes;
+          campaign.approvals.secondDecidedAt = new Date();
+          
+          if (needsRemediation) {
+            // Keep in SUBMITTED for remediation tracking
+            if (campaign.workflow) {
+              campaign.workflow.remediationStatus = RemediationStatus.PENDING;
+            }
+          } else {
+            // No remediation needed, complete the campaign
+            campaign.status = AccessReviewCampaignStatus.COMPLETED;
+            campaign.completedAt = new Date();
+          }
+        } else {
+          // Rejected - return to IN_REVIEW status for re-review
+          campaign.status = AccessReviewCampaignStatus.IN_REVIEW;
+        }
       }
 
       await campaign.save();
