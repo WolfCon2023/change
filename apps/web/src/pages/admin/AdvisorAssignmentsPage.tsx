@@ -188,8 +188,10 @@ export function AdvisorAssignmentsPage() {
       toast({ title: 'Advisor assigned successfully' });
       closeModal();
       refetch();
-    } catch {
-      toast({ title: 'Failed to create assignment', variant: 'destructive' });
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message || 'Failed to create assignment';
+      toast({ title: errorMessage, variant: 'destructive' });
     }
   };
 
@@ -205,8 +207,10 @@ export function AdvisorAssignmentsPage() {
       toast({ title: 'Assignment updated successfully' });
       closeModal();
       refetch();
-    } catch {
-      toast({ title: 'Failed to update assignment', variant: 'destructive' });
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message || 'Failed to update assignment';
+      toast({ title: errorMessage, variant: 'destructive' });
     }
   };
 
@@ -218,8 +222,10 @@ export function AdvisorAssignmentsPage() {
       toast({ title: 'Assignment removed successfully' });
       closeModal();
       refetch();
-    } catch {
-      toast({ title: 'Failed to remove assignment', variant: 'destructive' });
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message || 'Failed to remove assignment';
+      toast({ title: errorMessage, variant: 'destructive' });
     }
   };
 
@@ -235,8 +241,10 @@ export function AdvisorAssignmentsPage() {
           : 'Set as primary advisor',
       });
       refetch();
-    } catch {
-      toast({ title: 'Failed to update primary status', variant: 'destructive' });
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message || 'Failed to update primary status';
+      toast({ title: errorMessage, variant: 'destructive' });
     }
   };
 
