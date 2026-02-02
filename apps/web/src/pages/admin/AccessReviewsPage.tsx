@@ -92,6 +92,12 @@ export function AccessReviewsPage() {
   // Get all available users for the create modal
   const availableUsers = usersData?.data || [];
 
+  // Compute progress from actual items data (live updates)
+  const items = (itemsData?.data as ReviewItem[]) || [];
+  const totalItems = items.length;
+  const completedItems = items.filter(item => item.decision !== 'pending').length;
+  const liveCompletionPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
   const reviewColumns = [
     {
       key: 'name',
@@ -466,7 +472,7 @@ export function AccessReviewsPage() {
                       <Button 
                         variant="outline" 
                         onClick={handleCloseReview}
-                        disabled={selectedReview.completedItemCount < selectedReview.itemCount}
+                        disabled={completedItems < totalItems || totalItems === 0}
                       >
                         Close Review
                       </Button>
@@ -483,18 +489,18 @@ export function AccessReviewsPage() {
                 </div>
               </div>
 
-              {/* Progress Bar */}
+              {/* Progress Bar - uses live computed values */}
               <div className="mt-4">
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span>Review Progress</span>
                   <span className="font-medium">
-                    {selectedReview.completedItemCount} of {selectedReview.itemCount} completed ({selectedReview.completionPercentage}%)
+                    {completedItems} of {totalItems} completed ({liveCompletionPercentage}%)
                   </span>
                 </div>
                 <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${selectedReview.completionPercentage}%` }}
+                    style={{ width: `${liveCompletionPercentage}%` }}
                   />
                 </div>
               </div>
