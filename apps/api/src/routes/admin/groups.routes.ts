@@ -21,44 +21,27 @@ import { logIamActionFromRequest, computeDiff } from '../../services/index.js';
 const router = Router();
 
 // Validation schemas
-const createGroupSchema = z.object({
-  body: z.object({
-    name: z.string().min(1).max(100),
-    description: z.string().max(500).optional(),
-    members: z.array(z.string()).optional(),
-    roles: z.array(z.string()).optional(),
-  }),
+const createGroupBodySchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  members: z.array(z.string()).optional(),
+  roles: z.array(z.string()).optional(),
 });
 
-const updateGroupSchema = z.object({
-  params: z.object({
-    groupId: z.string(),
-  }),
-  body: z.object({
-    name: z.string().min(1).max(100).optional(),
-    description: z.string().max(500).optional(),
-    isActive: z.boolean().optional(),
-  }),
+const updateGroupBodySchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  isActive: z.boolean().optional(),
 });
 
-const manageMembersSchema = z.object({
-  params: z.object({
-    groupId: z.string(),
-  }),
-  body: z.object({
-    action: z.enum(['add', 'remove']),
-    userIds: z.array(z.string()).min(1),
-  }),
+const manageMembersBodySchema = z.object({
+  action: z.enum(['add', 'remove']),
+  userIds: z.array(z.string()).min(1),
 });
 
-const manageRolesSchema = z.object({
-  params: z.object({
-    groupId: z.string(),
-  }),
-  body: z.object({
-    action: z.enum(['add', 'remove']),
-    roleIds: z.array(z.string()).min(1),
-  }),
+const manageRolesBodySchema = z.object({
+  action: z.enum(['add', 'remove']),
+  roleIds: z.array(z.string()).min(1),
 });
 
 /**
@@ -203,7 +186,7 @@ router.post(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_GROUP_WRITE),
-  validate(createGroupSchema),
+  validate(createGroupBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId } = req.params;
@@ -270,7 +253,7 @@ router.put(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_GROUP_WRITE),
-  validate(updateGroupSchema),
+  validate(updateGroupBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId, groupId } = req.params;
@@ -348,7 +331,7 @@ router.post(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_GROUP_MANAGE_MEMBERS),
-  validate(manageMembersSchema),
+  validate(manageMembersBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId, groupId } = req.params;
@@ -442,7 +425,7 @@ router.post(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_ROLE_ASSIGN),
-  validate(manageRolesSchema),
+  validate(manageRolesBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId, groupId } = req.params;

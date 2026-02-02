@@ -30,24 +30,17 @@ import { logIamActionFromRequest, computeDiff } from '../../services/index.js';
 const router = Router();
 
 // Validation schemas
-const createRoleSchema = z.object({
-  body: z.object({
-    name: z.string().min(1).max(100),
-    description: z.string().max(500).optional(),
-    permissions: z.array(z.string()).min(1),
-  }),
+const createRoleBodySchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  permissions: z.array(z.string()).min(1),
 });
 
-const updateRoleSchema = z.object({
-  params: z.object({
-    roleId: z.string(),
-  }),
-  body: z.object({
-    name: z.string().min(1).max(100).optional(),
-    description: z.string().max(500).optional(),
-    permissions: z.array(z.string()).optional(),
-    isActive: z.boolean().optional(),
-  }),
+const updateRoleBodySchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  permissions: z.array(z.string()).optional(),
+  isActive: z.boolean().optional(),
 });
 
 /**
@@ -192,7 +185,7 @@ router.post(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_ROLE_WRITE),
-  validate(createRoleSchema),
+  validate(createRoleBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId } = req.params;
@@ -257,7 +250,7 @@ router.put(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_ROLE_WRITE),
-  validate(updateRoleSchema),
+  validate(updateRoleBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId, roleId } = req.params;
