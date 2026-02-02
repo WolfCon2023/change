@@ -274,11 +274,12 @@ export function useCreateRole(tenantId: string) {
   });
 }
 
-export function useUpdateRole(tenantId: string, roleId: string) {
+export function useUpdateRole(tenantId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name?: string; description?: string; permissions?: string[] }) => {
-      const res = await api.put<ApiResponse<unknown>>(`/admin/tenants/${tenantId}/roles/${roleId}`, data);
+    mutationFn: async (data: { roleId: string; name?: string; description?: string; permissions?: string[] }) => {
+      const { roleId, ...updateData } = data;
+      const res = await api.put<ApiResponse<unknown>>(`/admin/tenants/${tenantId}/roles/${roleId}`, updateData);
       return res.data.data;
     },
     onSuccess: () => {

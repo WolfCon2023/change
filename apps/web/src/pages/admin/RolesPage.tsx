@@ -17,12 +17,18 @@ import { useToast } from '@/components/ui/use-toast';
 import { IamPermission, PrimaryRole } from '@change/shared';
 
 interface Role {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   description?: string;
   permissions: string[];
   isSystem: boolean;
   isActive: boolean;
+}
+
+// Helper to get role ID (handles both id and _id)
+function getRoleId(role: Role): string {
+  return role.id || role._id || '';
 }
 
 type ModalMode = 'create' | 'edit' | 'view' | 'delete' | null;
@@ -42,7 +48,7 @@ export function RolesPage() {
   const { data, isLoading, refetch } = useRoles(tenantId, { page });
   const { data: permissionCatalog } = usePermissionCatalog();
   const createRole = useCreateRole(tenantId);
-  const updateRole = useUpdateRole(tenantId, selectedRole?.id || '');
+  const updateRole = useUpdateRole(tenantId);
   const deleteRole = useDeleteRole(tenantId);
 
   const columns = [
@@ -207,6 +213,7 @@ export function RolesPage() {
 
     try {
       await updateRole.mutateAsync({
+        roleId: getRoleId(selectedRole),
         name: formData.name,
         description: formData.description,
         permissions: formData.permissions,
@@ -223,7 +230,7 @@ export function RolesPage() {
     if (!selectedRole) return;
 
     try {
-      await deleteRole.mutateAsync(selectedRole.id);
+      await deleteRole.mutateAsync(getRoleId(selectedRole));
       toast({ title: 'Role deleted successfully' });
       closeModal();
       refetch();
