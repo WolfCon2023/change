@@ -772,6 +772,324 @@ router.post(
 );
 
 // =============================================================================
+// SMART SUGGESTIONS API
+// =============================================================================
+
+/**
+ * GET /admin/tenants/:tenantId/access-review-campaigns/:id/suggestions
+ * Get AI-powered review suggestions for campaign items
+ */
+router.get(
+  '/tenants/:tenantId/access-review-campaigns/:id/suggestions',
+  authenticate,
+  loadIamPermissions,
+  requirePermission(IamPermission.IAM_ACCESS_REVIEW_READ),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { tenantId, id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_ID', message: 'Invalid campaign ID' },
+        });
+      }
+
+      const campaign = await AccessReviewCampaign.findOne({
+        _id: id,
+        tenantId,
+      }).lean();
+
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Campaign not found' },
+        });
+      }
+
+      // Generate suggestions based on item characteristics
+      const suggestions: Array<{
+        itemId: string;
+        subjectId: string;
+        suggestedDecision: string;
+        confidence: 'high' | 'medium' | 'low';
+        reasons: string[];
+        requiresManualReview: boolean;
+        riskScore: number;
+      }> = [];
+
+      campaign.subjects?.forEach((subject) => {
+        subject.items?.forEach((item) => {
+          const reasons: string[] = [];
+          let suggestedDecision = CampaignDecisionType.APPROVE;
+          let confidence: 'high' | 'medium' | 'low' = 'high';
+          let requiresManualReview = false;
+          let riskScore = 0;
+
+          // Rule 1: Standard access with public data - low risk, high confidence approve
+          if (item.privilegeLevel === PrivilegeLevel.STANDARD ||
+              item.privilegeLevel === PrivilegeLevel.READ_ONLY) {
+            reasons.push('Standard/read-only access level');
+            riskScore += 10;
+          }
+
+          // Rule 2: Admin/Super Admin - high risk, requires manual review
+          if (item.privilegeLevel === PrivilegeLevel.ADMIN) {
+            reasons.push('Admin access requires careful review');
+            requiresManualReview = true;
+            confidence = 'low';
+            riskScore += 60;
+          }
+          if (item.privilegeLevel === PrivilegeLevel.SUPER_ADMIN) {
+            reasons.push('Super Admin access - highest risk level');
+            requiresManualReview = true;
+            confidence = 'low';
+            riskScore += 90;
+          }
+
+          // Rule 3: Data classification impact
+          if (item.dataClassification === 'public') {
+            reasons.push('Public data classification - minimal risk');
+            riskScore += 5;
+          } else if (item.dataClassification === 'internal') {
+            reasons.push('Internal data - standard business access');
+            riskScore += 15;
+            if (confidence === 'high') confidence = 'medium';
+          } else if (item.dataClassification === 'confidential') {
+            reasons.push('Confidential data - elevated review needed');
+            riskScore += 40;
+            confidence = 'medium';
+          } else if (item.dataClassification === 'restricted') {
+            reasons.push('Restricted data - high-sensitivity access');
+            requiresManualReview = true;
+            confidence = 'low';
+            riskScore += 70;
+          }
+
+          // Rule 4: Employment type consideration
+          if (subject.employmentType === 'contractor') {
+            reasons.push('External contractor - verify access necessity');
+            if (confidence === 'high') confidence = 'medium';
+            riskScore += 20;
+          } else if (subject.employmentType === 'vendor') {
+            reasons.push('Vendor access - limited scope recommended');
+            requiresManualReview = true;
+            riskScore += 30;
+          }
+
+          // Rule 5: Grant method
+          if (item.grantMethod === 'automatic') {
+            reasons.push('Automatically granted - review for appropriateness');
+            if (confidence === 'high') confidence = 'medium';
+          }
+
+          // Rule 6: Production environment
+          if (item.environment === 'production') {
+            reasons.push('Production environment access');
+            riskScore += 15;
+          }
+
+          suggestions.push({
+            itemId: item.id?.toString() || `${subject.id}-${item.roleName}`,
+            subjectId: subject.id?.toString() || subject.subjectId,
+            suggestedDecision,
+            confidence,
+            reasons,
+            requiresManualReview,
+            riskScore: Math.min(riskScore, 100), // Cap at 100
+          });
+        });
+      });
+
+      // Sort by risk score (highest first for prioritization)
+      suggestions.sort((a, b) => b.riskScore - a.riskScore);
+
+      // Summary statistics
+      const summary = {
+        totalItems: suggestions.length,
+        highConfidence: suggestions.filter(s => s.confidence === 'high').length,
+        mediumConfidence: suggestions.filter(s => s.confidence === 'medium').length,
+        lowConfidence: suggestions.filter(s => s.confidence === 'low').length,
+        requireManualReview: suggestions.filter(s => s.requiresManualReview).length,
+        averageRiskScore: suggestions.length > 0
+          ? Math.round(suggestions.reduce((sum, s) => sum + s.riskScore, 0) / suggestions.length)
+          : 0,
+        highRiskItems: suggestions.filter(s => s.riskScore >= 60).length,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          suggestions,
+          summary,
+        },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// =============================================================================
+// BULK DECISION API
+// =============================================================================
+
+/**
+ * POST /admin/tenants/:tenantId/access-review-campaigns/:id/bulk-decision
+ * Apply decisions to multiple items at once
+ */
+router.post(
+  '/tenants/:tenantId/access-review-campaigns/:id/bulk-decision',
+  authenticate,
+  loadIamPermissions,
+  requirePermission(IamPermission.IAM_ACCESS_REVIEW_WRITE),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { tenantId, id } = req.params;
+      const { 
+        targetType, // 'all' | 'filtered' | 'selected'
+        itemIds,    // For 'selected' type
+        filter,     // For 'filtered' type
+        decision,   // { decisionType, reasonCode, comments }
+        skipHighRisk = true,
+      } = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_ID', message: 'Invalid campaign ID' },
+        });
+      }
+
+      const campaign = await AccessReviewCampaign.findOne({
+        _id: id,
+        tenantId,
+      });
+
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Campaign not found' },
+        });
+      }
+
+      // Only allow bulk decisions for DRAFT or IN_REVIEW campaigns
+      if (campaign.status !== AccessReviewCampaignStatus.DRAFT &&
+          campaign.status !== AccessReviewCampaignStatus.IN_REVIEW) {
+        return res.status(400).json({
+          success: false,
+          error: { 
+            code: 'INVALID_STATUS', 
+            message: 'Can only apply bulk decisions to campaigns in DRAFT or IN_REVIEW status' 
+          },
+        });
+      }
+
+      let processed = 0;
+      let skipped = 0;
+      const skippedItems: Array<{ itemId: string; reason: string }> = [];
+
+      // Process each subject and item
+      campaign.subjects?.forEach((subject) => {
+        subject.items?.forEach((item) => {
+          const itemId = item.id?.toString() || `${subject.id}-${item.roleName}`;
+          
+          // Check if item should be included
+          let shouldInclude = false;
+          
+          if (targetType === 'all') {
+            shouldInclude = true;
+          } else if (targetType === 'selected' && itemIds?.includes(itemId)) {
+            shouldInclude = true;
+          } else if (targetType === 'filtered' && filter) {
+            // Apply filter criteria
+            let matchesFilter = true;
+            if (filter.privilegeLevel && item.privilegeLevel !== filter.privilegeLevel) {
+              matchesFilter = false;
+            }
+            if (filter.entitlementType && item.entitlementType !== filter.entitlementType) {
+              matchesFilter = false;
+            }
+            if (filter.dataClassification && item.dataClassification !== filter.dataClassification) {
+              matchesFilter = false;
+            }
+            shouldInclude = matchesFilter;
+          }
+          
+          if (!shouldInclude) return;
+
+          // Skip high-risk items if requested
+          if (skipHighRisk) {
+            const isHighRisk = 
+              item.privilegeLevel === PrivilegeLevel.ADMIN ||
+              item.privilegeLevel === PrivilegeLevel.SUPER_ADMIN ||
+              item.dataClassification === 'restricted';
+            
+            if (isHighRisk) {
+              skipped++;
+              skippedItems.push({ itemId, reason: 'High-risk item requires manual review' });
+              return;
+            }
+          }
+
+          // Skip already-decided items
+          if (item.decision?.decisionType && 
+              item.decision.decisionType !== CampaignDecisionType.PENDING) {
+            skipped++;
+            skippedItems.push({ itemId, reason: 'Item already has a decision' });
+            return;
+          }
+
+          // Apply decision
+          item.decision = {
+            decisionType: decision.decisionType,
+            reasonCode: decision.reasonCode,
+            comments: decision.comments || 'Bulk decision applied',
+            decidedAt: new Date(),
+            decidedBy: new mongoose.Types.ObjectId(req.user!.userId),
+          };
+          
+          processed++;
+        });
+      });
+
+      await campaign.save();
+
+      // Audit log
+      await logIamActionFromRequest(
+        req,
+        AccessReviewCampaignAuditAction.CAMPAIGN_UPDATED as Parameters<typeof logIamActionFromRequest>[1],
+        'AccessReviewCampaign',
+        campaign._id.toString(),
+        `Bulk decision applied to ${processed} items in campaign: ${campaign.name}`,
+        { 
+          after: { 
+            bulkDecision: decision.decisionType,
+            itemsProcessed: processed,
+            itemsSkipped: skipped,
+          }
+        }
+      );
+
+      res.json({
+        success: true,
+        data: {
+          totalProcessed: processed,
+          successful: processed,
+          skipped,
+          failed: 0,
+          skippedItems: skippedItems.slice(0, 20), // Limit to first 20
+        },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// =============================================================================
 // DELETE CAMPAIGN (Draft only)
 // =============================================================================
 

@@ -1000,3 +1000,83 @@ export function useDeleteAccessReviewCampaign(tenantId: string) {
     },
   });
 }
+
+// Smart Suggestions Response Type
+export interface SmartSuggestion {
+  itemId: string;
+  subjectId: string;
+  suggestedDecision: string;
+  confidence: 'high' | 'medium' | 'low';
+  reasons: string[];
+  requiresManualReview: boolean;
+  riskScore: number;
+}
+
+export interface SmartSuggestionsResponse {
+  suggestions: SmartSuggestion[];
+  summary: {
+    totalItems: number;
+    highConfidence: number;
+    mediumConfidence: number;
+    lowConfidence: number;
+    requireManualReview: number;
+    averageRiskScore: number;
+    highRiskItems: number;
+  };
+}
+
+export function useAccessReviewSuggestions(tenantId: string, campaignId: string) {
+  return useQuery({
+    queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId, 'suggestions'],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<SmartSuggestionsResponse>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/suggestions`
+      );
+      return res.data.data;
+    },
+    enabled: !!tenantId && !!campaignId,
+  });
+}
+
+// Bulk Decision Request Type
+export interface BulkDecisionRequest {
+  targetType: 'all' | 'filtered' | 'selected';
+  itemIds?: string[];
+  filter?: {
+    privilegeLevel?: string;
+    entitlementType?: string;
+    dataClassification?: string;
+  };
+  decision: {
+    decisionType: string;
+    reasonCode?: string;
+    comments?: string;
+  };
+  skipHighRisk?: boolean;
+}
+
+export interface BulkDecisionResult {
+  totalProcessed: number;
+  successful: number;
+  skipped: number;
+  failed: number;
+  skippedItems?: Array<{ itemId: string; reason: string }>;
+}
+
+export function useBulkAccessReviewDecision(tenantId: string, campaignId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: BulkDecisionRequest) => {
+      const res = await api.post<ApiResponse<BulkDecisionResult>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/bulk-decision`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId, 'suggestions'] });
+    },
+  });
+}
