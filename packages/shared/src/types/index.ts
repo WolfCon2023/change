@@ -47,6 +47,9 @@ import type {
   SecondLevelDecisionType,
   DecisionReasonCodeType,
   RegulatedFlagType,
+  CampaignScopeTypeValue,
+  GroupReviewStatusType,
+  BulkActionTypeValue,
 } from '../constants/index.js';
 
 // =============================================================================
@@ -1204,4 +1207,147 @@ export interface AccessReviewCampaignFilters extends PaginationParams {
   endDate?: Date;
   assignedReviewerId?: string;
   search?: string;
+}
+
+// =============================================================================
+// GROUP REVIEW TYPES
+// =============================================================================
+
+/**
+ * Group Review Subject
+ * A group being reviewed in a campaign (parallel to user subjects)
+ */
+export interface AccessReviewGroupSubject {
+  id?: string;
+  // Group identification
+  groupId: string;
+  groupName: string;
+  description?: string;
+  // Group metadata
+  memberCount: number;
+  roleCount: number;
+  createdAt?: Date;
+  lastModifiedAt?: Date;
+  // Owner info
+  ownerName?: string;
+  ownerEmail?: string;
+  // Review status
+  status: GroupReviewStatusType;
+  // Membership certification
+  membershipCertified?: boolean;
+  membershipCertifiedBy?: string;
+  membershipCertifiedAt?: Date;
+  membershipNotes?: string;
+  // Permissions certification
+  permissionsCertified?: boolean;
+  permissionsCertifiedBy?: string;
+  permissionsCertifiedAt?: Date;
+  permissionsNotes?: string;
+  // Members to review (optional drill-down)
+  members?: AccessReviewGroupMember[];
+  // Roles/permissions assigned to group
+  groupRoles?: AccessReviewCampaignItem[];
+  // Decision
+  decision?: {
+    action: CampaignDecisionTypeValue;
+    comments?: string;
+    changes?: string[];
+  };
+}
+
+/**
+ * Group Member (for drill-down review)
+ */
+export interface AccessReviewGroupMember {
+  userId: string;
+  fullName: string;
+  email: string;
+  memberSince?: Date;
+  addedBy?: string;
+  // Quick certification
+  certified?: boolean;
+  certifiedAt?: Date;
+  notes?: string;
+}
+
+// =============================================================================
+// BULK OPERATIONS
+// =============================================================================
+
+/**
+ * Bulk User Selection Request
+ * For adding multiple users to a campaign at once
+ */
+export interface BulkUserSelectionRequest {
+  // Select by user IDs
+  userIds?: string[];
+  // Select by group membership
+  groupIds?: string[];
+  // Select by role assignment
+  roleIds?: string[];
+  // Select by filters
+  filters?: {
+    department?: string;
+    employmentType?: EmploymentTypeValue;
+    hasPrivilegedAccess?: boolean;
+    inactiveForDays?: number;
+  };
+  // Auto-populate their current access
+  autoPopulateAccess?: boolean;
+}
+
+/**
+ * Bulk Decision Request
+ * For applying decisions to multiple items at once
+ */
+export interface BulkDecisionRequest {
+  // Target items
+  targetType: 'all' | 'filtered' | 'selected';
+  itemIds?: string[]; // For 'selected' type
+  // Filter criteria for 'filtered' type
+  filter?: {
+    privilegeLevel?: PrivilegeLevelType;
+    entitlementType?: EntitlementTypeValue;
+    hasBeenUsedRecently?: boolean;
+    dataClassification?: DataClassificationType;
+  };
+  // Decision to apply
+  decision: {
+    decisionType: CampaignDecisionTypeValue;
+    reasonCode?: DecisionReasonCodeType;
+    comments?: string;
+  };
+  // Skip items that require manual review
+  skipHighRisk?: boolean;
+}
+
+/**
+ * Bulk Operation Result
+ */
+export interface BulkOperationResult {
+  totalProcessed: number;
+  successful: number;
+  skipped: number;
+  failed: number;
+  skippedItems?: Array<{
+    itemId: string;
+    reason: string;
+  }>;
+  failedItems?: Array<{
+    itemId: string;
+    error: string;
+  }>;
+}
+
+/**
+ * Smart Review Suggestions
+ * AI/rule-based suggestions for faster review
+ */
+export interface ReviewSuggestion {
+  itemId: string;
+  suggestedDecision: CampaignDecisionTypeValue;
+  confidence: 'high' | 'medium' | 'low';
+  reasons: string[];
+  requiresManualReview: boolean;
+  riskIndicators?: string[];
 }

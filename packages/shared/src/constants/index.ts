@@ -1350,3 +1350,43 @@ export const AccessReviewCampaignAuditAction = {
 } as const;
 
 export type AccessReviewCampaignAuditActionType = (typeof AccessReviewCampaignAuditAction)[keyof typeof AccessReviewCampaignAuditAction];
+
+/**
+ * Campaign Scope Type
+ * What is being reviewed in the campaign
+ */
+export const CampaignScopeType = {
+  USERS: 'users',
+  GROUPS: 'groups',
+  MIXED: 'mixed',
+} as const;
+
+export type CampaignScopeTypeValue = (typeof CampaignScopeType)[keyof typeof CampaignScopeType];
+
+/**
+ * Group Review Status
+ * Status of group certification
+ */
+export const GroupReviewStatus = {
+  PENDING: 'pending',
+  MEMBERSHIP_CERTIFIED: 'membership_certified',
+  PERMISSIONS_CERTIFIED: 'permissions_certified',
+  FULLY_CERTIFIED: 'fully_certified',
+  CHANGES_REQUIRED: 'changes_required',
+} as const;
+
+export type GroupReviewStatusType = (typeof GroupReviewStatus)[keyof typeof GroupReviewStatus];
+
+/**
+ * Bulk Action Type
+ * Types of bulk actions for fast review
+ */
+export const BulkActionType = {
+  APPROVE_ALL: 'approve_all',
+  APPROVE_STANDARD: 'approve_standard_only',
+  REVOKE_UNUSED: 'revoke_unused',
+  COPY_DECISION: 'copy_decision',
+  FLAG_FOR_REVIEW: 'flag_for_review',
+} as const;
+
+export type BulkActionTypeValue = (typeof BulkActionType)[keyof typeof BulkActionType];

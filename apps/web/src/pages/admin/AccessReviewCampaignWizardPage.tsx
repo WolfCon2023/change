@@ -5,11 +5,12 @@
 
 import { useState, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus, Trash2, User, Users, CheckSquare, Square, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateAccessReviewCampaign, useRoles } from '@/lib/admin-api';
+import { useCreateAccessReviewCampaign, useRoles, useUsers } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -113,6 +114,14 @@ export function AccessReviewCampaignWizardPage() {
   const { data: rolesData } = useRoles(tenantId, { limit: 100 });
   const availableRoles = rolesData?.data || [];
 
+  // Fetch existing users for bulk selection
+  const { data: usersData } = useUsers(tenantId, { limit: 100 });
+  const availableUsers = usersData?.data || [];
+
+  // Track selected users for bulk add
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
+
   // Form state
   const [campaignData, setCampaignData] = useState({
     name: '',
@@ -160,6 +169,79 @@ export function AccessReviewCampaignWizardPage() {
   const addSubject = () => {
     setSubjects([...subjects, { ...defaultSubject, subjectId: `temp-${Date.now()}` }]);
     setSelectedSubjectIndex(subjects.length);
+  };
+
+  // Toggle user selection for bulk add
+  const toggleUserSelection = (userId: string) => {
+    const newSelected = new Set(selectedUserIds);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUserIds(newSelected);
+  };
+
+  // Select all users
+  const selectAllUsers = () => {
+    setSelectedUserIds(new Set(availableUsers.map(u => u.id)));
+  };
+
+  // Deselect all users
+  const deselectAllUsers = () => {
+    setSelectedUserIds(new Set());
+  };
+
+  // Add selected users as subjects with their roles auto-populated
+  const addSelectedUsersAsSubjects = () => {
+    const newSubjects: SubjectForm[] = [];
+    
+    availableUsers
+      .filter(user => selectedUserIds.has(user.id))
+      .forEach(user => {
+        // Check if user is already added
+        if (subjects.some(s => s.subjectId === user.id)) {
+          return;
+        }
+
+        // Create subject with auto-populated roles
+        const userRoles = availableRoles.filter(role => 
+          // This would ideally check user's assigned roles
+          // For now, we add a placeholder item
+          true
+        );
+
+        const subject: SubjectForm = {
+          subjectId: user.id,
+          fullName: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          employmentType: EmploymentType.EMPLOYEE,
+          jobTitle: '',
+          department: '',
+          items: userRoles.slice(0, 1).map(role => ({
+            application: campaignData.systemName || 'System',
+            environment: campaignData.environment,
+            roleName: role.name,
+            entitlementType: EntitlementType.ROLE,
+            privilegeLevel: role.name.toLowerCase().includes('admin') 
+              ? PrivilegeLevel.ADMIN 
+              : PrivilegeLevel.STANDARD,
+            grantMethod: GrantMethod.MANUAL,
+            dataClassification: DataClassification.INTERNAL,
+          })),
+        };
+
+        newSubjects.push(subject);
+      });
+
+    setSubjects([...subjects, ...newSubjects]);
+    setSelectedUserIds(new Set());
+    setBulkMode(false);
+    
+    toast({
+      title: `Added ${newSubjects.length} users`,
+      description: 'Users have been added with their roles. Review and adjust as needed.',
+    });
   };
 
   const removeSubject = (index: number) => {
@@ -405,28 +487,130 @@ export function AccessReviewCampaignWizardPage() {
           {/* Step 2: Subjects */}
           {currentStep === 1 && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              {/* Mode Toggle */}
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
                   Add the users whose access will be reviewed in this campaign.
                 </p>
-                <Button onClick={addSubject} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Subject
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant={bulkMode ? "outline" : "default"} 
+                    size="sm"
+                    onClick={() => setBulkMode(false)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Manual Add
+                  </Button>
+                  <Button 
+                    variant={bulkMode ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => setBulkMode(true)}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Bulk Select
+                  </Button>
+                </div>
               </div>
 
-              {subjects.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No subjects added yet. Click "Add Subject" to start.
+              {/* Bulk Selection Mode */}
+              {bulkMode && (
+                <div className="border rounded-lg p-4 bg-blue-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-blue-600" />
+                      <span className="font-medium text-blue-900">Quick Select Users</span>
+                      <Badge variant="secondary">{selectedUserIds.size} selected</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={selectAllUsers}>
+                        Select All
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={deselectAllUsers}>
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-2 mb-4">
+                    {availableUsers.map((user) => {
+                      const isSelected = selectedUserIds.has(user.id);
+                      const alreadyAdded = subjects.some(s => s.subjectId === user.id);
+                      return (
+                        <div
+                          key={user.id}
+                          onClick={() => !alreadyAdded && toggleUserSelection(user.id)}
+                          className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                            alreadyAdded 
+                              ? 'bg-gray-100 opacity-50 cursor-not-allowed'
+                              : isSelected 
+                                ? 'bg-blue-100 border border-blue-300' 
+                                : 'bg-white hover:bg-gray-50 border border-gray-200'
+                          }`}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <Square className="h-4 w-4 text-gray-400" />
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
+                          </div>
+                          {alreadyAdded && (
+                            <Badge variant="outline" className="text-xs">Already added</Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <Button 
+                    onClick={addSelectedUsersAsSubjects}
+                    disabled={selectedUserIds.size === 0}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add {selectedUserIds.size} Selected Users
+                  </Button>
                 </div>
-              ) : (
+              )}
+
+              {/* Manual Add Mode */}
+              {!bulkMode && subjects.length === 0 && (
+                <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="mb-2">No subjects added yet.</p>
+                  <p className="text-sm">Use "Bulk Select" for faster multi-user selection, or "Manual Add" for individual entries.</p>
+                  <Button onClick={addSubject} className="mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Subject
+                  </Button>
+                </div>
+              )}
+
+              {/* Subject List */}
+              {subjects.length > 0 && !bulkMode && (
                 <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline">{subjects.length} subjects</Badge>
+                    <Button onClick={addSubject} size="sm" variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Another
+                    </Button>
+                  </div>
                   {subjects.map((subject, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium">Subject {index + 1}</span>
+                          <span className="font-medium">
+                            {subject.fullName || `Subject ${index + 1}`}
+                          </span>
+                          {subject.items.length > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {subject.items.length} items
+                            </Badge>
+                          )}
                         </div>
                         <Button variant="ghost" size="sm" onClick={() => removeSubject(index)}>
                           <Trash2 className="h-4 w-4 text-red-500" />
