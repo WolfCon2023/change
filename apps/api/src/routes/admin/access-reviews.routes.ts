@@ -83,9 +83,15 @@ router.get(
         AccessReview.countDocuments(filter),
       ]);
 
+      // Transform _id to id for frontend compatibility
+      const transformedReviews = reviews.map(review => ({
+        ...review,
+        id: review._id?.toString(),
+      }));
+
       res.json({
         success: true,
-        data: reviews,
+        data: transformedReviews,
         meta: {
           timestamp: new Date().toISOString(),
           pagination: {
@@ -266,9 +272,24 @@ router.get(
         AccessReviewItem.countDocuments(filter),
       ]);
 
+      // Transform _id to id for frontend compatibility
+      const transformedItems = items.map(item => ({
+        ...item,
+        id: item._id?.toString(),
+        userId: item.userId?.toString(),
+        currentRoles: item.currentRoles?.map((role: { _id?: unknown; name?: string }) => ({
+          id: role._id?.toString(),
+          name: role.name,
+        })),
+        currentGroups: item.currentGroups?.map((group: { _id?: unknown; name?: string }) => ({
+          id: group._id?.toString(),
+          name: group.name,
+        })),
+      }));
+
       res.json({
         success: true,
-        data: items,
+        data: transformedItems,
         meta: {
           timestamp: new Date().toISOString(),
           pagination: {

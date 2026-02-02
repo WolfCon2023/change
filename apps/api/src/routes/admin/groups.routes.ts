@@ -100,15 +100,20 @@ router.get(
         Group.countDocuments(filter),
       ]);
 
-      // Add member count
-      const groupsWithCount = groups.map(g => ({
+      // Transform _id to id and add member count for frontend compatibility
+      const transformedGroups = groups.map(g => ({
         ...g,
+        id: g._id?.toString(),
         memberCount: g.members?.length || 0,
+        roles: g.roles?.map((role: { _id?: unknown; name?: string }) => ({
+          id: role._id?.toString(),
+          name: role.name,
+        })),
       }));
 
       res.json({
         success: true,
-        data: groupsWithCount,
+        data: transformedGroups,
         meta: {
           timestamp: new Date().toISOString(),
           pagination: {

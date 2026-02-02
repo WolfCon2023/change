@@ -118,9 +118,15 @@ router.get(
         IamRole.countDocuments(filter),
       ]);
 
+      // Transform _id to id for frontend compatibility
+      const transformedRoles = roles.map(role => ({
+        ...role,
+        id: role._id?.toString(),
+      }));
+
       res.json({
         success: true,
-        data: roles,
+        data: transformedRoles,
         meta: {
           timestamp: new Date().toISOString(),
           pagination: {

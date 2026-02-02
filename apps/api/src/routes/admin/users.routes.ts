@@ -220,9 +220,23 @@ router.get(
         User.countDocuments(filter),
       ]);
 
+      // Transform _id to id for frontend compatibility
+      const transformedUsers = users.map(user => ({
+        ...user,
+        id: user._id?.toString(),
+        roles: user.iamRoles?.map((role: { _id?: unknown; name?: string }) => ({
+          id: role._id?.toString(),
+          name: role.name,
+        })),
+        groups: user.groups?.map((group: { _id?: unknown; name?: string }) => ({
+          id: group._id?.toString(),
+          name: group.name,
+        })),
+      }));
+
       res.json({
         success: true,
-        data: users,
+        data: transformedUsers,
         meta: {
           timestamp: new Date().toISOString(),
           pagination: {
