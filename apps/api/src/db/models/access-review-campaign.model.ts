@@ -240,8 +240,8 @@ accessReviewCampaignItemSchema.pre('save', function() {
  */
 export interface IAccessReviewCampaignSubject {
   _id?: Types.ObjectId;
-  // User identification
-  subjectId: Types.ObjectId;
+  // User identification (can be ObjectId string or synthetic ID)
+  subjectId: string;
   fullName: string;
   email: string;
   employeeId?: string;
@@ -267,9 +267,9 @@ export interface IAccessReviewCampaignSubject {
 const accessReviewCampaignSubjectSchema = new Schema<IAccessReviewCampaignSubject>(
   {
     subjectId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,
       required: true,
+      trim: true,
     },
     fullName: {
       type: String,
