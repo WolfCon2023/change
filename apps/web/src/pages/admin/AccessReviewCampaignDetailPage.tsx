@@ -117,6 +117,9 @@ export function AccessReviewCampaignDetailPage() {
   const tenantId = context?.currentTenantId || '';
   const { toast } = useToast();
 
+  // Ensure we have a valid campaign ID before proceeding
+  const campaignId = id || '';
+
   // State
   const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,10 +144,11 @@ export function AccessReviewCampaignDetailPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState<Set<string>>(new Set());
 
-  const { data: campaign, isLoading } = useAccessReviewCampaign(tenantId, id || '');
-  const updateCampaign = useUpdateAccessReviewCampaign(tenantId, id || '');
-  const submitCampaign = useSubmitAccessReviewCampaign(tenantId, id || '');
-  const approveCampaign = useApproveAccessReviewCampaign(tenantId, id || '');
+  // Only fetch if we have a valid campaignId
+  const { data: campaign, isLoading } = useAccessReviewCampaign(tenantId, campaignId);
+  const updateCampaign = useUpdateAccessReviewCampaign(tenantId, campaignId);
+  const submitCampaign = useSubmitAccessReviewCampaign(tenantId, campaignId);
+  const approveCampaign = useApproveAccessReviewCampaign(tenantId, campaignId);
   const { data: groupsData } = useGroups(tenantId, { limit: 100 });
   const availableGroups = groupsData?.data || [];
 

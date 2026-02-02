@@ -887,20 +887,23 @@ export function useAccessReviewCampaigns(tenantId: string, params?: Partial<Acce
 }
 
 export function useAccessReviewCampaign(tenantId: string, campaignId: string) {
+  const isEnabled = Boolean(tenantId) && Boolean(campaignId) && campaignId !== 'undefined';
+  
   return useQuery({
-    queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId],
+    queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId || 'none'],
     queryFn: async () => {
-      // Guard against undefined or empty campaignId
-      if (!campaignId) {
-        throw new Error('Campaign ID is required');
+      // Double-check the campaignId is valid before making request
+      if (!campaignId || campaignId === 'undefined') {
+        return null;
       }
       const res = await api.get<ApiResponse<AccessReviewCampaign>>(
         `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}`
       );
       return res.data.data;
     },
-    enabled: !!tenantId && !!campaignId,
-    retry: false, // Don't retry if campaignId is invalid
+    enabled: isEnabled,
+    retry: false,
+    staleTime: isEnabled ? 5 * 60 * 1000 : Infinity, // Don't refetch if disabled
   });
 }
 
@@ -1045,20 +1048,23 @@ export interface SmartSuggestionsResponse {
 }
 
 export function useAccessReviewSuggestions(tenantId: string, campaignId: string) {
+  const isEnabled = Boolean(tenantId) && Boolean(campaignId) && campaignId !== 'undefined';
+  
   return useQuery({
-    queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId, 'suggestions'],
+    queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId || 'none', 'suggestions'],
     queryFn: async () => {
-      // Guard against undefined or empty campaignId
-      if (!campaignId) {
-        throw new Error('Campaign ID is required');
+      // Double-check the campaignId is valid before making request
+      if (!campaignId || campaignId === 'undefined') {
+        return null;
       }
       const res = await api.get<ApiResponse<SmartSuggestionsResponse>>(
         `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/suggestions`
       );
       return res.data.data;
     },
-    enabled: !!tenantId && !!campaignId,
+    enabled: isEnabled,
     retry: false,
+    staleTime: isEnabled ? 5 * 60 * 1000 : Infinity,
   });
 }
 
