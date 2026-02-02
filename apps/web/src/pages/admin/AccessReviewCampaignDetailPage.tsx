@@ -71,6 +71,7 @@ import {
   GrantMethodLabels,
   SecondLevelDecision,
 } from '@change/shared';
+import type { AccessReviewCampaignItem } from '@change/shared';
 
 const statusColors: Record<AccessReviewCampaignStatusType, string> = {
   [AccessReviewCampaignStatus.DRAFT]: 'bg-gray-100 text-gray-800',
@@ -208,8 +209,7 @@ export function AccessReviewCampaignDetailPage() {
   }, [campaign]);
 
   // Filter items based on current filters
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getFilteredItems = (items: any[] | undefined) => {
+  const getFilteredItems = (items: AccessReviewCampaignItem[] | undefined): AccessReviewCampaignItem[] => {
     if (!items) return [];
     
     return items.filter(item => {
@@ -363,7 +363,7 @@ export function AccessReviewCampaignDetailPage() {
       subject.items?.forEach((item, iIdx) => {
         // Only approve standard access items that are pending
         if ((item.privilegeLevel === PrivilegeLevel.STANDARD || 
-             item.privilegeLevel === PrivilegeLevel.STANDARD) &&
+             item.privilegeLevel === PrivilegeLevel.ELEVATED) &&
             (!item.decision?.decisionType || 
              item.decision.decisionType === CampaignDecisionType.PENDING)) {
           
