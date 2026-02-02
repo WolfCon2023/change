@@ -5,7 +5,7 @@
 
 import { useState, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2, User, Users, CheckSquare, Square, Zap } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus, Trash2, User, Users, CheckSquare, Square, Zap, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -109,6 +109,8 @@ export function AccessReviewCampaignWizardPage() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   // Fetch existing roles for the dropdown
   const { data: rolesData } = useRoles(tenantId, { limit: 100 });
@@ -141,26 +143,92 @@ export function AccessReviewCampaignWizardPage() {
 
   const createCampaign = useCreateAccessReviewCampaign(tenantId);
 
-  const canGoNext = () => {
+  // Validate current step and return errors
+  const validateStep = (): { valid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
     switch (currentStep) {
-      case 0:
-        return !!(campaignData.name && campaignData.systemName && campaignData.periodStart && campaignData.periodEnd);
-      case 1:
-        return subjects.length > 0 && subjects.every(s => s.fullName && s.email && s.subjectId);
-      case 2:
-        return subjects.every(s => s.items.length > 0 && s.items.every(i => i.application && i.roleName));
-      default:
-        return true;
+      case 0: // Campaign Details
+        if (!campaignData.name) errors.push('Campaign name is required');
+        if (!campaignData.systemName) errors.push('System name is required');
+        if (!campaignData.periodStart) errors.push('Period start date is required');
+        if (!campaignData.periodEnd) errors.push('Period end date is required');
+        if (campaignData.periodStart && campaignData.periodEnd && 
+            new Date(campaignData.periodStart) >= new Date(campaignData.periodEnd)) {
+          errors.push('Period end date must be after start date');
+        }
+        break;
+      case 1: // Subjects
+        if (subjects.length === 0) {
+          errors.push('At least one subject is required');
+        } else {
+          subjects.forEach((subject, idx) => {
+            if (!subject.fullName?.trim()) {
+              errors.push(`Subject ${idx + 1}: Full name is required`);
+            }
+            if (!subject.email?.trim()) {
+              errors.push(`Subject ${idx + 1}: Email is required`);
+            }
+            if (!subject.subjectId?.trim()) {
+              errors.push(`Subject ${idx + 1}: Subject ID is required`);
+            }
+          });
+        }
+        break;
+      case 2: // Access Items
+        subjects.forEach((subject, sIdx) => {
+          if (subject.items.length === 0) {
+            errors.push(`${subject.fullName || `Subject ${sIdx + 1}`}: At least one access item is required`);
+          } else {
+            subject.items.forEach((item, iIdx) => {
+              if (!item.application?.trim()) {
+                errors.push(`${subject.fullName || `Subject ${sIdx + 1}`}, Item ${iIdx + 1}: Application is required`);
+              }
+              if (!item.roleName?.trim()) {
+                errors.push(`${subject.fullName || `Subject ${sIdx + 1}`}, Item ${iIdx + 1}: Role name is required`);
+              }
+            });
+          }
+        });
+        break;
     }
+    
+    return { valid: errors.length === 0, errors };
+  };
+
+  const canGoNext = () => {
+    const { valid } = validateStep();
+    return valid;
   };
 
   const handleNext = () => {
+    const { valid, errors } = validateStep();
+    
+    if (!valid) {
+      setValidationErrors(errors);
+      setShowValidationErrors(true);
+      toast({
+        title: 'Validation Error',
+        description: `Please fix ${errors.length} error(s) before proceeding`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Clear errors and proceed
+    setValidationErrors([]);
+    setShowValidationErrors(false);
+    
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handleBack = () => {
+    // Clear validation errors when going back
+    setValidationErrors([]);
+    setShowValidationErrors(false);
+    
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
@@ -605,17 +673,32 @@ export function AccessReviewCampaignWizardPage() {
                       Add Another
                     </Button>
                   </div>
-                  {subjects.map((subject, index) => (
-                    <div key={index} className="border rounded-lg p-4">
+                  {subjects.map((subject, index) => {
+                    const isSubjectValid = subject.fullName?.trim() && subject.email?.trim() && subject.subjectId?.trim();
+                    const hasItems = subject.items.length > 0;
+                    
+                    return (
+                    <div 
+                      key={index} 
+                      className={`border rounded-lg p-4 ${
+                        showValidationErrors && !isSubjectValid ? 'border-red-300 bg-red-50' : ''
+                      }`}
+                    >
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400" />
                           <span className="font-medium">
                             {subject.fullName || `Subject ${index + 1}`}
                           </span>
-                          {subject.items.length > 0 && (
+                          {hasItems && (
                             <Badge variant="secondary" className="text-xs">
                               {subject.items.length} items
+                            </Badge>
+                          )}
+                          {showValidationErrors && !isSubjectValid && (
+                            <Badge className="bg-red-100 text-red-800 text-xs">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Incomplete
                             </Badge>
                           )}
                         </div>
@@ -630,7 +713,11 @@ export function AccessReviewCampaignWizardPage() {
                             value={subject.fullName}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => updateSubject(index, 'fullName', e.target.value)}
                             placeholder="John Doe"
+                            className={showValidationErrors && !subject.fullName?.trim() ? 'border-red-500' : ''}
                           />
+                          {showValidationErrors && !subject.fullName?.trim() && (
+                            <p className="text-xs text-red-500 mt-1">Full name is required</p>
+                          )}
                         </div>
                         <div>
                           <label className="text-sm text-gray-500 block mb-1">Email *</label>
@@ -639,7 +726,11 @@ export function AccessReviewCampaignWizardPage() {
                             value={subject.email}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => updateSubject(index, 'email', e.target.value)}
                             placeholder="john@example.com"
+                            className={showValidationErrors && !subject.email?.trim() ? 'border-red-500' : ''}
                           />
+                          {showValidationErrors && !subject.email?.trim() && (
+                            <p className="text-xs text-red-500 mt-1">Email is required</p>
+                          )}
                         </div>
                         <div>
                           <label className="text-sm text-gray-500 block mb-1">Employment Type *</label>
@@ -684,7 +775,8 @@ export function AccessReviewCampaignWizardPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -840,6 +932,23 @@ export function AccessReviewCampaignWizardPage() {
         </CardContent>
       </Card>
 
+      {/* Validation Errors */}
+      {showValidationErrors && validationErrors.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-red-800">Please fix the following errors:</p>
+              <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-red-700">
+                {validationErrors.map((error, idx) => (
+                  <li key={idx}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation Buttons */}
       <div className="flex justify-between">
         <Button variant="outline" onClick={handleBack} disabled={currentStep === 0}>
@@ -847,12 +956,12 @@ export function AccessReviewCampaignWizardPage() {
           Back
         </Button>
         {currentStep < STEPS.length - 1 ? (
-          <Button onClick={handleNext} disabled={!canGoNext()}>
+          <Button onClick={handleNext}>
             Next
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         ) : (
-          <Button onClick={handleCreate} disabled={isSubmitting || !canGoNext()}>
+          <Button onClick={handleCreate} disabled={isSubmitting}>
             {isSubmitting ? 'Creating...' : 'Create Campaign'}
             <Check className="h-4 w-4 ml-2" />
           </Button>
