@@ -79,9 +79,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
+        style={{ left: 0 }}
         className={cn(
-          'fixed top-0 left-0 z-50 h-screen w-64 bg-card border-r transform transition-transform duration-200 ease-in-out lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed top-0 z-50 h-screen w-64 bg-card border-r transition-transform duration-200 ease-in-out',
+          // Mobile: hidden by default, shown when sidebarOpen
+          // Desktop: always visible
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="flex flex-col h-full">
