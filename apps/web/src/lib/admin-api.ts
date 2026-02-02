@@ -73,6 +73,17 @@ export function useAdminDashboard(tenantId: string) {
 }
 
 // Users
+export interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export function useUsers(tenantId: string, params?: {
   page?: number;
   limit?: number;
@@ -83,7 +94,7 @@ export function useUsers(tenantId: string, params?: {
   return useQuery({
     queryKey: ['admin', 'users', tenantId, params],
     queryFn: async () => {
-      const res = await api.get<PaginatedResponse<unknown>>(`/admin/tenants/${tenantId}/users`, { params });
+      const res = await api.get<PaginatedResponse<AdminUser>>(`/admin/tenants/${tenantId}/users`, { params });
       return res.data;
     },
     enabled: !!tenantId,

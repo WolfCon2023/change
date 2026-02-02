@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateAccessReviewCampaign, useRoles, useUsers } from '@/lib/admin-api';
+import { useCreateAccessReviewCampaign, useRoles, useUsers, AdminUser } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -116,7 +116,7 @@ export function AccessReviewCampaignWizardPage() {
 
   // Fetch existing users for bulk selection
   const { data: usersData } = useUsers(tenantId, { limit: 100 });
-  const availableUsers = usersData?.data || [];
+  const availableUsers: AdminUser[] = usersData?.data || [];
 
   // Track selected users for bulk add
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -205,11 +205,8 @@ export function AccessReviewCampaignWizardPage() {
         }
 
         // Create subject with auto-populated roles
-        const userRoles = availableRoles.filter(role => 
-          // This would ideally check user's assigned roles
-          // For now, we add a placeholder item
-          true
-        );
+        // For now, we add a placeholder item using available roles
+        const userRoles = availableRoles.slice(0, 1);
 
         const subject: SubjectForm = {
           subjectId: user.id,

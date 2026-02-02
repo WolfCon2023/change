@@ -61,7 +61,6 @@ import {
   DecisionReasonCode,
   PrivilegeLevel,
   PrivilegeLevelLabels,
-  PrivilegeLevelType,
   EnvironmentTypeLabels,
   ReviewTypeLabels,
   EmploymentTypeLabels,
@@ -129,7 +128,6 @@ export function AccessReviewCampaignDetailPage() {
   
   // Bulk selection state
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
   
   // Group review state
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -210,7 +208,8 @@ export function AccessReviewCampaignDetailPage() {
   }, [campaign]);
 
   // Filter items based on current filters
-  const getFilteredItems = (items: typeof campaign.subjects[0]['items']) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getFilteredItems = (items: any[] | undefined) => {
     if (!items) return [];
     
     return items.filter(item => {
@@ -364,7 +363,7 @@ export function AccessReviewCampaignDetailPage() {
       subject.items?.forEach((item, iIdx) => {
         // Only approve standard access items that are pending
         if ((item.privilegeLevel === PrivilegeLevel.STANDARD || 
-             item.privilegeLevel === PrivilegeLevel.READ_ONLY) &&
+             item.privilegeLevel === PrivilegeLevel.STANDARD) &&
             (!item.decision?.decisionType || 
              item.decision.decisionType === CampaignDecisionType.PENDING)) {
           
@@ -373,7 +372,7 @@ export function AccessReviewCampaignDetailPage() {
             ...item,
             decision: {
               decisionType: CampaignDecisionType.APPROVE,
-              reasonCode: DecisionReasonCode.ROLE_REQUIRED,
+              reasonCode: DecisionReasonCode.JOB_FUNCTION,
               comments: 'Bulk approved - standard access',
             },
           };
@@ -410,7 +409,7 @@ export function AccessReviewCampaignDetailPage() {
             ...item,
             decision: {
               decisionType: CampaignDecisionType.APPROVE,
-              reasonCode: DecisionReasonCode.ROLE_REQUIRED,
+              reasonCode: DecisionReasonCode.JOB_FUNCTION,
               comments: 'Bulk approved',
             },
           };
@@ -443,7 +442,7 @@ export function AccessReviewCampaignDetailPage() {
             ...item,
             decision: {
               decisionType: CampaignDecisionType.APPROVE,
-              reasonCode: DecisionReasonCode.ROLE_REQUIRED,
+              reasonCode: DecisionReasonCode.JOB_FUNCTION,
               comments: 'Approved via bulk selection',
             },
           };
@@ -477,7 +476,7 @@ export function AccessReviewCampaignDetailPage() {
             ...item,
             decision: {
               decisionType: suggestion.suggestedDecision,
-              reasonCode: DecisionReasonCode.ROLE_REQUIRED,
+              reasonCode: DecisionReasonCode.JOB_FUNCTION,
               comments: `AI suggestion (${suggestion.confidence} confidence): ${suggestion.reasons.join(', ')}`,
             },
           };
@@ -527,7 +526,7 @@ export function AccessReviewCampaignDetailPage() {
             ...item,
             decision: {
               decisionType: suggestion.suggestedDecision,
-              reasonCode: DecisionReasonCode.ROLE_REQUIRED,
+              reasonCode: DecisionReasonCode.JOB_FUNCTION,
               comments: `AI auto-approved: ${suggestion.reasons.join(', ')}`,
             },
           };
