@@ -155,10 +155,10 @@ export function GovernancePage() {
       bg: 'bg-yellow-100',
       description: 'Identify risks and improvement opportunities',
       activities: [
-        { label: 'Excessive permissions review', link: '/admin/access-reviews' },
+        { label: 'Excessive permissions review', link: '/admin/access-review-campaigns' },
         { label: 'Inactive user detection', link: '/admin/users' },
         { label: 'Role drift analysis', link: '/admin/roles' },
-        { label: 'Security gap assessment', link: null },
+        { label: 'Security gap assessment', link: '/admin/access-review-campaigns' },
       ],
       metrics: [
         `${dashboard?.usersWithoutMfa?.length ?? 0} users without MFA`,
@@ -175,7 +175,7 @@ export function GovernancePage() {
         { label: 'Access request workflow', link: '/admin/access-requests' },
         { label: 'Policy updates', link: '/admin/roles' },
         { label: 'Role cleanup', link: '/admin/roles' },
-        { label: 'MFA enforcement', link: '/admin/users' },
+        { label: 'Review campaigns', link: '/admin/access-review-campaigns' },
       ],
       metrics: [
         `${dashboard?.pendingAccessRequests ?? 0} pending requests`,
@@ -189,7 +189,7 @@ export function GovernancePage() {
       bg: 'bg-red-100',
       description: 'Maintain and monitor IAM controls',
       activities: [
-        { label: 'Access reviews', link: '/admin/access-reviews' },
+        { label: 'Access review campaigns', link: '/admin/access-review-campaigns' },
         { label: 'Continuous monitoring', link: '/admin/audit-logs' },
         { label: 'Compliance evidence', link: '/admin/audit-logs' },
         { label: 'API key rotation', link: '/admin/api-keys' },
