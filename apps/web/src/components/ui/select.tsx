@@ -9,7 +9,8 @@ import { ChevronDown } from 'lucide-react';
 
 interface SelectContextValue {
   value: string;
-  onValueChange: (value: string) => void;
+  label: string;
+  onValueChange: (value: string, label: string) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
 }
@@ -32,9 +33,11 @@ interface SelectProps {
 
 export function Select({ value = '', onValueChange, children }: SelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [label, setLabel] = React.useState('');
 
   const handleValueChange = React.useCallback(
-    (newValue: string) => {
+    (newValue: string, newLabel: string) => {
+      setLabel(newLabel);
       onValueChange?.(newValue);
       setOpen(false);
     },
@@ -42,7 +45,7 @@ export function Select({ value = '', onValueChange, children }: SelectProps) {
   );
 
   return (
-    <SelectContext.Provider value={{ value, onValueChange: handleValueChange, open, setOpen }}>
+    <SelectContext.Provider value={{ value, label, onValueChange: handleValueChange, open, setOpen }}>
       <div className="relative">{children}</div>
     </SelectContext.Provider>
   );
@@ -76,8 +79,9 @@ interface SelectValueProps {
 }
 
 export function SelectValue({ placeholder }: SelectValueProps) {
-  const { value } = useSelectContext();
-  return <span className={cn(!value && 'text-muted-foreground')}>{value || placeholder}</span>;
+  const { value, label } = useSelectContext();
+  const displayText = label || (value ? value : placeholder);
+  return <span className={cn(!value && 'text-muted-foreground')}>{displayText || placeholder}</span>;
 }
 
 interface SelectContentProps {
@@ -130,9 +134,22 @@ export function SelectItem({ value, children, className }: SelectItemProps) {
   const { value: selectedValue, onValueChange } = useSelectContext();
   const isSelected = value === selectedValue;
 
+  // Extract text content from children for the label
+  const getTextContent = (node: React.ReactNode): string => {
+    if (typeof node === 'string') return node;
+    if (typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(getTextContent).join('');
+    if (React.isValidElement(node) && node.props.children) {
+      return getTextContent(node.props.children);
+    }
+    return '';
+  };
+
+  const label = getTextContent(children);
+
   return (
     <div
-      onClick={() => onValueChange(value)}
+      onClick={() => onValueChange(value, label)}
       className={cn(
         'relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
         isSelected && 'bg-accent text-accent-foreground',
