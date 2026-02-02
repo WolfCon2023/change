@@ -169,9 +169,7 @@ export function AccessReviewCampaignWizardPage() {
             if (!subject.email?.trim()) {
               errors.push(`Subject ${idx + 1}: Email is required`);
             }
-            if (!subject.subjectId?.trim()) {
-              errors.push(`Subject ${idx + 1}: Subject ID is required`);
-            }
+            // subjectId is auto-generated, no need to validate user input
           });
         }
         break;
@@ -369,8 +367,8 @@ export function AccessReviewCampaignWizardPage() {
         periodStart: toISODateTime(campaignData.periodStart) as unknown as Date,
         periodEnd: toISODateTime(campaignData.periodEnd) as unknown as Date,
         reviewerType: campaignData.reviewerType as ReviewerTypeValue,
-        subjects: subjects.map(s => ({
-          subjectId: s.subjectId,
+        subjects: subjects.map((s, idx) => ({
+          subjectId: s.subjectId || `subject-${Date.now()}-${idx}`,
           fullName: s.fullName,
           email: s.email,
           employeeId: s.employeeId || undefined,
@@ -674,7 +672,7 @@ export function AccessReviewCampaignWizardPage() {
                     </Button>
                   </div>
                   {subjects.map((subject, index) => {
-                    const isSubjectValid = subject.fullName?.trim() && subject.email?.trim() && subject.subjectId?.trim();
+                    const isSubjectValid = subject.fullName?.trim() && subject.email?.trim();
                     const hasItems = subject.items.length > 0;
                     
                     return (
