@@ -890,12 +890,17 @@ export function useAccessReviewCampaign(tenantId: string, campaignId: string) {
   return useQuery({
     queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId],
     queryFn: async () => {
+      // Guard against undefined or empty campaignId
+      if (!campaignId) {
+        throw new Error('Campaign ID is required');
+      }
       const res = await api.get<ApiResponse<AccessReviewCampaign>>(
         `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}`
       );
       return res.data.data;
     },
     enabled: !!tenantId && !!campaignId,
+    retry: false, // Don't retry if campaignId is invalid
   });
 }
 
@@ -1043,12 +1048,17 @@ export function useAccessReviewSuggestions(tenantId: string, campaignId: string)
   return useQuery({
     queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId, 'suggestions'],
     queryFn: async () => {
+      // Guard against undefined or empty campaignId
+      if (!campaignId) {
+        throw new Error('Campaign ID is required');
+      }
       const res = await api.get<ApiResponse<SmartSuggestionsResponse>>(
         `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/suggestions`
       );
       return res.data.data;
     },
     enabled: !!tenantId && !!campaignId,
+    retry: false,
   });
 }
 
