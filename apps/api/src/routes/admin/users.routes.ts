@@ -6,7 +6,6 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import {
   IamPermission,
@@ -545,9 +544,9 @@ router.post(
       }
 
       // Generate temporary password
+      // Note: Set plain text password - the pre-save hook will hash it
       const tempPassword = crypto.randomBytes(16).toString('hex');
-      const salt = await bcrypt.genSalt(12);
-      user.passwordHash = await bcrypt.hash(tempPassword, salt);
+      user.passwordHash = tempPassword;
       user.mustChangePassword = true;
       user.passwordChangedAt = new Date();
       await user.save();
