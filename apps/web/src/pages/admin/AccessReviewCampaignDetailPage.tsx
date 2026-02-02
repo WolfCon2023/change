@@ -11,7 +11,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Edit,
@@ -112,6 +112,7 @@ type DataFilterOption = 'all' | DataClassificationType;
 export function AccessReviewCampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { context } = useAdminStore();
   const { user } = useAuthStore();
   const tenantId = context?.currentTenantId || '';
@@ -119,6 +120,9 @@ export function AccessReviewCampaignDetailPage() {
 
   // Ensure we have a valid campaign ID before proceeding
   const campaignId = id || '';
+  
+  // Check if we're in edit mode based on URL
+  const isEditMode = location.pathname.endsWith('/edit');
 
   // State
   const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(0);
@@ -610,10 +614,17 @@ export function AccessReviewCampaignDetailPage() {
         <div className="flex items-center gap-2">
           {canEdit && (
             <PermissionGate permission={IamPermission.IAM_ACCESS_REVIEW_WRITE}>
-              <Button variant="outline" onClick={() => navigate(`/admin/access-review-campaigns/${id}/edit`)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
+              {isEditMode ? (
+                <Button variant="outline" onClick={() => navigate(`/admin/access-review-campaigns/${campaignId}`)}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Done Editing
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => navigate(`/admin/access-review-campaigns/${campaignId}/edit`)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
             </PermissionGate>
           )}
           {campaign.status === AccessReviewCampaignStatus.SUBMITTED &&
@@ -632,6 +643,22 @@ export function AccessReviewCampaignDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Mode Banner */}
+      {isEditMode && canEdit && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <Edit className="h-5 w-5 text-blue-600" />
+            <div>
+              <p className="font-medium text-blue-900">Edit Mode</p>
+              <p className="text-sm text-blue-700">
+                You can make decisions on access items, add notes, and use bulk actions. 
+                Click &quot;Done Editing&quot; when finished.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
@@ -1465,7 +1492,23 @@ export function AccessReviewCampaignDetailPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500">No approval information available yet.</p>
+                <div className="space-y-4">
+                  <p className="text-gray-500">No approval information available yet.</p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Approval Workflow</h4>
+                    <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                      <li><strong>Draft:</strong> Review subjects and make decisions on access items</li>
+                      <li><strong>Submit:</strong> Once all decisions are made, submit for approval</li>
+                      <li><strong>Review:</strong> Approvals are captured and second-level approval may be required for privileged access</li>
+                      <li><strong>Complete:</strong> After approval, remediation tasks are created if needed</li>
+                    </ol>
+                    {campaign.status === AccessReviewCampaignStatus.DRAFT && (
+                      <p className="text-sm text-blue-700 mt-3">
+                        This campaign is in <strong>Draft</strong> status. Go to the &quot;Subjects&quot; tab to make access decisions.
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1476,33 +1519,51 @@ export function AccessReviewCampaignDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Workflow Status</CardTitle>
+              <p className="text-sm text-gray-500">
+                Track campaign deadlines, escalations, and remediation progress
+              </p>
             </CardHeader>
             <CardContent>
               {campaign.workflow ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500 block">Due Date</span>
-                      <span>{new Date(campaign.workflow.dueDate).toLocaleDateString()}</span>
+                <div className="space-y-6">
+                  {/* Workflow Metrics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <span className="text-gray-500 text-sm block mb-1">Due Date</span>
+                      <span className="font-medium text-lg">{new Date(campaign.workflow.dueDate).toLocaleDateString()}</span>
+                      {new Date(campaign.workflow.dueDate) < new Date() && campaign.status !== AccessReviewCampaignStatus.COMPLETED && (
+                        <Badge className="bg-red-100 text-red-800 mt-1">Overdue</Badge>
+                      )}
                     </div>
-                    <div>
-                      <span className="text-gray-500 block">Escalation Level</span>
-                      <span>{campaign.workflow.escalationLevel || 0}</span>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <span className="text-gray-500 text-sm block mb-1">Escalation Level</span>
+                      <span className="font-medium text-lg">{campaign.workflow.escalationLevel || 0}</span>
+                      {(campaign.workflow.escalationLevel || 0) > 0 && (
+                        <Badge className="bg-yellow-100 text-yellow-800 mt-1">Escalated</Badge>
+                      )}
                     </div>
-                    <div>
-                      <span className="text-gray-500 block">Remediation Status</span>
-                      <span>
-                        {campaign.workflow.remediationStatus ? (
-                          <Badge variant="outline">{campaign.workflow.remediationStatus}</Badge>
-                        ) : (
-                          '-'
-                        )}
-                      </span>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <span className="text-gray-500 text-sm block mb-1">Remediation Status</span>
+                      {campaign.workflow.remediationStatus ? (
+                        <Badge variant="outline" className="mt-1">{campaign.workflow.remediationStatus}</Badge>
+                      ) : (
+                        <span className="font-medium text-lg">Not Started</span>
+                      )}
                     </div>
-                    <div>
-                      <span className="text-gray-500 block">Remediation Ticket</span>
-                      <span>{campaign.workflow.remediationTicketId || '-'}</span>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <span className="text-gray-500 text-sm block mb-1">Remediation Ticket</span>
+                      <span className="font-medium">{campaign.workflow.remediationTicketId || 'None'}</span>
                     </div>
+                  </div>
+
+                  {/* Workflow Explanation */}
+                  <div className="bg-gray-50 rounded-lg p-4 border">
+                    <h4 className="font-medium mb-2">What is the Workflow?</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• <strong>Due Date:</strong> The deadline by which all review decisions must be completed</li>
+                      <li>• <strong>Escalation Level:</strong> Increases if the campaign approaches or passes the due date without completion</li>
+                      <li>• <strong>Remediation:</strong> After approval, access changes are tracked here until fully implemented</li>
+                    </ul>
                   </div>
                 </div>
               ) : (
