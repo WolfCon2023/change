@@ -627,18 +627,28 @@ export function AccessReviewCampaignDetailPage() {
               )}
             </PermissionGate>
           )}
-          {campaign.status === AccessReviewCampaignStatus.SUBMITTED &&
-           campaign.approvals?.secondLevelRequired &&
-           !campaign.approvals?.secondDecision && (
+          {/* Show approval actions for SUBMITTED campaigns */}
+          {campaign.status === AccessReviewCampaignStatus.SUBMITTED && (
             <PermissionGate permission={IamPermission.IAM_ACCESS_REVIEW_DECIDE}>
-              <Button variant="destructive" onClick={() => handleApprove(false)}>
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject
-              </Button>
-              <Button onClick={() => handleApprove(true)}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
+              {campaign.approvals?.secondLevelRequired && !campaign.approvals?.secondDecision ? (
+                // Second-level approval required
+                <>
+                  <Button variant="destructive" onClick={() => handleApprove(false)}>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                  <Button onClick={() => handleApprove(true)}>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve Campaign
+                  </Button>
+                </>
+              ) : !campaign.approvals?.secondLevelRequired ? (
+                // No second-level approval required - can complete directly
+                <Button onClick={() => handleApprove(true)}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Complete Review
+                </Button>
+              ) : null}
             </PermissionGate>
           )}
         </div>
@@ -1493,21 +1503,48 @@ export function AccessReviewCampaignDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-gray-500">No approval information available yet.</p>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Approval Workflow</h4>
-                    <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
-                      <li><strong>Draft:</strong> Review subjects and make decisions on access items</li>
-                      <li><strong>Submit:</strong> Once all decisions are made, submit for approval</li>
-                      <li><strong>Review:</strong> Approvals are captured and second-level approval may be required for privileged access</li>
-                      <li><strong>Complete:</strong> After approval, remediation tasks are created if needed</li>
-                    </ol>
-                    {campaign.status === AccessReviewCampaignStatus.DRAFT && (
-                      <p className="text-sm text-blue-700 mt-3">
-                        This campaign is in <strong>Draft</strong> status. Go to the &quot;Subjects&quot; tab to make access decisions.
-                      </p>
-                    )}
-                  </div>
+                  {/* Show pending approval for submitted campaigns */}
+                  {campaign.status === AccessReviewCampaignStatus.SUBMITTED ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-yellow-900">Pending Approval</h4>
+                          <p className="text-sm text-yellow-700">This campaign has been submitted and is awaiting approval.</p>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-yellow-200">
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>To approve this campaign:</strong>
+                        </p>
+                        <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1">
+                          <li>Review all access decisions in the &quot;Subjects&quot; tab</li>
+                          <li>Click the &quot;Approve Campaign&quot; or &quot;Complete Review&quot; button at the top right</li>
+                          <li>The campaign will be marked as completed and remediation tasks will be created</li>
+                        </ol>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-gray-500">No approval information available yet.</p>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-medium text-blue-900 mb-2">Approval Workflow</h4>
+                        <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                          <li><strong>Draft:</strong> Review subjects and make decisions on access items</li>
+                          <li><strong>Submit:</strong> Once all decisions are made, submit for approval</li>
+                          <li><strong>Review:</strong> Approvals are captured and second-level approval may be required for privileged access</li>
+                          <li><strong>Complete:</strong> After approval, remediation tasks are created if needed</li>
+                        </ol>
+                        {campaign.status === AccessReviewCampaignStatus.DRAFT && (
+                          <p className="text-sm text-blue-700 mt-3">
+                            This campaign is in <strong>Draft</strong> status. Go to the &quot;Subjects&quot; tab to make access decisions.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
