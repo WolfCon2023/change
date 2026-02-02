@@ -155,10 +155,10 @@ export function GovernancePage() {
       bg: 'bg-yellow-100',
       description: 'Identify risks and improvement opportunities',
       activities: [
+        { label: 'Security gap analysis', link: '/admin/security-gaps' },
         { label: 'Excessive permissions review', link: '/admin/access-review-campaigns' },
         { label: 'Inactive user detection', link: '/admin/users' },
         { label: 'Role drift analysis', link: '/admin/roles' },
-        { label: 'Security gap assessment', link: '/admin/access-review-campaigns' },
       ],
       metrics: [
         `${dashboard?.usersWithoutMfa?.length ?? 0} users without MFA`,

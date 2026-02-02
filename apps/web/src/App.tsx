@@ -35,6 +35,9 @@ import { AccessReviewCampaignsPage } from '@/pages/admin/AccessReviewCampaignsPa
 import { AccessReviewCampaignDetailPage } from '@/pages/admin/AccessReviewCampaignDetailPage';
 import { AccessReviewCampaignWizardPage } from '@/pages/admin/AccessReviewCampaignWizardPage';
 
+// Security Gap Analysis Page
+import { SecurityGapAnalysisPage } from '@/pages/admin/SecurityGapAnalysisPage';
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -159,6 +162,8 @@ function App() {
           <Route path="audit-logs" element={<AuditLogsPage />} />
           <Route path="access-reviews" element={<AccessReviewsPage />} />
           <Route path="governance" element={<GovernancePage />} />
+          {/* Security Gap Analysis */}
+          <Route path="security-gaps" element={<SecurityGapAnalysisPage />} />
           {/* Access Review Campaigns */}
           <Route path="access-review-campaigns" element={<AccessReviewCampaignsPage />} />
           <Route path="access-review-campaigns/new" element={<AccessReviewCampaignWizardPage />} />

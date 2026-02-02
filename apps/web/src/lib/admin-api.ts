@@ -72,6 +72,52 @@ export function useAdminDashboard(tenantId: string) {
   });
 }
 
+// Security Gap Analysis
+export interface SecurityGap {
+  id: string;
+  category: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  affectedItems: Array<{ id: string; name: string; detail?: string }>;
+  recommendation: string;
+  complianceFrameworks: string[];
+}
+
+export interface SecurityGapAnalysis {
+  securityScore: number;
+  totalGaps: number;
+  gapsBySeverity: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  gapsByCategory: Record<string, number>;
+  gaps: SecurityGap[];
+  summary: {
+    totalUsers: number;
+    mfaCoverage: number;
+    adminAccessPercentage: number;
+    inactiveUserPercentage: number;
+    apiKeysWithIssues: number;
+    lastAccessReview: string | null;
+  };
+  analyzedAt: string;
+}
+
+export function useSecurityGapAnalysis(tenantId: string) {
+  return useQuery({
+    queryKey: ['admin', 'security-gaps', tenantId],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<SecurityGapAnalysis>>(`/admin/tenants/${tenantId}/security-gaps`);
+      return res.data.data;
+    },
+    enabled: !!tenantId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
+
 // Users
 export interface AdminUser {
   id: string;
