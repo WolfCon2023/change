@@ -101,6 +101,17 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId } = req.params;
+      const primaryRole = req.primaryRole;
+      const isItAdmin = primaryRole === PrimaryRole.IT_ADMIN;
+
+      // For IT_ADMIN, include platform-level entities (those without tenantId)
+      const userQuery = isItAdmin
+        ? { $or: [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }] }
+        : { tenantId };
+
+      const groupQuery = isItAdmin
+        ? { $or: [{ tenantId, isActive: true }, { isPlatformGroup: true, isActive: true }] }
+        : { tenantId, isActive: true };
 
       // Get user stats
       const [
@@ -113,22 +124,22 @@ router.get(
         pendingAccessRequests,
         openAccessReviews,
       ] = await Promise.all([
-        User.countDocuments({ tenantId }),
-        User.countDocuments({ tenantId, isActive: true }),
-        User.countDocuments({ tenantId, lockedAt: { $exists: true } }),
-        User.countDocuments({ tenantId, mfaEnabled: true }),
+        User.countDocuments(userQuery),
+        User.countDocuments({ ...userQuery, isActive: true }),
+        User.countDocuments({ ...userQuery, lockedAt: { $exists: true } }),
+        User.countDocuments({ ...userQuery, mfaEnabled: true }),
         IamRole.countDocuments({
           $or: [{ tenantId }, { tenantId: { $exists: false } }],
           isActive: true,
         }),
-        Group.countDocuments({ tenantId, isActive: true }),
+        Group.countDocuments(groupQuery),
         AccessRequest.countDocuments({ tenantId, status: 'pending' }),
         AccessReview.countDocuments({ tenantId, status: { $in: ['open', 'in_progress'] } }),
       ]);
 
       // Get users without MFA
       const usersWithoutMfa = await User.find({
-        tenantId,
+        ...userQuery,
         isActive: true,
         mfaEnabled: false,
       })
@@ -139,9 +150,13 @@ router.get(
       // Get expiring API keys (next 30 days)
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+      const apiKeyQuery = isItAdmin
+        ? { $or: [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }] }
+        : { tenantId };
       
       const expiringApiKeys = await ApiKey.find({
-        tenantId,
+        ...apiKeyQuery,
         revokedAt: { $exists: false },
         expiresAt: { $lte: thirtyDaysFromNow, $gte: new Date() },
       })
@@ -151,7 +166,10 @@ router.get(
 
       // Get recent IAM changes
       const { IamAuditLog } = await import('../../db/models/index.js');
-      const recentIamChanges = await IamAuditLog.find({ tenantId })
+      const auditQuery = isItAdmin
+        ? { $or: [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }] }
+        : { tenantId };
+      const recentIamChanges = await IamAuditLog.find(auditQuery)
         .sort({ createdAt: -1 })
         .limit(10)
         .lean();
