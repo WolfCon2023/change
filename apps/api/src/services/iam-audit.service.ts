@@ -212,6 +212,8 @@ export interface IamAuditLogQuery {
   endDate?: Date;
   page?: number;
   limit?: number;
+  sortBy?: 'createdAt' | 'actorEmail' | 'action' | 'targetType' | 'ip';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export async function queryIamAuditLogs(query: IamAuditLogQuery & { includePlatformLogs?: boolean }) {
@@ -258,9 +260,14 @@ export async function queryIamAuditLogs(query: IamAuditLogQuery & { includePlatf
   const limit = Math.min(query.limit || 50, 100);
   const skip = (page - 1) * limit;
 
+  // Build sort object
+  const sortField = query.sortBy || 'createdAt';
+  const sortDirection = query.sortOrder === 'asc' ? 1 : -1;
+  const sort: Record<string, 1 | -1> = { [sortField]: sortDirection };
+
   const [logs, total] = await Promise.all([
     IamAuditLog.find(filter)
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .skip(skip)
       .limit(limit)
       .lean(),

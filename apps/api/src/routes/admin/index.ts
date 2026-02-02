@@ -29,6 +29,7 @@ import accessRequestsRoutes from './access-requests.routes.js';
 import accessReviewsRoutes from './access-reviews.routes.js';
 import advisorAssignmentsRoutes from './advisor-assignments.routes.js';
 import tenantSettingsRoutes from './tenant-settings.routes.js';
+import accessReviewCampaignsRoutes from './access-review-campaigns.routes.js';
 
 const router = Router();
 
@@ -220,5 +221,6 @@ router.use(accessRequestsRoutes);
 router.use(accessReviewsRoutes);
 router.use(advisorAssignmentsRoutes);
 router.use(tenantSettingsRoutes);
+router.use(accessReviewCampaignsRoutes);
 
 export default router;

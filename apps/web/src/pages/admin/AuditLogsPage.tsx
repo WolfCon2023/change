@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { DataTable } from '@/components/admin/DataTable';
+import { DataTable, SortState } from '@/components/admin/DataTable';
 import { PermissionGate } from '@/components/admin/PermissionGate';
 import { useAuditLogs, useExportAuditLogs, useTenantSettings, useToggleAuditLogging } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
@@ -42,6 +42,10 @@ export function AuditLogsPage() {
     endDate: '',
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [sortState, setSortState] = useState<SortState>({
+    column: 'createdAt',
+    direction: 'desc',
+  });
 
   // Reset page to 1 when filters change
   const handleFilterChange = (newFilters: typeof filters) => {
@@ -56,7 +60,15 @@ export function AuditLogsPage() {
     targetType: filters.targetType || undefined,
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
+    sortBy: sortState.column || undefined,
+    sortOrder: sortState.direction || undefined,
   });
+  
+  // Handle sort change - reset to page 1 when sorting changes
+  const handleSortChange = (newSort: SortState) => {
+    setSortState(newSort);
+    setPage(1);
+  };
   const exportLogs = useExportAuditLogs(tenantId);
   
   // Tenant settings for audit logging toggle
@@ -84,6 +96,8 @@ export function AuditLogsPage() {
     {
       key: 'timestamp',
       header: 'Time',
+      sortable: true,
+      sortKey: 'createdAt',
       render: (log: AuditLog) => (
         <span className="text-sm text-gray-500">
           {new Date(log.createdAt).toLocaleString()}
@@ -93,6 +107,8 @@ export function AuditLogsPage() {
     {
       key: 'actor',
       header: 'Actor',
+      sortable: true,
+      sortKey: 'actorEmail',
       render: (log: AuditLog) => (
         <span className="text-sm font-medium text-gray-900">{log.actorEmail}</span>
       ),
@@ -100,6 +116,8 @@ export function AuditLogsPage() {
     {
       key: 'action',
       header: 'Action',
+      sortable: true,
+      sortKey: 'action',
       render: (log: AuditLog) => (
         <Badge variant="outline" className="text-xs font-mono">
           {log.action.split('.').pop()}
@@ -109,6 +127,8 @@ export function AuditLogsPage() {
     {
       key: 'target',
       header: 'Target',
+      sortable: true,
+      sortKey: 'targetType',
       render: (log: AuditLog) => (
         <div>
           <p className="text-sm text-gray-900">{log.targetName || log.targetId}</p>
@@ -119,6 +139,7 @@ export function AuditLogsPage() {
     {
       key: 'summary',
       header: 'Summary',
+      sortable: false,
       render: (log: AuditLog) => (
         <p className="text-sm text-gray-500 truncate max-w-xs" title={log.summary}>
           {log.summary}
@@ -128,6 +149,8 @@ export function AuditLogsPage() {
     {
       key: 'ip',
       header: 'IP',
+      sortable: true,
+      sortKey: 'ip',
       render: (log: AuditLog) => (
         <span className="text-xs text-gray-400 font-mono">{log.ip || '-'}</span>
       ),
@@ -263,6 +286,8 @@ export function AuditLogsPage() {
         onPageChange={setPage}
         isLoading={isLoading}
         emptyMessage="No audit logs found"
+        sortState={sortState}
+        onSortChange={handleSortChange}
       />
     </div>
   );

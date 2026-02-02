@@ -1,18 +1,27 @@
 /**
  * Data Table Component
- * Reusable table with pagination
+ * Reusable table with pagination and sorting
  */
 
 import { ReactNode } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+export type SortDirection = 'asc' | 'desc' | null;
+
+export interface SortState {
+  column: string | null;
+  direction: SortDirection;
+}
 
 export interface Column<T> {
   key: string;
   header: string;
   render?: (item: T) => ReactNode;
   className?: string;
+  sortable?: boolean;
+  sortKey?: string; // Optional: use different key for API sorting
 }
 
 interface DataTableProps<T> {
@@ -31,6 +40,9 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   emptyMessage?: string;
   onRowClick?: (item: T) => void;
+  // Sorting props
+  sortState?: SortState;
+  onSortChange?: (sort: SortState) => void;
 }
 
 export function DataTable<T>({
@@ -42,7 +54,43 @@ export function DataTable<T>({
   isLoading,
   emptyMessage = 'No data found',
   onRowClick,
+  sortState,
+  onSortChange,
 }: DataTableProps<T>) {
+  const handleSort = (column: Column<T>) => {
+    if (!column.sortable || !onSortChange) return;
+    
+    const sortKey = column.sortKey || column.key;
+    let newDirection: SortDirection = 'asc';
+    
+    if (sortState?.column === sortKey) {
+      if (sortState.direction === 'asc') {
+        newDirection = 'desc';
+      } else if (sortState.direction === 'desc') {
+        newDirection = null;
+      }
+    }
+    
+    onSortChange({
+      column: newDirection ? sortKey : null,
+      direction: newDirection,
+    });
+  };
+
+  const getSortIcon = (column: Column<T>) => {
+    const sortKey = column.sortKey || column.key;
+    if (sortState?.column !== sortKey) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
+    }
+    if (sortState.direction === 'asc') {
+      return <ArrowUp className="h-4 w-4 ml-1" />;
+    }
+    if (sortState.direction === 'desc') {
+      return <ArrowDown className="h-4 w-4 ml-1" />;
+    }
+    return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
+  };
+
   return (
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="overflow-x-auto">
@@ -54,10 +102,15 @@ export function DataTable<T>({
                   key={col.key}
                   className={cn(
                     'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
+                    col.sortable && 'cursor-pointer hover:bg-gray-100 select-none',
                     col.className
                   )}
+                  onClick={() => col.sortable && handleSort(col)}
                 >
-                  {col.header}
+                  <div className="flex items-center">
+                    {col.header}
+                    {col.sortable && getSortIcon(col)}
+                  </div>
                 </th>
               ))}
             </tr>

@@ -30,6 +30,23 @@ import type {
   PrimaryRoleType,
   OperationalPermissionType,
   AdvisorAssignmentStatusType,
+  // Access Review Campaign types
+  AccessReviewCampaignStatusType,
+  CampaignDecisionTypeValue,
+  PrivilegeLevelType,
+  EmploymentTypeValue,
+  EnvironmentTypeValue,
+  DataClassificationType,
+  EntitlementTypeValue,
+  GrantMethodType,
+  SodConcernType,
+  ReviewTypeValue,
+  ReviewerTypeValue,
+  RemediationStatusType,
+  SubjectStatusType,
+  SecondLevelDecisionType,
+  DecisionReasonCodeType,
+  RegulatedFlagType,
 } from '../constants/index.js';
 
 // =============================================================================
@@ -917,5 +934,274 @@ export interface UserFilters extends PaginationParams {
   role?: UserRoleType;
   isActive?: boolean;
   mfaEnabled?: boolean;
+  search?: string;
+}
+
+// =============================================================================
+// ACCESS REVIEW CAMPAIGN TYPES (IAM Compliance)
+// =============================================================================
+
+/**
+ * Access Review Decision
+ * Decision made for each access item during review
+ */
+export interface AccessReviewItemDecision {
+  decisionType: CampaignDecisionTypeValue;
+  reasonCode?: DecisionReasonCodeType;
+  comments?: string;
+  effectiveDate?: Date;
+  requestedChange?: AccessReviewRequestedChange;
+  evidenceProvided?: boolean;
+  evidenceLink?: string;
+  decidedBy?: string;
+  decidedAt?: Date;
+}
+
+/**
+ * Requested Change for MODIFY decisions
+ */
+export interface AccessReviewRequestedChange {
+  newRoleName?: string;
+  newPermissions?: string[];
+  newScope?: string;
+  expirationDate?: Date;
+  notes?: string;
+}
+
+/**
+ * Access Review Item
+ * Individual access/entitlement row being reviewed
+ */
+export interface AccessReviewCampaignItem {
+  id?: string;
+  // Application/System info
+  application: string;
+  environment: EnvironmentTypeValue;
+  // Role/Entitlement info
+  roleName: string;
+  roleDescription?: string;
+  entitlementName?: string;
+  entitlementType: EntitlementTypeValue;
+  privilegeLevel: PrivilegeLevelType;
+  scope?: string;
+  // Grant info
+  grantedDate?: Date;
+  grantedBy?: string;
+  grantMethod: GrantMethodType;
+  // Usage info
+  lastUsedDate?: Date;
+  authMethod?: string;
+  mfaEnabled?: boolean;
+  // Justification
+  justificationOnFile?: string;
+  ticketId?: string;
+  supportLink?: string;
+  // Classification
+  dataClassification: DataClassificationType;
+  regulatedFlags?: RegulatedFlagType[];
+  // Derived/computed
+  isPrivileged?: boolean;
+  sodConcern?: SodConcernType;
+  compensatingControls?: string;
+  // Decision
+  decision?: AccessReviewItemDecision;
+}
+
+/**
+ * Access Review Subject
+ * The identity (user) being reviewed in a campaign
+ */
+export interface AccessReviewCampaignSubject {
+  id?: string;
+  // User identification
+  subjectId: string; // userId reference
+  fullName: string;
+  email: string;
+  employeeId?: string;
+  // Job info
+  jobTitle?: string;
+  department?: string;
+  managerName?: string;
+  managerEmail?: string;
+  location?: string;
+  // Employment info
+  startDate?: Date;
+  endDate?: Date; // Required for contractors/vendors
+  employmentType: EmploymentTypeValue;
+  // Review status
+  status: SubjectStatusType;
+  // Access items to review
+  items: AccessReviewCampaignItem[];
+  // Timestamps
+  reviewedAt?: Date;
+  reviewedBy?: string;
+}
+
+/**
+ * Campaign Approvals
+ * Approval/attestation tracking for the campaign
+ */
+export interface AccessReviewCampaignApprovals {
+  // Primary reviewer
+  reviewerName: string;
+  reviewerEmail: string;
+  reviewerAttestation?: boolean;
+  reviewerAttestedAt?: Date;
+  // Second-level approval (for privileged access)
+  secondLevelRequired?: boolean;
+  secondApproverName?: string;
+  secondApproverEmail?: string;
+  secondDecision?: SecondLevelDecisionType;
+  secondDecisionNotes?: string;
+  secondDecidedAt?: Date;
+}
+
+/**
+ * Campaign Workflow
+ * Workflow tracking and remediation status
+ */
+export interface AccessReviewCampaignWorkflow {
+  dueDate: Date;
+  escalationLevel?: number;
+  notificationsSentAt?: Date[];
+  // Remediation tracking
+  remediationTicketCreated?: boolean;
+  remediationTicketId?: string;
+  remediationStatus?: RemediationStatusType;
+  remediationCompletedAt?: Date;
+  verifiedBy?: string;
+  verifiedAt?: Date;
+}
+
+/**
+ * Access Review Campaign
+ * Main campaign document containing subjects and items
+ */
+export interface AccessReviewCampaign extends TenantScopedEntity {
+  // Campaign identification
+  name: string;
+  description?: string;
+  systemName: string;
+  environment: EnvironmentTypeValue;
+  businessUnit?: string;
+  // Review metadata
+  reviewType: ReviewTypeValue;
+  triggerReason?: string;
+  periodStart: Date;
+  periodEnd: Date;
+  // Status
+  status: AccessReviewCampaignStatusType;
+  // Creator/Owner
+  createdBy: string;
+  createdByEmail?: string;
+  // Reviewer assignment
+  reviewerType: ReviewerTypeValue;
+  assignedReviewerId?: string;
+  assignedReviewerEmail?: string;
+  // Embedded documents
+  subjects: AccessReviewCampaignSubject[];
+  approvals?: AccessReviewCampaignApprovals;
+  workflow?: AccessReviewCampaignWorkflow;
+  // Stats (computed)
+  totalSubjects?: number;
+  completedSubjects?: number;
+  totalItems?: number;
+  completedItems?: number;
+  // Timestamps
+  submittedAt?: Date;
+  approvedAt?: Date;
+  completedAt?: Date;
+}
+
+/**
+ * Create Campaign Request
+ */
+export interface AccessReviewCampaignCreateRequest {
+  name: string;
+  description?: string;
+  systemName: string;
+  environment: EnvironmentTypeValue;
+  businessUnit?: string;
+  reviewType: ReviewTypeValue;
+  triggerReason?: string;
+  periodStart: Date;
+  periodEnd: Date;
+  reviewerType: ReviewerTypeValue;
+  assignedReviewerId?: string;
+  assignedReviewerEmail?: string;
+  subjects?: AccessReviewCampaignSubject[];
+  workflow?: {
+    dueDate: Date;
+  };
+}
+
+/**
+ * Update Campaign Request
+ */
+export interface AccessReviewCampaignUpdateRequest {
+  name?: string;
+  description?: string;
+  systemName?: string;
+  environment?: EnvironmentTypeValue;
+  businessUnit?: string;
+  reviewType?: ReviewTypeValue;
+  triggerReason?: string;
+  periodStart?: Date;
+  periodEnd?: Date;
+  reviewerType?: ReviewerTypeValue;
+  assignedReviewerId?: string;
+  assignedReviewerEmail?: string;
+  subjects?: AccessReviewCampaignSubject[];
+  approvals?: AccessReviewCampaignApprovals;
+  workflow?: Partial<AccessReviewCampaignWorkflow>;
+}
+
+/**
+ * Submit Campaign Request
+ */
+export interface AccessReviewCampaignSubmitRequest {
+  reviewerAttestation: boolean;
+  reviewerName: string;
+  reviewerEmail: string;
+}
+
+/**
+ * Approve Campaign Request (Second-level)
+ */
+export interface AccessReviewCampaignApproveRequest {
+  decision: SecondLevelDecisionType;
+  notes?: string;
+  approverName: string;
+  approverEmail: string;
+}
+
+/**
+ * Remediate Campaign Request
+ */
+export interface AccessReviewCampaignRemediateRequest {
+  remediationTicketId: string;
+  remediationStatus: RemediationStatusType;
+  notes?: string;
+}
+
+/**
+ * Complete Campaign Request
+ */
+export interface AccessReviewCampaignCompleteRequest {
+  verifiedBy: string;
+  notes?: string;
+}
+
+/**
+ * Campaign Filters for List Endpoint
+ */
+export interface AccessReviewCampaignFilters extends PaginationParams {
+  status?: AccessReviewCampaignStatusType;
+  systemName?: string;
+  environment?: EnvironmentTypeValue;
+  reviewType?: ReviewTypeValue;
+  startDate?: Date;
+  endDate?: Date;
+  assignedReviewerId?: string;
   search?: string;
 }

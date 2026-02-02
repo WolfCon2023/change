@@ -1050,3 +1050,303 @@ export const OperationalPermissionCatalog: Array<{
   // Issues
   { key: OperationalPermission.ISSUES_MANAGE, description: 'Manage issues and tickets', category: OperationalPermissionCategory.ISSUES },
 ];
+
+// =============================================================================
+// ACCESS REVIEW CAMPAIGN (IAM Compliance)
+// =============================================================================
+
+/**
+ * Access Review Campaign Status
+ * Tracks the lifecycle of an access review campaign
+ */
+export const AccessReviewCampaignStatus = {
+  DRAFT: 'draft',
+  IN_REVIEW: 'in_review',
+  SUBMITTED: 'submitted',
+  COMPLETED: 'completed',
+} as const;
+
+export type AccessReviewCampaignStatusType = (typeof AccessReviewCampaignStatus)[keyof typeof AccessReviewCampaignStatus];
+
+/**
+ * Campaign Decision Type
+ * The decision made for each access item during review
+ */
+export const CampaignDecisionType = {
+  APPROVE: 'approve',
+  REVOKE: 'revoke',
+  MODIFY: 'modify',
+  ESCALATE: 'escalate',
+  PENDING: 'pending',
+} as const;
+
+export type CampaignDecisionTypeValue = (typeof CampaignDecisionType)[keyof typeof CampaignDecisionType];
+
+/**
+ * Privilege Level
+ * Classification of access privilege levels
+ */
+export const PrivilegeLevel = {
+  STANDARD: 'standard',
+  ELEVATED: 'elevated',
+  ADMIN: 'admin',
+  SUPER_ADMIN: 'super_admin',
+} as const;
+
+export type PrivilegeLevelType = (typeof PrivilegeLevel)[keyof typeof PrivilegeLevel];
+
+export const PrivilegeLevelLabels: Record<PrivilegeLevelType, string> = {
+  [PrivilegeLevel.STANDARD]: 'Standard',
+  [PrivilegeLevel.ELEVATED]: 'Elevated',
+  [PrivilegeLevel.ADMIN]: 'Admin',
+  [PrivilegeLevel.SUPER_ADMIN]: 'Super Admin',
+};
+
+/**
+ * Employment Type
+ * Classification of user employment relationship
+ */
+export const EmploymentType = {
+  EMPLOYEE: 'employee',
+  CONTRACTOR: 'contractor',
+  VENDOR: 'vendor',
+} as const;
+
+export type EmploymentTypeValue = (typeof EmploymentType)[keyof typeof EmploymentType];
+
+export const EmploymentTypeLabels: Record<EmploymentTypeValue, string> = {
+  [EmploymentType.EMPLOYEE]: 'Employee',
+  [EmploymentType.CONTRACTOR]: 'Contractor',
+  [EmploymentType.VENDOR]: 'Vendor',
+};
+
+/**
+ * Environment Type
+ * Classification of system environments
+ */
+export const EnvironmentType = {
+  PROD: 'prod',
+  UAT: 'uat',
+  DEV: 'dev',
+} as const;
+
+export type EnvironmentTypeValue = (typeof EnvironmentType)[keyof typeof EnvironmentType];
+
+export const EnvironmentTypeLabels: Record<EnvironmentTypeValue, string> = {
+  [EnvironmentType.PROD]: 'Production',
+  [EnvironmentType.UAT]: 'UAT',
+  [EnvironmentType.DEV]: 'Development',
+};
+
+/**
+ * Data Classification
+ * Classification of data sensitivity levels
+ */
+export const DataClassification = {
+  PUBLIC: 'public',
+  INTERNAL: 'internal',
+  CONFIDENTIAL: 'confidential',
+  RESTRICTED: 'restricted',
+} as const;
+
+export type DataClassificationType = (typeof DataClassification)[keyof typeof DataClassification];
+
+export const DataClassificationLabels: Record<DataClassificationType, string> = {
+  [DataClassification.PUBLIC]: 'Public',
+  [DataClassification.INTERNAL]: 'Internal',
+  [DataClassification.CONFIDENTIAL]: 'Confidential',
+  [DataClassification.RESTRICTED]: 'Restricted',
+};
+
+/**
+ * Entitlement Type
+ * Types of access entitlements that can be reviewed
+ */
+export const EntitlementType = {
+  ROLE: 'role',
+  GROUP: 'group',
+  PERMISSION: 'permission',
+  LICENSE: 'license',
+  API_KEY: 'api_key',
+  TOKEN: 'token',
+} as const;
+
+export type EntitlementTypeValue = (typeof EntitlementType)[keyof typeof EntitlementType];
+
+export const EntitlementTypeLabels: Record<EntitlementTypeValue, string> = {
+  [EntitlementType.ROLE]: 'Role',
+  [EntitlementType.GROUP]: 'Group',
+  [EntitlementType.PERMISSION]: 'Permission',
+  [EntitlementType.LICENSE]: 'License',
+  [EntitlementType.API_KEY]: 'API Key',
+  [EntitlementType.TOKEN]: 'Token',
+};
+
+/**
+ * Grant Method
+ * How access was granted to the user
+ */
+export const GrantMethod = {
+  MANUAL: 'manual',
+  WORKFLOW: 'workflow',
+  SCIM: 'scim',
+  HR_FEED: 'hr_feed',
+  GROUP_MEMBERSHIP: 'group_membership',
+  API: 'api',
+} as const;
+
+export type GrantMethodType = (typeof GrantMethod)[keyof typeof GrantMethod];
+
+export const GrantMethodLabels: Record<GrantMethodType, string> = {
+  [GrantMethod.MANUAL]: 'Manual',
+  [GrantMethod.WORKFLOW]: 'Workflow',
+  [GrantMethod.SCIM]: 'SCIM',
+  [GrantMethod.HR_FEED]: 'HR Feed',
+  [GrantMethod.GROUP_MEMBERSHIP]: 'Group Membership',
+  [GrantMethod.API]: 'API',
+};
+
+/**
+ * SOD Concern Status
+ * Segregation of Duties concern indicator
+ */
+export const SodConcern = {
+  YES: 'yes',
+  NO: 'no',
+  UNKNOWN: 'unknown',
+} as const;
+
+export type SodConcernType = (typeof SodConcern)[keyof typeof SodConcern];
+
+/**
+ * Review Type
+ * Type of access review being conducted
+ */
+export const ReviewType = {
+  PERIODIC: 'periodic',
+  EVENT_DRIVEN: 'event_driven',
+  ROLE_CHANGE: 'role_change',
+  TERMINATION: 'termination',
+  COMPLIANCE: 'compliance',
+} as const;
+
+export type ReviewTypeValue = (typeof ReviewType)[keyof typeof ReviewType];
+
+export const ReviewTypeLabels: Record<ReviewTypeValue, string> = {
+  [ReviewType.PERIODIC]: 'Periodic Review',
+  [ReviewType.EVENT_DRIVEN]: 'Event Driven',
+  [ReviewType.ROLE_CHANGE]: 'Role Change',
+  [ReviewType.TERMINATION]: 'Termination',
+  [ReviewType.COMPLIANCE]: 'Compliance Audit',
+};
+
+/**
+ * Reviewer Type
+ * Who is responsible for conducting the review
+ */
+export const ReviewerType = {
+  MANAGER: 'manager',
+  APP_OWNER: 'app_owner',
+  IT_ADMIN: 'it_admin',
+  COMPLIANCE: 'compliance',
+} as const;
+
+export type ReviewerTypeValue = (typeof ReviewerType)[keyof typeof ReviewerType];
+
+/**
+ * Remediation Status
+ * Status of access revocation/modification remediation
+ */
+export const RemediationStatus = {
+  NOT_REQUIRED: 'not_required',
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+} as const;
+
+export type RemediationStatusType = (typeof RemediationStatus)[keyof typeof RemediationStatus];
+
+/**
+ * Subject Status
+ * Review status for individual subjects in a campaign
+ */
+export const SubjectStatus = {
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+} as const;
+
+export type SubjectStatusType = (typeof SubjectStatus)[keyof typeof SubjectStatus];
+
+/**
+ * Second Level Approval Decision
+ */
+export const SecondLevelDecision = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+} as const;
+
+export type SecondLevelDecisionType = (typeof SecondLevelDecision)[keyof typeof SecondLevelDecision];
+
+/**
+ * Reason Codes for Access Review Decisions
+ */
+export const DecisionReasonCode = {
+  // Approve reasons
+  BUSINESS_NEED: 'business_need',
+  JOB_FUNCTION: 'job_function',
+  MANAGER_APPROVED: 'manager_approved',
+  COMPLIANT: 'compliant',
+  // Revoke reasons
+  NO_LONGER_NEEDED: 'no_longer_needed',
+  ROLE_CHANGE: 'role_change',
+  TERMINATION: 'termination',
+  COMPLIANCE_VIOLATION: 'compliance_violation',
+  SOD_CONFLICT: 'sod_conflict',
+  EXCESSIVE_ACCESS: 'excessive_access',
+  // Modify reasons
+  REDUCE_SCOPE: 'reduce_scope',
+  UPDATE_PERMISSIONS: 'update_permissions',
+  TIME_BOUND: 'time_bound',
+  // Escalate reasons
+  REQUIRES_APPROVAL: 'requires_approval',
+  POLICY_EXCEPTION: 'policy_exception',
+  UNKNOWN_JUSTIFICATION: 'unknown_justification',
+} as const;
+
+export type DecisionReasonCodeType = (typeof DecisionReasonCode)[keyof typeof DecisionReasonCode];
+
+/**
+ * Regulated Flags
+ * Compliance/regulatory flags for access items
+ */
+export const RegulatedFlag = {
+  SOX: 'sox',
+  PCI: 'pci',
+  HIPAA: 'hipaa',
+  GDPR: 'gdpr',
+  SOC2: 'soc2',
+  FERPA: 'ferpa',
+} as const;
+
+export type RegulatedFlagType = (typeof RegulatedFlag)[keyof typeof RegulatedFlag];
+
+/**
+ * IAM Audit Actions for Access Review Campaigns
+ */
+export const AccessReviewCampaignAuditAction = {
+  CAMPAIGN_CREATED: 'iam.access_review_campaign.created',
+  CAMPAIGN_UPDATED: 'iam.access_review_campaign.updated',
+  CAMPAIGN_SUBMITTED: 'iam.access_review_campaign.submitted',
+  CAMPAIGN_APPROVED: 'iam.access_review_campaign.approved',
+  CAMPAIGN_REJECTED: 'iam.access_review_campaign.rejected',
+  CAMPAIGN_REMEDIATION_STARTED: 'iam.access_review_campaign.remediation_started',
+  CAMPAIGN_REMEDIATION_COMPLETED: 'iam.access_review_campaign.remediation_completed',
+  CAMPAIGN_COMPLETED: 'iam.access_review_campaign.completed',
+  SUBJECT_REVIEWED: 'iam.access_review_campaign.subject_reviewed',
+  ITEM_DECISION_MADE: 'iam.access_review_campaign.item_decision',
+} as const;
+
+export type AccessReviewCampaignAuditActionType = (typeof AccessReviewCampaignAuditAction)[keyof typeof AccessReviewCampaignAuditAction];

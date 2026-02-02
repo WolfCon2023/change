@@ -537,6 +537,8 @@ export function useAuditLogs(tenantId: string, params?: {
   targetType?: string;
   startDate?: string;
   endDate?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc' | null;
 }) {
   return useQuery({
     queryKey: ['admin', 'audit-logs', tenantId, params],
@@ -837,6 +839,164 @@ export function useToggleAuditLogging(tenantId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'tenant-settings', tenantId] });
+    },
+  });
+}
+
+// =============================================================================
+// ACCESS REVIEW CAMPAIGNS
+// =============================================================================
+
+import type {
+  AccessReviewCampaign,
+  AccessReviewCampaignCreateRequest,
+  AccessReviewCampaignUpdateRequest,
+  AccessReviewCampaignSubmitRequest,
+  AccessReviewCampaignApproveRequest,
+  AccessReviewCampaignRemediateRequest,
+  AccessReviewCampaignCompleteRequest,
+  AccessReviewCampaignFilters,
+} from '@change/shared';
+
+export function useAccessReviewCampaigns(tenantId: string, params?: Partial<AccessReviewCampaignFilters>) {
+  return useQuery({
+    queryKey: ['admin', 'access-review-campaigns', tenantId, params],
+    queryFn: async () => {
+      const res = await api.get<PaginatedResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns`,
+        { params }
+      );
+      return res.data;
+    },
+    enabled: !!tenantId,
+  });
+}
+
+export function useAccessReviewCampaign(tenantId: string, campaignId: string) {
+  return useQuery({
+    queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}`
+      );
+      return res.data.data;
+    },
+    enabled: !!tenantId && !!campaignId,
+  });
+}
+
+export function useCreateAccessReviewCampaign(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AccessReviewCampaignCreateRequest) => {
+      const res = await api.post<ApiResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
+    },
+  });
+}
+
+export function useUpdateAccessReviewCampaign(tenantId: string, campaignId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AccessReviewCampaignUpdateRequest) => {
+      const res = await api.put<ApiResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId] });
+    },
+  });
+}
+
+export function useSubmitAccessReviewCampaign(tenantId: string, campaignId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AccessReviewCampaignSubmitRequest) => {
+      const res = await api.post<ApiResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/submit`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId] });
+    },
+  });
+}
+
+export function useApproveAccessReviewCampaign(tenantId: string, campaignId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AccessReviewCampaignApproveRequest) => {
+      const res = await api.post<ApiResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/approve`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId] });
+    },
+  });
+}
+
+export function useRemediateAccessReviewCampaign(tenantId: string, campaignId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AccessReviewCampaignRemediateRequest) => {
+      const res = await api.post<ApiResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/remediate`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId] });
+    },
+  });
+}
+
+export function useCompleteAccessReviewCampaign(tenantId: string, campaignId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AccessReviewCampaignCompleteRequest) => {
+      const res = await api.post<ApiResponse<AccessReviewCampaign>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}/complete`,
+        data
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId, campaignId] });
+    },
+  });
+}
+
+export function useDeleteAccessReviewCampaign(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (campaignId: string) => {
+      const res = await api.delete<ApiResponse<{ message: string }>>(
+        `/admin/tenants/${tenantId}/access-review-campaigns/${campaignId}`
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-review-campaigns', tenantId] });
     },
   });
 }

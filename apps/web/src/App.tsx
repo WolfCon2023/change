@@ -30,6 +30,11 @@ import {
   GovernancePage,
 } from '@/pages/admin';
 
+// Access Review Campaign Pages
+import { AccessReviewCampaignsPage } from '@/pages/admin/AccessReviewCampaignsPage';
+import { AccessReviewCampaignDetailPage } from '@/pages/admin/AccessReviewCampaignDetailPage';
+import { AccessReviewCampaignWizardPage } from '@/pages/admin/AccessReviewCampaignWizardPage';
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -154,6 +159,11 @@ function App() {
           <Route path="audit-logs" element={<AuditLogsPage />} />
           <Route path="access-reviews" element={<AccessReviewsPage />} />
           <Route path="governance" element={<GovernancePage />} />
+          {/* Access Review Campaigns */}
+          <Route path="access-review-campaigns" element={<AccessReviewCampaignsPage />} />
+          <Route path="access-review-campaigns/new" element={<AccessReviewCampaignWizardPage />} />
+          <Route path="access-review-campaigns/:id" element={<AccessReviewCampaignDetailPage />} />
+          <Route path="access-review-campaigns/:id/edit" element={<AccessReviewCampaignDetailPage />} />
         </Route>
 
         {/* Catch-all redirect */}

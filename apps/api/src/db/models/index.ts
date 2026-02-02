@@ -49,3 +49,12 @@ export {
 export { IamAuditLog, type IIamAuditLog } from './iam-audit-log.model.js';
 export { AdvisorAssignment, type IAdvisorAssignment } from './advisor-assignment.model.js';
 export { TenantSettings, type ITenantSettings as ITenantSettingsDocument } from './tenant-settings.model.js';
+export {
+  AccessReviewCampaign,
+  type IAccessReviewCampaign,
+  type IAccessReviewCampaignSubject,
+  type IAccessReviewCampaignItem,
+  type IAccessReviewItemDecision,
+  type IAccessReviewCampaignApprovals,
+  type IAccessReviewCampaignWorkflow,
+} from './access-review-campaign.model.js';

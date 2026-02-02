@@ -28,6 +28,8 @@ const auditLogQuerySchema = z.object({
   targetId: z.string().optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
+  sortBy: z.enum(['createdAt', 'actorEmail', 'action', 'targetType', 'ip']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
 /**
@@ -53,6 +55,8 @@ router.get(
         targetId,
         startDate,
         endDate,
+        sortBy,
+        sortOrder,
       } = req.query as {
         page: number;
         limit: number;
@@ -63,6 +67,8 @@ router.get(
         targetId?: string;
         startDate?: string;
         endDate?: string;
+        sortBy?: 'createdAt' | 'actorEmail' | 'action' | 'targetType' | 'ip';
+        sortOrder?: 'asc' | 'desc';
       };
 
       // IT_ADMIN can see platform-level logs (auth events, etc.)
@@ -80,6 +86,8 @@ router.get(
         page,
         limit,
         includePlatformLogs,
+        sortBy,
+        sortOrder,
       });
 
       res.json({
