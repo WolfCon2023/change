@@ -782,3 +782,61 @@ export function useDeleteAdvisorAssignment() {
     },
   });
 }
+
+// =============================================================================
+// TENANT SETTINGS
+// =============================================================================
+
+export interface TenantSettings {
+  id: string;
+  tenantId: string;
+  auditLoggingEnabled: boolean;
+  auditRetentionDays: number;
+  mfaRequired: boolean;
+  sessionTimeoutMinutes: number;
+  maxFailedLoginAttempts: number;
+  passwordExpiryDays: number;
+  emailNotificationsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function useTenantSettings(tenantId: string) {
+  return useQuery({
+    queryKey: ['admin', 'tenant-settings', tenantId],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<TenantSettings>>(`/admin/tenants/${tenantId}/settings`);
+      return res.data.data;
+    },
+    enabled: !!tenantId,
+  });
+}
+
+export function useUpdateTenantSettings(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Partial<Omit<TenantSettings, 'id' | 'tenantId' | 'createdAt' | 'updatedAt'>>) => {
+      const res = await api.put<ApiResponse<TenantSettings>>(`/admin/tenants/${tenantId}/settings`, data);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tenant-settings', tenantId] });
+    },
+  });
+}
+
+export function useToggleAuditLogging(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const res = await api.patch<ApiResponse<{ auditLoggingEnabled: boolean }>>(
+        `/admin/tenants/${tenantId}/settings/audit-logging`,
+        { enabled }
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'tenant-settings', tenantId] });
+    },
+  });
+}

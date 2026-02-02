@@ -5,7 +5,7 @@
 
 import type { Request } from 'express';
 import type { IamAuditActionType } from '@change/shared';
-import { IamAuditLog } from '../db/models/index.js';
+import { IamAuditLog, TenantSettings } from '../db/models/index.js';
 
 interface AuditLogOptions {
   tenantId?: string;
@@ -25,10 +25,36 @@ interface AuditLogOptions {
 }
 
 /**
+ * Check if audit logging is enabled for a tenant
+ */
+async function isAuditLoggingEnabled(tenantId?: string): Promise<boolean> {
+  if (!tenantId) {
+    // Platform-level logs (no tenant) are always recorded
+    return true;
+  }
+  
+  try {
+    const settings = await TenantSettings.findOne({ tenantId }).select('auditLoggingEnabled').lean();
+    // Default to true if no settings exist
+    return settings?.auditLoggingEnabled ?? true;
+  } catch (error) {
+    console.error('Failed to check audit logging setting:', error);
+    // Default to true on error to avoid missing important logs
+    return true;
+  }
+}
+
+/**
  * Create an IAM audit log entry
  */
 export async function logIamAction(options: AuditLogOptions): Promise<void> {
   try {
+    // Check if audit logging is enabled for this tenant
+    const loggingEnabled = await isAuditLoggingEnabled(options.tenantId);
+    if (!loggingEnabled) {
+      return; // Skip logging if disabled
+    }
+    
     // Generate a placeholder ObjectId for unknown actors (e.g., failed login with unknown email)
     const actorId = options.actorId === 'unknown' 
       ? new (await import('mongoose')).default.Types.ObjectId()

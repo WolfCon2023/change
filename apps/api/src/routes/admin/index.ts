@@ -28,6 +28,7 @@ import auditLogsRoutes from './audit-logs.routes.js';
 import accessRequestsRoutes from './access-requests.routes.js';
 import accessReviewsRoutes from './access-reviews.routes.js';
 import advisorAssignmentsRoutes from './advisor-assignments.routes.js';
+import tenantSettingsRoutes from './tenant-settings.routes.js';
 
 const router = Router();
 
@@ -218,5 +219,6 @@ router.use(auditLogsRoutes);
 router.use(accessRequestsRoutes);
 router.use(accessReviewsRoutes);
 router.use(advisorAssignmentsRoutes);
+router.use(tenantSettingsRoutes);
 
 export default router;

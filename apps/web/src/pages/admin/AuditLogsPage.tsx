@@ -8,9 +8,10 @@ import { Download, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { DataTable } from '@/components/admin/DataTable';
 import { PermissionGate } from '@/components/admin/PermissionGate';
-import { useAuditLogs, useExportAuditLogs } from '@/lib/admin-api';
+import { useAuditLogs, useExportAuditLogs, useTenantSettings, useToggleAuditLogging } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
 import { IamPermission } from '@change/shared';
@@ -57,6 +58,27 @@ export function AuditLogsPage() {
     endDate: filters.endDate || undefined,
   });
   const exportLogs = useExportAuditLogs(tenantId);
+  
+  // Tenant settings for audit logging toggle
+  const { data: settings } = useTenantSettings(tenantId);
+  const toggleAuditLogging = useToggleAuditLogging(tenantId);
+  
+  const handleToggleAuditLogging = async (enabled: boolean) => {
+    try {
+      await toggleAuditLogging.mutateAsync(enabled);
+      toast({ 
+        title: enabled ? 'Audit logging enabled' : 'Audit logging disabled',
+        description: enabled 
+          ? 'All IAM activities will now be recorded.' 
+          : 'Audit logging has been turned off. Activities will not be recorded.',
+      });
+    } catch {
+      toast({ 
+        title: 'Failed to update audit logging setting', 
+        variant: 'destructive' 
+      });
+    }
+  };
 
   const columns = [
     {
@@ -132,19 +154,56 @@ export function AuditLogsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
           <p className="text-gray-500">View all IAM activity and changes</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-          <PermissionGate permission={IamPermission.IAM_AUDIT_EXPORT}>
-            <Button variant="outline" onClick={handleExport} disabled={exportLogs.isPending}>
-              <Download className="h-4 w-4 mr-2" />
-              {exportLogs.isPending ? 'Exporting...' : 'Export CSV'}
+        <div className="flex items-center space-x-4">
+          {/* Audit Logging Toggle */}
+          <div className="flex items-center space-x-2 border-r pr-4">
+            <label htmlFor="audit-toggle" className="text-sm font-medium text-gray-700">
+              Audit Logging
+            </label>
+            <Switch
+              id="audit-toggle"
+              checked={settings?.auditLoggingEnabled ?? true}
+              onCheckedChange={handleToggleAuditLogging}
+              disabled={toggleAuditLogging.isPending}
+            />
+            <span className={`text-xs ${settings?.auditLoggingEnabled !== false ? 'text-green-600' : 'text-gray-400'}`}>
+              {settings?.auditLoggingEnabled !== false ? 'On' : 'Off'}
+            </span>
+          </div>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
             </Button>
-          </PermissionGate>
+            <PermissionGate permission={IamPermission.IAM_AUDIT_EXPORT}>
+              <Button variant="outline" onClick={handleExport} disabled={exportLogs.isPending}>
+                <Download className="h-4 w-4 mr-2" />
+                {exportLogs.isPending ? 'Exporting...' : 'Export CSV'}
+              </Button>
+            </PermissionGate>
+          </div>
         </div>
       </div>
+
+      {/* Warning when audit logging is disabled */}
+      {settings?.auditLoggingEnabled === false && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800">Audit Logging Disabled</h3>
+              <p className="text-sm text-yellow-700 mt-1">
+                Audit logging is currently turned off. New IAM activities will not be recorded. 
+                This may affect compliance requirements. Turn on audit logging to resume recording activities.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       {showFilters && (
