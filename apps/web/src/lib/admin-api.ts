@@ -661,7 +661,10 @@ export function useAccessReviewDecision(tenantId: string, reviewId: string) {
       return res.data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'access-reviews', tenantId, reviewId] });
+      // Invalidate all related queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-reviews', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'access-reviews', tenantId, reviewId, 'items'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', tenantId] });
     },
   });
 }
