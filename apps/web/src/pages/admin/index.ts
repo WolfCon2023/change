@@ -12,3 +12,4 @@ export { AccessRequestsPage } from './AccessRequestsPage';
 export { ApiKeysPage } from './ApiKeysPage';
 export { AuditLogsPage } from './AuditLogsPage';
 export { AccessReviewsPage } from './AccessReviewsPage';
+export { GovernancePage } from './GovernancePage';

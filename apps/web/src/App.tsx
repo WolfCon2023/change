@@ -27,6 +27,7 @@ import {
   ApiKeysPage,
   AuditLogsPage,
   AccessReviewsPage,
+  GovernancePage,
 } from '@/pages/admin';
 
 // Create a client
@@ -152,6 +153,7 @@ function App() {
           <Route path="api-keys" element={<ApiKeysPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />
           <Route path="access-reviews" element={<AccessReviewsPage />} />
+          <Route path="governance" element={<GovernancePage />} />
         </Route>
 
         {/* Catch-all redirect */}

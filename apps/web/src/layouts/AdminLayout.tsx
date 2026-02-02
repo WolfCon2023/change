@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   UserCheck,
+  Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -91,6 +92,12 @@ const navItems: NavItem[] = [
     href: '/admin/access-reviews',
     icon: ClipboardCheck,
     permission: IamPermission.IAM_ACCESS_REVIEW_READ,
+  },
+  {
+    label: 'Governance',
+    href: '/admin/governance',
+    icon: Compass,
+    // Visible to all admin portal users - informational only
   },
 ];
 
