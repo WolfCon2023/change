@@ -123,9 +123,15 @@ router.get(
         AccessReviewCampaign.countDocuments(filter),
       ]);
 
+      // Transform _id to id for frontend compatibility
+      const transformedCampaigns = campaigns.map(campaign => ({
+        ...campaign,
+        id: campaign._id?.toString(),
+      }));
+
       res.json({
         success: true,
-        data: campaigns,
+        data: transformedCampaigns,
         meta: {
           timestamp: new Date().toISOString(),
           pagination: {
@@ -180,9 +186,15 @@ router.get(
         });
       }
 
+      // Transform _id to id for frontend compatibility
+      const transformedCampaign = {
+        ...campaign,
+        id: campaign._id?.toString(),
+      };
+
       res.json({
         success: true,
-        data: campaign,
+        data: transformedCampaign,
         meta: { timestamp: new Date().toISOString() },
       });
     } catch (error) {
@@ -228,9 +240,16 @@ router.post(
         { after: { name: campaign.name, systemName: campaign.systemName, status: campaign.status } }
       );
 
+      // Transform to include id field
+      const campaignObj = campaign.toObject();
+      const responseData = {
+        ...campaignObj,
+        id: campaign._id.toString(),
+      };
+
       res.status(201).json({
         success: true,
-        data: campaign,
+        data: responseData,
         meta: { timestamp: new Date().toISOString() },
       });
     } catch (error) {
