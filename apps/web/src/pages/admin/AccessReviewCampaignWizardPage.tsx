@@ -38,6 +38,14 @@ import {
 import type {
   AccessReviewCampaignCreateRequest,
   AccessReviewCampaignSubject,
+  EnvironmentTypeValue,
+  ReviewTypeValue,
+  ReviewerTypeValue,
+  EmploymentTypeValue,
+  EntitlementTypeValue,
+  PrivilegeLevelType,
+  GrantMethodType,
+  DataClassificationType,
 } from '@change/shared';
 
 const STEPS = [
@@ -190,42 +198,42 @@ export function AccessReviewCampaignWizardPage() {
     setIsSubmitting(true);
     try {
       const request: AccessReviewCampaignCreateRequest = {
-        name: campaignData.name!,
-        description: campaignData.description,
-        systemName: campaignData.systemName!,
-        environment: campaignData.environment!,
-        businessUnit: campaignData.businessUnit,
-        reviewType: campaignData.reviewType!,
-        triggerReason: campaignData.triggerReason,
-        periodStart: new Date(campaignData.periodStart!),
-        periodEnd: new Date(campaignData.periodEnd!),
-        reviewerType: campaignData.reviewerType!,
+        name: campaignData.name,
+        description: campaignData.description || undefined,
+        systemName: campaignData.systemName,
+        environment: campaignData.environment as EnvironmentTypeValue,
+        businessUnit: campaignData.businessUnit || undefined,
+        reviewType: campaignData.reviewType as ReviewTypeValue,
+        triggerReason: campaignData.triggerReason || undefined,
+        periodStart: new Date(campaignData.periodStart),
+        periodEnd: new Date(campaignData.periodEnd),
+        reviewerType: campaignData.reviewerType as ReviewerTypeValue,
         subjects: subjects.map(s => ({
           subjectId: s.subjectId,
           fullName: s.fullName,
           email: s.email,
-          employeeId: s.employeeId,
-          jobTitle: s.jobTitle,
-          department: s.department,
-          managerName: s.managerName,
-          managerEmail: s.managerEmail,
-          location: s.location,
-          employmentType: s.employmentType,
+          employeeId: s.employeeId || undefined,
+          jobTitle: s.jobTitle || undefined,
+          department: s.department || undefined,
+          managerName: s.managerName || undefined,
+          managerEmail: s.managerEmail || undefined,
+          location: s.location || undefined,
+          employmentType: s.employmentType as EmploymentTypeValue,
           items: s.items.map(i => ({
             application: i.application,
-            environment: i.environment,
+            environment: i.environment as EnvironmentTypeValue,
             roleName: i.roleName,
-            roleDescription: i.roleDescription,
-            entitlementName: i.entitlementName,
-            entitlementType: i.entitlementType,
-            privilegeLevel: i.privilegeLevel,
-            scope: i.scope,
-            grantMethod: i.grantMethod,
-            dataClassification: i.dataClassification,
+            roleDescription: i.roleDescription || undefined,
+            entitlementName: i.entitlementName || undefined,
+            entitlementType: i.entitlementType as EntitlementTypeValue,
+            privilegeLevel: i.privilegeLevel as PrivilegeLevelType,
+            scope: i.scope || undefined,
+            grantMethod: i.grantMethod as GrantMethodType,
+            dataClassification: i.dataClassification as DataClassificationType,
           })),
         })) as AccessReviewCampaignSubject[],
         workflow: {
-          dueDate: new Date(campaignData.periodEnd!),
+          dueDate: new Date(campaignData.periodEnd),
         },
       };
 
@@ -594,11 +602,11 @@ export function AccessReviewCampaignWizardPage() {
                   </div>
                   <div>
                     <span className="text-gray-500">Environment:</span>
-                    <span className="ml-2 font-medium">{EnvironmentTypeLabels[campaignData.environment!]}</span>
+                    <span className="ml-2 font-medium">{EnvironmentTypeLabels[campaignData.environment as EnvironmentTypeValue]}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Review Type:</span>
-                    <span className="ml-2 font-medium">{ReviewTypeLabels[campaignData.reviewType!]}</span>
+                    <span className="ml-2 font-medium">{ReviewTypeLabels[campaignData.reviewType as ReviewTypeValue]}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Period:</span>
