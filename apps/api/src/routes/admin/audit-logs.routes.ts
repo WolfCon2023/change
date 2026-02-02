@@ -17,19 +17,17 @@ import { queryIamAuditLogs, exportIamAuditLogs } from '../../services/index.js';
 
 const router = Router();
 
-// Validation schemas
-const auditLogFiltersSchema = z.object({
-  query: z.object({
-    page: z.string().optional().transform(v => v ? parseInt(v, 10) : PaginationDefaults.PAGE),
-    limit: z.string().optional().transform(v => v ? Math.min(parseInt(v, 10), PaginationDefaults.MAX_LIMIT) : PaginationDefaults.LIMIT),
-    actorId: z.string().optional(),
-    actorEmail: z.string().optional(),
-    action: z.string().optional(),
-    targetType: z.string().optional(),
-    targetId: z.string().optional(),
-    startDate: z.string().datetime().optional(),
-    endDate: z.string().datetime().optional(),
-  }),
+// Validation schemas - for query parameters
+const auditLogQuerySchema = z.object({
+  page: z.string().optional().transform(v => v ? parseInt(v, 10) : PaginationDefaults.PAGE),
+  limit: z.string().optional().transform(v => v ? Math.min(parseInt(v, 10), PaginationDefaults.MAX_LIMIT) : PaginationDefaults.LIMIT),
+  actorId: z.string().optional(),
+  actorEmail: z.string().optional(),
+  action: z.string().optional(),
+  targetType: z.string().optional(),
+  targetId: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
 });
 
 /**
@@ -41,7 +39,7 @@ router.get(
   authenticate,
   loadIamPermissions,
   requirePermission(IamPermission.IAM_AUDIT_READ),
-  validate(auditLogFiltersSchema),
+  validate(auditLogQuerySchema, 'query'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId } = req.params;
