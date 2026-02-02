@@ -18,6 +18,7 @@ import {
   X,
   UserCheck,
   Compass,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -91,6 +92,12 @@ const navItems: NavItem[] = [
     label: 'Access Reviews',
     href: '/admin/access-reviews',
     icon: ClipboardCheck,
+    permission: IamPermission.IAM_ACCESS_REVIEW_READ,
+  },
+  {
+    label: 'Review Campaigns',
+    href: '/admin/access-review-campaigns',
+    icon: ClipboardList,
     permission: IamPermission.IAM_ACCESS_REVIEW_READ,
   },
   {
