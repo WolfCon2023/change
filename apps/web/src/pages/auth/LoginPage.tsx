@@ -58,6 +58,7 @@ export function LoginPage() {
               id="email"
               type="email"
               placeholder="you@example.com"
+              autoComplete="email"
               {...register('email')}
               error={!!errors.email}
             />
@@ -72,6 +73,7 @@ export function LoginPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 {...register('password')}
                 error={!!errors.password}
               />

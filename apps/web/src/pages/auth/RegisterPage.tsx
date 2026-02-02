@@ -65,6 +65,7 @@ export function RegisterPage() {
               <Input
                 id="firstName"
                 placeholder="John"
+                autoComplete="given-name"
                 {...register('firstName')}
                 error={!!errors.firstName}
               />
@@ -77,6 +78,7 @@ export function RegisterPage() {
               <Input
                 id="lastName"
                 placeholder="Doe"
+                autoComplete="family-name"
                 {...register('lastName')}
                 error={!!errors.lastName}
               />
@@ -91,6 +93,7 @@ export function RegisterPage() {
               id="email"
               type="email"
               placeholder="you@example.com"
+              autoComplete="email"
               {...register('email')}
               error={!!errors.email}
             />
@@ -105,6 +108,7 @@ export function RegisterPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 {...register('password')}
                 error={!!errors.password}
               />

@@ -280,6 +280,16 @@ export function AccessReviewCampaignWizardPage() {
     setSubjects(newSubjects);
   };
 
+  // Helper to convert date string to ISO datetime string
+  const toISODateTime = (dateStr: string): string => {
+    // If already in ISO format, return as-is
+    if (dateStr.includes('T')) {
+      return dateStr;
+    }
+    // Convert YYYY-MM-DD to ISO datetime (start of day UTC)
+    return new Date(dateStr + 'T00:00:00.000Z').toISOString();
+  };
+
   const handleCreate = async () => {
     setIsSubmitting(true);
     try {
@@ -291,8 +301,8 @@ export function AccessReviewCampaignWizardPage() {
         businessUnit: campaignData.businessUnit || undefined,
         reviewType: campaignData.reviewType as ReviewTypeValue,
         triggerReason: campaignData.triggerReason || undefined,
-        periodStart: new Date(campaignData.periodStart),
-        periodEnd: new Date(campaignData.periodEnd),
+        periodStart: toISODateTime(campaignData.periodStart) as unknown as Date,
+        periodEnd: toISODateTime(campaignData.periodEnd) as unknown as Date,
         reviewerType: campaignData.reviewerType as ReviewerTypeValue,
         subjects: subjects.map(s => ({
           subjectId: s.subjectId,
@@ -319,7 +329,7 @@ export function AccessReviewCampaignWizardPage() {
           })),
         })) as AccessReviewCampaignSubject[],
         workflow: {
-          dueDate: new Date(campaignData.periodEnd),
+          dueDate: toISODateTime(campaignData.periodEnd) as unknown as Date,
         },
       };
 
