@@ -51,20 +51,18 @@ const userFiltersSchema = z.object({
   }),
 });
 
-const createUserSchema = z.object({
-  body: z.object({
-    email: z.string().email(),
-    phoneNumber: z.string().max(20).optional(),
-    password: z.string().min(8).optional(),
-    firstName: z.string().min(1).max(100),
-    lastName: z.string().min(1).max(100),
-    role: z.nativeEnum(UserRole).optional(),
-    primaryRole: z.nativeEnum(PrimaryRole).optional(),
-    iamRoleIds: z.array(z.string()).optional(),
-    groupIds: z.array(z.string()).optional(),
-    mfaEnforced: z.boolean().optional(),
-    mustChangePassword: z.boolean().optional(),
-  }),
+const createUserBodySchema = z.object({
+  email: z.string().email(),
+  phoneNumber: z.string().max(20).optional(),
+  password: z.string().min(8).optional(),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  role: z.nativeEnum(UserRole).optional(),
+  primaryRole: z.nativeEnum(PrimaryRole).optional(),
+  iamRoleIds: z.array(z.string()).optional(),
+  groupIds: z.array(z.string()).optional(),
+  mfaEnforced: z.boolean().optional(),
+  mustChangePassword: z.boolean().optional(),
 });
 
 const updateUserBodySchema = z.object({
@@ -303,7 +301,7 @@ router.post(
   loadIamPermissions,
   requireTenantAccess('tenantId'),
   requirePermission(IamPermission.IAM_USER_WRITE),
-  validate(createUserSchema),
+  validate(createUserBodySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId } = req.params;
