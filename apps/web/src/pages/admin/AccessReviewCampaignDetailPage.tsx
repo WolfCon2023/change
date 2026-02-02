@@ -14,8 +14,6 @@ import {
   AlertTriangle,
   User,
   Shield,
-  Clock,
-  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { PermissionGate } from '@/components/admin/PermissionGate';
 import {
@@ -38,6 +35,7 @@ import {
   useApproveAccessReviewCampaign,
 } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
+import { useAuthStore } from '@/stores/auth.store';
 import { useToast } from '@/components/ui/use-toast';
 import {
   IamPermission,
@@ -46,7 +44,6 @@ import {
   CampaignDecisionType,
   CampaignDecisionTypeValue,
   DecisionReasonCode,
-  PrivilegeLevel,
   PrivilegeLevelLabels,
   EnvironmentTypeLabels,
   ReviewTypeLabels,
@@ -55,10 +52,6 @@ import {
   EntitlementTypeLabels,
   GrantMethodLabels,
   SecondLevelDecision,
-} from '@change/shared';
-import type {
-  AccessReviewCampaignSubject,
-  AccessReviewCampaignItem,
 } from '@change/shared';
 
 const statusColors: Record<AccessReviewCampaignStatusType, string> = {
@@ -88,6 +81,7 @@ export function AccessReviewCampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { context } = useAdminStore();
+  const { user } = useAuthStore();
   const tenantId = context?.currentTenantId || '';
   const { toast } = useToast();
 
@@ -172,8 +166,8 @@ export function AccessReviewCampaignDetailPage() {
     try {
       await submitCampaign.mutateAsync({
         reviewerAttestation: true,
-        reviewerName: context?.user?.name || 'Unknown',
-        reviewerEmail: context?.user?.email || 'unknown@example.com',
+        reviewerName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+        reviewerEmail: user?.email || 'unknown@example.com',
       });
       toast({ title: 'Campaign submitted successfully' });
     } catch (error) {
@@ -191,8 +185,8 @@ export function AccessReviewCampaignDetailPage() {
     try {
       await approveCampaign.mutateAsync({
         decision: approved ? SecondLevelDecision.APPROVED : SecondLevelDecision.REJECTED,
-        approverName: context?.user?.name || 'Unknown',
-        approverEmail: context?.user?.email || 'unknown@example.com',
+        approverName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+        approverEmail: user?.email || 'unknown@example.com',
       });
       toast({ title: approved ? 'Campaign approved' : 'Campaign rejected' });
     } catch {

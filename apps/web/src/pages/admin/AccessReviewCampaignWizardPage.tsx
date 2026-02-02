@@ -3,7 +3,7 @@
  * Multi-step wizard for creating new access review campaigns
  */
 
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,18 +29,15 @@ import {
   EmploymentType,
   EmploymentTypeLabels,
   EntitlementType,
-  EntitlementTypeLabels,
   PrivilegeLevel,
   PrivilegeLevelLabels,
   GrantMethod,
-  GrantMethodLabels,
   DataClassification,
   DataClassificationLabels,
 } from '@change/shared';
 import type {
   AccessReviewCampaignCreateRequest,
   AccessReviewCampaignSubject,
-  AccessReviewCampaignItem,
 } from '@change/shared';
 
 const STEPS = [
@@ -50,11 +47,32 @@ const STEPS = [
   { id: 'review', title: 'Review & Create', description: 'Confirm and create' },
 ];
 
-interface SubjectForm extends Omit<AccessReviewCampaignSubject, 'items' | 'status'> {
+interface SubjectForm {
+  subjectId: string;
+  fullName: string;
+  email: string;
+  employeeId?: string;
+  jobTitle?: string;
+  department?: string;
+  managerName?: string;
+  managerEmail?: string;
+  location?: string;
+  employmentType: string;
   items: ItemForm[];
 }
 
-interface ItemForm extends Omit<AccessReviewCampaignItem, 'decision'> {}
+interface ItemForm {
+  application: string;
+  environment: string;
+  roleName: string;
+  roleDescription?: string;
+  entitlementName?: string;
+  entitlementType: string;
+  privilegeLevel: string;
+  scope?: string;
+  grantMethod: string;
+  dataClassification: string;
+}
 
 const defaultSubject: SubjectForm = {
   subjectId: '',
@@ -84,12 +102,15 @@ export function AccessReviewCampaignWizardPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
-  const [campaignData, setCampaignData] = useState<Partial<AccessReviewCampaignCreateRequest>>({
+  const [campaignData, setCampaignData] = useState({
     name: '',
+    description: '',
     systemName: '',
-    environment: EnvironmentType.PROD,
-    reviewType: ReviewType.PERIODIC,
-    reviewerType: ReviewerType.MANAGER,
+    environment: EnvironmentType.PROD as string,
+    businessUnit: '',
+    reviewType: ReviewType.PERIODIC as string,
+    triggerReason: '',
+    reviewerType: ReviewerType.MANAGER as string,
     periodStart: new Date().toISOString().split('T')[0],
     periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   });
@@ -139,9 +160,10 @@ export function AccessReviewCampaignWizardPage() {
     }
   };
 
-  const updateSubject = (index: number, field: string, value: string) => {
+  const updateSubject = (index: number, field: keyof SubjectForm, value: string) => {
     const newSubjects = [...subjects];
-    (newSubjects[index] as Record<string, unknown>)[field] = value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (newSubjects[index] as any)[field] = value;
     setSubjects(newSubjects);
   };
 
@@ -157,9 +179,10 @@ export function AccessReviewCampaignWizardPage() {
     setSubjects(newSubjects);
   };
 
-  const updateItem = (subjectIndex: number, itemIndex: number, field: string, value: string) => {
+  const updateItem = (subjectIndex: number, itemIndex: number, field: keyof ItemForm, value: string) => {
     const newSubjects = [...subjects];
-    (newSubjects[subjectIndex].items[itemIndex] as Record<string, unknown>)[field] = value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (newSubjects[subjectIndex].items[itemIndex] as any)[field] = value;
     setSubjects(newSubjects);
   };
 
@@ -278,7 +301,7 @@ export function AccessReviewCampaignWizardPage() {
                   <label className="text-sm font-medium text-gray-700 block mb-1">Campaign Name *</label>
                   <Input
                     value={campaignData.name || ''}
-                    onChange={(e) => setCampaignData({ ...campaignData, name: e.target.value })}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCampaignData({ ...campaignData, name: e.target.value })}
                     placeholder="Q1 2026 Access Review"
                   />
                 </div>
@@ -286,7 +309,7 @@ export function AccessReviewCampaignWizardPage() {
                   <label className="text-sm font-medium text-gray-700 block mb-1">System Name *</label>
                   <Input
                     value={campaignData.systemName || ''}
-                    onChange={(e) => setCampaignData({ ...campaignData, systemName: e.target.value })}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCampaignData({ ...campaignData, systemName: e.target.value })}
                     placeholder="CHANGE Platform"
                   />
                 </div>
@@ -327,7 +350,7 @@ export function AccessReviewCampaignWizardPage() {
                   <Input
                     type="date"
                     value={campaignData.periodStart || ''}
-                    onChange={(e) => setCampaignData({ ...campaignData, periodStart: e.target.value })}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCampaignData({ ...campaignData, periodStart: e.target.value })}
                   />
                 </div>
                 <div>
@@ -335,14 +358,14 @@ export function AccessReviewCampaignWizardPage() {
                   <Input
                     type="date"
                     value={campaignData.periodEnd || ''}
-                    onChange={(e) => setCampaignData({ ...campaignData, periodEnd: e.target.value })}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCampaignData({ ...campaignData, periodEnd: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1">Business Unit</label>
                   <Input
                     value={campaignData.businessUnit || ''}
-                    onChange={(e) => setCampaignData({ ...campaignData, businessUnit: e.target.value })}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCampaignData({ ...campaignData, businessUnit: e.target.value })}
                     placeholder="Engineering"
                   />
                 </div>
@@ -350,7 +373,7 @@ export function AccessReviewCampaignWizardPage() {
                   <label className="text-sm font-medium text-gray-700 block mb-1">Trigger Reason</label>
                   <Input
                     value={campaignData.triggerReason || ''}
-                    onChange={(e) => setCampaignData({ ...campaignData, triggerReason: e.target.value })}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCampaignData({ ...campaignData, triggerReason: e.target.value })}
                     placeholder="Quarterly compliance review"
                   />
                 </div>
@@ -359,7 +382,7 @@ export function AccessReviewCampaignWizardPage() {
                 <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
                 <Textarea
                   value={campaignData.description || ''}
-                  onChange={(e) => setCampaignData({ ...campaignData, description: e.target.value })}
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setCampaignData({ ...campaignData, description: e.target.value })}
                   placeholder="Describe the purpose of this access review campaign..."
                   rows={3}
                 />
@@ -402,7 +425,7 @@ export function AccessReviewCampaignWizardPage() {
                           <label className="text-sm text-gray-500 block mb-1">Full Name *</label>
                           <Input
                             value={subject.fullName}
-                            onChange={(e) => updateSubject(index, 'fullName', e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => updateSubject(index, 'fullName', e.target.value)}
                             placeholder="John Doe"
                           />
                         </div>
@@ -411,7 +434,7 @@ export function AccessReviewCampaignWizardPage() {
                           <Input
                             type="email"
                             value={subject.email}
-                            onChange={(e) => updateSubject(index, 'email', e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => updateSubject(index, 'email', e.target.value)}
                             placeholder="john@example.com"
                           />
                         </div>
@@ -435,7 +458,7 @@ export function AccessReviewCampaignWizardPage() {
                           <label className="text-sm text-gray-500 block mb-1">Job Title</label>
                           <Input
                             value={subject.jobTitle || ''}
-                            onChange={(e) => updateSubject(index, 'jobTitle', e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => updateSubject(index, 'jobTitle', e.target.value)}
                             placeholder="Software Engineer"
                           />
                         </div>
@@ -443,7 +466,7 @@ export function AccessReviewCampaignWizardPage() {
                           <label className="text-sm text-gray-500 block mb-1">Department</label>
                           <Input
                             value={subject.department || ''}
-                            onChange={(e) => updateSubject(index, 'department', e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => updateSubject(index, 'department', e.target.value)}
                             placeholder="Engineering"
                           />
                         </div>
@@ -452,7 +475,7 @@ export function AccessReviewCampaignWizardPage() {
                           <Input
                             type="email"
                             value={subject.managerEmail || ''}
-                            onChange={(e) => updateSubject(index, 'managerEmail', e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => updateSubject(index, 'managerEmail', e.target.value)}
                             placeholder="manager@example.com"
                           />
                         </div>
@@ -499,7 +522,7 @@ export function AccessReviewCampaignWizardPage() {
                               <label className="text-xs text-gray-500 block mb-1">Application *</label>
                               <Input
                                 value={item.application}
-                                onChange={(e) => updateItem(subjectIndex, itemIndex, 'application', e.target.value)}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => updateItem(subjectIndex, itemIndex, 'application', e.target.value)}
                                 placeholder="App name"
                                 className="h-8 text-sm"
                               />
@@ -508,7 +531,7 @@ export function AccessReviewCampaignWizardPage() {
                               <label className="text-xs text-gray-500 block mb-1">Role Name *</label>
                               <Input
                                 value={item.roleName}
-                                onChange={(e) => updateItem(subjectIndex, itemIndex, 'roleName', e.target.value)}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => updateItem(subjectIndex, itemIndex, 'roleName', e.target.value)}
                                 placeholder="Role name"
                                 className="h-8 text-sm"
                               />

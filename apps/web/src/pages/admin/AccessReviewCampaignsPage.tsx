@@ -28,9 +28,7 @@ import {
   IamPermission,
   AccessReviewCampaignStatus,
   AccessReviewCampaignStatusType,
-  EnvironmentType,
   EnvironmentTypeLabels,
-  ReviewType,
   ReviewTypeLabels,
 } from '@change/shared';
 import type { AccessReviewCampaign } from '@change/shared';
