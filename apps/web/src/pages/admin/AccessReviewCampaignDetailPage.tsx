@@ -28,6 +28,7 @@ import {
   Sparkles,
   ChevronDown,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +71,7 @@ import {
   EntitlementTypeLabels,
   GrantMethodLabels,
   SecondLevelDecision,
+  RemediationStatus,
 } from '@change/shared';
 import type { AccessReviewCampaignItem } from '@change/shared';
 
@@ -1553,61 +1555,291 @@ export function AccessReviewCampaignDetailPage() {
 
         {/* Workflow Tab */}
         <TabsContent value="workflow">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Status</CardTitle>
-              <p className="text-sm text-gray-500">
-                Track campaign deadlines, escalations, and remediation progress
-              </p>
-            </CardHeader>
-            <CardContent>
-              {campaign.workflow ? (
-                <div className="space-y-6">
-                  {/* Workflow Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <span className="text-gray-500 text-sm block mb-1">Due Date</span>
-                      <span className="font-medium text-lg">{new Date(campaign.workflow.dueDate).toLocaleDateString()}</span>
-                      {new Date(campaign.workflow.dueDate) < new Date() && campaign.status !== AccessReviewCampaignStatus.COMPLETED && (
-                        <Badge className="bg-red-100 text-red-800 mt-1">Overdue</Badge>
-                      )}
+          <div className="space-y-6">
+            {/* Campaign Timeline */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Campaign Timeline
+                </CardTitle>
+                <p className="text-sm text-gray-500">
+                  Track the progress of this access review campaign
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
+                  
+                  <div className="space-y-6">
+                    {/* Created */}
+                    <div className="relative flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center z-10">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="font-medium">Campaign Created</p>
+                        <p className="text-sm text-gray-500">
+                          {campaign.createdAt ? new Date(campaign.createdAt).toLocaleString() : 'Unknown'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Review period: {new Date(campaign.periodStart).toLocaleDateString()} - {new Date(campaign.periodEnd).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <span className="text-gray-500 text-sm block mb-1">Escalation Level</span>
-                      <span className="font-medium text-lg">{campaign.workflow.escalationLevel || 0}</span>
-                      {(campaign.workflow.escalationLevel || 0) > 0 && (
-                        <Badge className="bg-yellow-100 text-yellow-800 mt-1">Escalated</Badge>
-                      )}
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <span className="text-gray-500 text-sm block mb-1">Remediation Status</span>
-                      {campaign.workflow.remediationStatus ? (
-                        <Badge variant="outline" className="mt-1">{campaign.workflow.remediationStatus}</Badge>
-                      ) : (
-                        <span className="font-medium text-lg">Not Started</span>
-                      )}
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <span className="text-gray-500 text-sm block mb-1">Remediation Ticket</span>
-                      <span className="font-medium">{campaign.workflow.remediationTicketId || 'None'}</span>
-                    </div>
-                  </div>
 
-                  {/* Workflow Explanation */}
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <h4 className="font-medium mb-2">What is the Workflow?</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• <strong>Due Date:</strong> The deadline by which all review decisions must be completed</li>
-                      <li>• <strong>Escalation Level:</strong> Increases if the campaign approaches or passes the due date without completion</li>
-                      <li>• <strong>Remediation:</strong> After approval, access changes are tracked here until fully implemented</li>
-                    </ul>
+                    {/* Submitted */}
+                    {campaign.submittedAt && (
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center z-10">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="font-medium">Submitted for Approval</p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(campaign.submittedAt).toLocaleString()}
+                          </p>
+                          {campaign.approvals?.reviewerName && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              Submitted by: {campaign.approvals.reviewerName}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Approved */}
+                    {campaign.approvedAt && (
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center z-10">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="font-medium">Approved</p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(campaign.approvedAt).toLocaleString()}
+                          </p>
+                          {campaign.approvals?.secondApproverName && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              Approved by: {campaign.approvals.secondApproverName}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Completed */}
+                    {campaign.completedAt && (
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center z-10">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="font-medium">Campaign Completed</p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(campaign.completedAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pending - show if not completed */}
+                    {campaign.status !== AccessReviewCampaignStatus.COMPLETED && (
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center z-10">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="font-medium text-gray-500">
+                            {campaign.status === AccessReviewCampaignStatus.DRAFT && 'Awaiting Review Decisions'}
+                            {campaign.status === AccessReviewCampaignStatus.IN_REVIEW && 'In Review'}
+                            {campaign.status === AccessReviewCampaignStatus.SUBMITTED && 'Awaiting Final Approval'}
+                          </p>
+                          {campaign.workflow?.dueDate && (
+                            <p className="text-sm text-gray-500">
+                              Due: {new Date(campaign.workflow.dueDate).toLocaleDateString()}
+                              {new Date(campaign.workflow.dueDate) < new Date() && (
+                                <Badge className="bg-red-100 text-red-800 ml-2">Overdue</Badge>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <p className="text-gray-500">No workflow information available.</p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Decision Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Review Summary
+                </CardTitle>
+                <p className="text-sm text-gray-500">
+                  Summary of access decisions made in this campaign
+                </p>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  // Calculate decision statistics
+                  const allItems = campaign.subjects?.flatMap(s => s.items) || [];
+                  const approved = allItems.filter(i => i.decision?.decisionType === CampaignDecisionType.APPROVE).length;
+                  const revoked = allItems.filter(i => i.decision?.decisionType === CampaignDecisionType.REVOKE).length;
+                  const modified = allItems.filter(i => i.decision?.decisionType === CampaignDecisionType.MODIFY).length;
+                  const pending = allItems.filter(i => !i.decision || i.decision.decisionType === CampaignDecisionType.PENDING).length;
+                  const total = allItems.length;
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-green-50 rounded-lg p-4 text-center">
+                          <span className="text-2xl font-bold text-green-700">{approved}</span>
+                          <p className="text-sm text-green-600">Approved</p>
+                        </div>
+                        <div className="bg-red-50 rounded-lg p-4 text-center">
+                          <span className="text-2xl font-bold text-red-700">{revoked}</span>
+                          <p className="text-sm text-red-600">Revoked</p>
+                        </div>
+                        <div className="bg-yellow-50 rounded-lg p-4 text-center">
+                          <span className="text-2xl font-bold text-yellow-700">{modified}</span>
+                          <p className="text-sm text-yellow-600">Modified</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <span className="text-2xl font-bold text-gray-700">{pending}</span>
+                          <p className="text-sm text-gray-600">Pending</p>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">Completion</span>
+                          <span className="font-medium">{total > 0 ? Math.round(((total - pending) / total) * 100) : 0}%</span>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-600 rounded-full transition-all"
+                            style={{ width: `${total > 0 ? ((total - pending) / total) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Summary message */}
+                      {campaign.status === AccessReviewCampaignStatus.COMPLETED && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <div className="flex items-center gap-2 text-green-800">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="font-medium">Review Complete</span>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">
+                            {revoked === 0 && modified === 0 
+                              ? `All ${approved} access items were certified as appropriate. No remediation required.`
+                              : `${approved} items certified. ${revoked + modified} items require remediation (${revoked} revoked, ${modified} modified).`
+                            }
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Remediation - only show if there are revocations/modifications */}
+            {(() => {
+              const allItems = campaign.subjects?.flatMap(s => s.items) || [];
+              const needsRemediation = allItems.some(i => 
+                i.decision?.decisionType === CampaignDecisionType.REVOKE ||
+                i.decision?.decisionType === CampaignDecisionType.MODIFY
+              );
+
+              if (!needsRemediation && campaign.status === AccessReviewCampaignStatus.COMPLETED) {
+                return null; // Don't show remediation card if not needed
+              }
+
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5" />
+                      Remediation
+                    </CardTitle>
+                    <p className="text-sm text-gray-500">
+                      Track implementation of access changes
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {needsRemediation ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <span className="text-gray-500 text-sm block mb-1">Status</span>
+                            <Badge 
+                              className={
+                                campaign.workflow?.remediationStatus === RemediationStatus.COMPLETED 
+                                  ? 'bg-green-100 text-green-800'
+                                  : campaign.workflow?.remediationStatus === RemediationStatus.IN_PROGRESS
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }
+                            >
+                              {campaign.workflow?.remediationStatus?.toUpperCase() || 'PENDING'}
+                            </Badge>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <span className="text-gray-500 text-sm block mb-1">Ticket</span>
+                            <span className="font-medium">
+                              {campaign.workflow?.remediationTicketId || 'Not Created'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Items requiring remediation */}
+                        <div>
+                          <h4 className="font-medium mb-2">Items Requiring Action</h4>
+                          <div className="space-y-2">
+                            {allItems
+                              .filter(i => 
+                                i.decision?.decisionType === CampaignDecisionType.REVOKE ||
+                                i.decision?.decisionType === CampaignDecisionType.MODIFY
+                              )
+                              .slice(0, 5)
+                              .map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between bg-gray-50 rounded p-2">
+                                  <div>
+                                    <span className="font-medium">{item.application}</span>
+                                    <span className="text-gray-500 mx-2">-</span>
+                                    <span>{item.roleName}</span>
+                                  </div>
+                                  <Badge className={
+                                    item.decision?.decisionType === CampaignDecisionType.REVOKE
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                  }>
+                                    {item.decision?.decisionType}
+                                  </Badge>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-gray-500">
+                        <CheckCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                        <p>No access changes require remediation.</p>
+                        <p className="text-sm">All reviewed items were approved.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
