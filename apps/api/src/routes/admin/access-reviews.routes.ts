@@ -35,24 +35,16 @@ const router = Router();
 
 // Validation schemas
 const createReviewSchema = z.object({
-  body: z.object({
-    name: z.string().min(1).max(200),
-    description: z.string().max(1000).optional(),
-    dueAt: z.string().datetime(),
-    userIds: z.array(z.string()).optional(),
-  }),
+  name: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+  dueAt: z.string().datetime(),
+  userIds: z.array(z.string()).optional(),
 });
 
 const decisionSchema = z.object({
-  params: z.object({
-    reviewId: z.string(),
-    itemId: z.string(),
-  }),
-  body: z.object({
-    decision: z.nativeEnum(AccessReviewDecision),
-    newRoles: z.array(z.string()).optional(),
-    notes: z.string().max(2000).optional(),
-  }),
+  decision: z.nativeEnum(AccessReviewDecision),
+  newRoles: z.array(z.string()).optional(),
+  notes: z.string().max(2000).optional(),
 });
 
 /**
