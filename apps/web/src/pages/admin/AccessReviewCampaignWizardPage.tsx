@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateAccessReviewCampaign } from '@/lib/admin-api';
+import { useCreateAccessReviewCampaign, useRoles } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -108,6 +108,10 @@ export function AccessReviewCampaignWizardPage() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch existing roles for the dropdown
+  const { data: rolesData } = useRoles(tenantId, { limit: 100 });
+  const availableRoles = rolesData?.data || [];
 
   // Form state
   const [campaignData, setCampaignData] = useState({
@@ -536,13 +540,22 @@ export function AccessReviewCampaignWizardPage() {
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500 block mb-1">Role Name *</label>
-                              <Input
+                              <label className="text-xs text-gray-500 block mb-1">Role *</label>
+                              <Select
                                 value={item.roleName}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => updateItem(subjectIndex, itemIndex, 'roleName', e.target.value)}
-                                placeholder="Role name"
-                                className="h-8 text-sm"
-                              />
+                                onValueChange={(value) => updateItem(subjectIndex, itemIndex, 'roleName', value)}
+                              >
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue placeholder="Select role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableRoles.map((role) => (
+                                    <SelectItem key={role.id} value={role.name}>
+                                      {role.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div>
                               <label className="text-xs text-gray-500 block mb-1">Privilege Level</label>
