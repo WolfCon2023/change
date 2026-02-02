@@ -917,6 +917,15 @@ export type ApiKeyStatusType = (typeof ApiKeyStatus)[keyof typeof ApiKeyStatus];
 // =============================================================================
 
 export const IamAuditAction = {
+  // Authentication actions
+  AUTH_LOGIN_SUCCESS: 'iam.auth.login_success',
+  AUTH_LOGIN_FAILED: 'iam.auth.login_failed',
+  AUTH_LOGOUT: 'iam.auth.logout',
+  AUTH_PASSWORD_CHANGED: 'iam.auth.password_changed',
+  AUTH_MFA_CHALLENGE: 'iam.auth.mfa_challenge',
+  AUTH_SESSION_EXPIRED: 'iam.auth.session_expired',
+  AUTH_TOKEN_REFRESH: 'iam.auth.token_refresh',
+
   // User actions
   USER_CREATED: 'iam.user.created',
   USER_UPDATED: 'iam.user.updated',

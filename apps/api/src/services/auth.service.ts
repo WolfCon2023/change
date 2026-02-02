@@ -1,10 +1,11 @@
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { type AuthTokenPayload, type UserRoleType, UserRole } from '@change/shared';
+import { type AuthTokenPayload, type UserRoleType, UserRole, IamAuditAction } from '@change/shared';
 import { config } from '../config/index.js';
 import { User, type IUser, Tenant } from '../db/models/index.js';
 import { UnauthorizedError, ConflictError, NotFoundError } from '../middleware/error-handler.js';
 import { AuditService } from './audit.service.js';
+import { logIamAction } from './iam-audit.service.js';
 
 export interface RegisterParams {
   email: string;
@@ -170,17 +171,57 @@ export class AuthService {
     // Find user with password
     const user = await User.findByEmail(email);
     if (!user) {
+      // Log failed login attempt (unknown user)
+      await logIamAction({
+        actorId: 'unknown',
+        actorEmail: email,
+        actorType: 'user',
+        action: IamAuditAction.AUTH_LOGIN_FAILED,
+        targetType: 'User',
+        targetId: 'unknown',
+        summary: `Failed login attempt for unknown email: ${email}`,
+        ip: ipAddress,
+        userAgent: userAgent?.substring(0, 500),
+      });
       throw new UnauthorizedError('Invalid email or password');
     }
 
     // Check if user is active
     if (!user.isActive) {
+      // Log failed login attempt (inactive user)
+      await logIamAction({
+        tenantId: user.tenantId?.toString(),
+        actorId: user._id.toString(),
+        actorEmail: user.email,
+        actorType: 'user',
+        action: IamAuditAction.AUTH_LOGIN_FAILED,
+        targetType: 'User',
+        targetId: user._id.toString(),
+        targetName: `${user.firstName} ${user.lastName}`,
+        summary: `Failed login - account deactivated: ${user.email}`,
+        ip: ipAddress,
+        userAgent: userAgent?.substring(0, 500),
+      });
       throw new UnauthorizedError('Account is deactivated');
     }
 
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      // Log failed login attempt (wrong password)
+      await logIamAction({
+        tenantId: user.tenantId?.toString(),
+        actorId: user._id.toString(),
+        actorEmail: user.email,
+        actorType: 'user',
+        action: IamAuditAction.AUTH_LOGIN_FAILED,
+        targetType: 'User',
+        targetId: user._id.toString(),
+        targetName: `${user.firstName} ${user.lastName}`,
+        summary: `Failed login - invalid password: ${user.email}`,
+        ip: ipAddress,
+        userAgent: userAgent?.substring(0, 500),
+      });
       throw new UnauthorizedError('Invalid email or password');
     }
 
@@ -191,7 +232,22 @@ export class AuthService {
     // Generate tokens
     const tokens = this.generateTokens(user);
 
-    // Log login
+    // Log successful login to IAM Audit Log (visible in admin portal)
+    await logIamAction({
+      tenantId: user.tenantId?.toString(),
+      actorId: user._id.toString(),
+      actorEmail: user.email,
+      actorType: 'user',
+      action: IamAuditAction.AUTH_LOGIN_SUCCESS,
+      targetType: 'User',
+      targetId: user._id.toString(),
+      targetName: `${user.firstName} ${user.lastName}`,
+      summary: `User logged in: ${user.email}`,
+      ip: ipAddress,
+      userAgent: userAgent?.substring(0, 500),
+    });
+
+    // Also log to general AuditLog for backward compatibility
     await AuditService.log(
       {
         tenantId: user.tenantId?.toString(),

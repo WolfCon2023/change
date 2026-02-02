@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { IamPermission, PaginationDefaults } from '@change/shared';
+import { IamPermission, PaginationDefaults, PrimaryRole } from '@change/shared';
 import {
   authenticate,
   loadIamPermissions,
@@ -67,6 +67,9 @@ router.get(
         endDate?: string;
       };
 
+      // IT_ADMIN can see platform-level logs (auth events, etc.)
+      const includePlatformLogs = req.primaryRole === PrimaryRole.IT_ADMIN;
+
       const result = await queryIamAuditLogs({
         tenantId,
         actorId,
@@ -78,6 +81,7 @@ router.get(
         endDate: endDate ? new Date(endDate) : undefined,
         page,
         limit,
+        includePlatformLogs,
       });
 
       res.json({

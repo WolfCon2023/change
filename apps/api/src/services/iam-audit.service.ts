@@ -29,9 +29,14 @@ interface AuditLogOptions {
  */
 export async function logIamAction(options: AuditLogOptions): Promise<void> {
   try {
+    // Generate a placeholder ObjectId for unknown actors (e.g., failed login with unknown email)
+    const actorId = options.actorId === 'unknown' 
+      ? new (await import('mongoose')).default.Types.ObjectId()
+      : options.actorId;
+    
     await IamAuditLog.create({
       tenantId: options.tenantId,
-      actorId: options.actorId,
+      actorId,
       actorEmail: options.actorEmail,
       actorType: options.actorType || 'user',
       action: options.action,
@@ -183,11 +188,20 @@ export interface IamAuditLogQuery {
   limit?: number;
 }
 
-export async function queryIamAuditLogs(query: IamAuditLogQuery) {
+export async function queryIamAuditLogs(query: IamAuditLogQuery & { includePlatformLogs?: boolean }) {
   const filter: Record<string, unknown> = {};
 
   if (query.tenantId) {
-    filter.tenantId = query.tenantId;
+    // If includePlatformLogs is true, also include logs without tenantId
+    if (query.includePlatformLogs) {
+      filter.$or = [
+        { tenantId: query.tenantId },
+        { tenantId: { $exists: false } },
+        { tenantId: null },
+      ];
+    } else {
+      filter.tenantId = query.tenantId;
+    }
   }
   if (query.actorId) {
     filter.actorId = query.actorId;
