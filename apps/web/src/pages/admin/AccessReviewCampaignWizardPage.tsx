@@ -194,11 +194,6 @@ export function AccessReviewCampaignWizardPage() {
     return { valid: errors.length === 0, errors };
   };
 
-  const canGoNext = () => {
-    const { valid } = validateStep();
-    return valid;
-  };
-
   const handleNext = () => {
     const { valid, errors } = validateStep();
     
