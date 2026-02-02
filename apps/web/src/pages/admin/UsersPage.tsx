@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Plus, Search, MoreHorizontal, Lock, Unlock, Key, UserCog, Pencil, Copy, Check } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Lock, Unlock, Key, UserCog, Pencil, Copy, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import {
   useLockUser,
   useUnlockUser,
   useResetPassword,
+  useDeleteUser,
 } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
 import { useToast } from '@/components/ui/use-toast';
@@ -68,7 +69,7 @@ function getRoleBadgeVariant(role?: string): 'default' | 'secondary' | 'destruct
   }
 }
 
-type ModalMode = 'create' | 'edit' | 'actions' | null;
+type ModalMode = 'create' | 'edit' | 'actions' | 'delete' | null;
 
 export function UsersPage() {
   const { context } = useAdminStore();
@@ -99,6 +100,7 @@ export function UsersPage() {
   const lockUser = useLockUser(tenantId, selectedUser ? getUserId(selectedUser) : '');
   const unlockUser = useUnlockUser(tenantId, selectedUser ? getUserId(selectedUser) : '');
   const resetPassword = useResetPassword(tenantId, selectedUser ? getUserId(selectedUser) : '');
+  const deleteUser = useDeleteUser(tenantId);
 
   const columns = [
     {
@@ -300,6 +302,20 @@ export function UsersPage() {
       toast({ title: 'Password reset successfully' });
     } catch {
       toast({ title: 'Failed to reset password', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    try {
+      await deleteUser.mutateAsync(getUserId(selectedUser));
+      toast({ title: 'User deleted successfully' });
+      closeModal();
+      refetch();
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message || 'Failed to delete user';
+      toast({ title: errorMessage, variant: 'destructive' });
     }
   };
 
@@ -589,6 +605,17 @@ export function UsersPage() {
                       Manage Roles
                     </Button>
                   </PermissionGate>
+
+                  <PermissionGate permission={IamPermission.IAM_USER_DELETE}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => setModalMode('delete')}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete User
+                    </Button>
+                  </PermissionGate>
                 </div>
 
                 <div className="mt-6 flex justify-end">
@@ -598,6 +625,34 @@ export function UsersPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {modalMode === 'delete' && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-2 text-red-600">Delete User</h2>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete{' '}
+              <strong>{selectedUser.firstName} {selectedUser.lastName}</strong> ({selectedUser.email})?
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              This will deactivate the user account. This action can be reversed by reactivating the user.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setModalMode('actions')}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteUser}
+                disabled={deleteUser.isPending}
+              >
+                {deleteUser.isPending ? 'Deleting...' : 'Delete User'}
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -196,6 +196,22 @@ export function useUnlockUser(tenantId: string, userId: string) {
   });
 }
 
+export function useDeleteUser(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await api.delete<ApiResponse<{ message: string }>>(
+        `/admin/tenants/${tenantId}/users/${userId}`
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', tenantId] });
+    },
+  });
+}
+
 export function useSetUserRoles(tenantId: string, userId: string) {
   const queryClient = useQueryClient();
   return useMutation({
