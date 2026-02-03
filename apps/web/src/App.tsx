@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores/auth.store';
 
 // Layouts
 import { AuthLayout } from '@/layouts/AuthLayout';
-import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import AppLayout from '@/layouts/AppLayout';
 
@@ -13,8 +12,7 @@ import AppLayout from '@/layouts/AppLayout';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 
-// Dashboard Pages
-import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+// Profile Page (used in app layout)
 import { ProfilePage } from '@/pages/dashboard/ProfilePage';
 
 // Admin Pages
@@ -94,7 +92,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/app/home" replace />;
   }
 
   return <>{children}</>;
@@ -135,24 +133,21 @@ function App() {
           }
         />
 
-        {/* Protected Routes */}
+        {/* Redirect old dashboard to new app home */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <DashboardLayout>
-                <DashboardPage />
-              </DashboardLayout>
+              <Navigate to="/app/home" replace />
             </ProtectedRoute>
           }
         />
+        {/* Redirect profile to app - profile will be in app layout */}
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
-              <DashboardLayout>
-                <ProfilePage />
-              </DashboardLayout>
+              <Navigate to="/app/profile" replace />
             </ProtectedRoute>
           }
         />
@@ -203,6 +198,7 @@ function App() {
           <Route path="tasks" element={<TasksPage />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="dashboards" element={<DashboardsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         {/* Catch-all redirect */}
