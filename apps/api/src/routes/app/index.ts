@@ -14,6 +14,8 @@ import setupRoutes from './setup.routes.js';
 import profileRoutes from './profile.routes.js';
 import homeRoutes from './home.routes.js';
 import referenceRoutes from './reference.routes.js';
+import documentsRoutes from './documents.routes.js';
+import tasksRoutes from './tasks.routes.js';
 
 const router = Router();
 
@@ -26,6 +28,8 @@ router.use('/setup', setupRoutes);
 router.use('/profile', profileRoutes);
 router.use('/home', homeRoutes);
 router.use('/reference', referenceRoutes);
+router.use('/documents', documentsRoutes);
+router.use('/tasks', tasksRoutes);
 
 // Health check for app routes
 router.get('/health', (_req: Request, res: Response) => {
