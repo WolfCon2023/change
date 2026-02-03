@@ -8,7 +8,6 @@ import {
   Book,
   Search,
   ChevronRight,
-  ChevronDown,
   Users,
   Shield,
   UserCog,
@@ -122,19 +121,37 @@ const glossaryTerms = [
 export function KnowledgeBasePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState('introduction');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['introduction']));
+  const [activeTab, setActiveTab] = useState('guide');
 
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId);
-      } else {
-        newSet.add(sectionId);
-      }
-      return newSet;
-    });
+  const scrollToSection = (sectionId: string) => {
+    // Determine which tab the section belongs to
+    const complianceSection = sectionId === 'compliance';
+    const glossarySection = sectionId === 'glossary' || sectionId === 'troubleshooting';
+    
+    // Switch to appropriate tab first
+    if (complianceSection) {
+      setActiveTab('compliance');
+    } else if (glossarySection) {
+      setActiveTab('glossary');
+    } else {
+      setActiveTab('guide');
+    }
+
+    // Update active section state
     setActiveSection(sectionId);
+
+    // Scroll to element after a brief delay to allow tab switch
+    setTimeout(() => {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Add a highlight effect
+        element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+        setTimeout(() => {
+          element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+        }, 2000);
+      }
+    }, 100);
   };
 
   const filteredToc = useMemo(() => {
@@ -226,7 +243,7 @@ export function KnowledgeBasePage() {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => toggleSection(item.id)}
+                      onClick={() => scrollToSection(item.id)}
                       className={`w-full flex items-center gap-2 px-4 py-2 text-left text-sm transition-colors ${
                         isActive
                           ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-600'
@@ -235,11 +252,7 @@ export function KnowledgeBasePage() {
                     >
                       <Icon className="h-4 w-4 flex-shrink-0" />
                       <span className="truncate">{item.title}</span>
-                      {expandedSections.has(item.id) ? (
-                        <ChevronDown className="h-4 w-4 ml-auto flex-shrink-0" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 ml-auto flex-shrink-0" />
-                      )}
+                      <ChevronRight className="h-4 w-4 ml-auto flex-shrink-0" />
                     </button>
                   );
                 })}
@@ -250,7 +263,7 @@ export function KnowledgeBasePage() {
 
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
-          <Tabs defaultValue="guide" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="guide">User Guide</TabsTrigger>
               <TabsTrigger value="compliance">Compliance</TabsTrigger>
@@ -260,7 +273,7 @@ export function KnowledgeBasePage() {
             {/* User Guide Tab */}
             <TabsContent value="guide" className="space-y-6 mt-6">
               {/* Introduction Section */}
-              <Card id="introduction">
+              <Card id="introduction" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Book className="h-5 w-5 text-blue-600" />
@@ -345,7 +358,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Getting Started Section */}
-              <Card id="getting-started">
+              <Card id="getting-started" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BookOpen className="h-5 w-5 text-green-600" />
@@ -397,7 +410,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Dashboard Section */}
-              <Card id="dashboard">
+              <Card id="dashboard" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <LayoutDashboard className="h-5 w-5 text-purple-600" />
@@ -468,7 +481,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* User Management Section */}
-              <Card id="user-management">
+              <Card id="user-management" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-blue-600" />
@@ -546,7 +559,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Role Management Section */}
-              <Card id="role-management">
+              <Card id="role-management" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-orange-600" />
@@ -635,7 +648,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Group Management Section */}
-              <Card id="group-management">
+              <Card id="group-management" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <UserCog className="h-5 w-5 text-cyan-600" />
@@ -676,7 +689,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Access Requests Section */}
-              <Card id="access-requests">
+              <Card id="access-requests" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ClipboardCheck className="h-5 w-5 text-green-600" />
@@ -716,7 +729,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* API Keys Section */}
-              <Card id="api-keys">
+              <Card id="api-keys" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Key className="h-5 w-5 text-yellow-600" />
@@ -775,7 +788,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Audit Logs Section */}
-              <Card id="audit-logs">
+              <Card id="audit-logs" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-gray-600" />
@@ -851,7 +864,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Access Reviews Section */}
-              <Card id="access-reviews">
+              <Card id="access-reviews" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ClipboardCheck className="h-5 w-5 text-indigo-600" />
@@ -975,7 +988,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Security Gaps Section */}
-              <Card id="security-gaps">
+              <Card id="security-gaps" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ShieldAlert className="h-5 w-5 text-red-600" />
@@ -1065,7 +1078,7 @@ export function KnowledgeBasePage() {
               </Card>
 
               {/* Governance Section */}
-              <Card id="governance">
+              <Card id="governance" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Compass className="h-5 w-5 text-teal-600" />
@@ -1254,7 +1267,7 @@ export function KnowledgeBasePage() {
                 </CardContent>
               </Card>
 
-              <Card id="troubleshooting">
+              <Card id="troubleshooting" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-yellow-600" />
