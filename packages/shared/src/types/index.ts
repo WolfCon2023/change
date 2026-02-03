@@ -50,6 +50,18 @@ import type {
   CampaignScopeTypeValue,
   GroupReviewStatusType,
   BulkActionTypeValue,
+  // Business App types
+  FormationStatusType,
+  EINStatusType,
+  ArtifactTypeValue,
+  WorkflowTemplateCategoryType,
+  WorkflowInstanceStatusType,
+  StepStatusType,
+  DMAICPhaseType,
+  ProcessCategoryType,
+  KPIFrequencyType,
+  RiskLevelType,
+  ApprovalStatusType,
 } from '../constants/index.js';
 
 // =============================================================================
@@ -1367,4 +1379,504 @@ export interface ReviewSuggestion {
   reasons: string[];
   requiresManualReview: boolean;
   riskIndicators?: string[];
+}
+
+// =============================================================================
+// BUSINESS APP TYPES
+// =============================================================================
+
+/**
+ * Starter Process
+ */
+export interface StarterProcess {
+  name: string;
+  description: string;
+  category: ProcessCategoryType;
+  priority: number;
+}
+
+/**
+ * Default KPI
+ */
+export interface DefaultKPI {
+  name: string;
+  description: string;
+  formula?: string;
+  unit: string;
+  targetDirection: 'increase' | 'decrease' | 'maintain';
+  category: string;
+  frequency: KPIFrequencyType;
+}
+
+/**
+ * Starter Document
+ */
+export interface StarterDoc {
+  name: string;
+  description: string;
+  templateKey?: string;
+  category: string;
+  required: boolean;
+  legalReview: boolean;
+}
+
+/**
+ * Starter Workflow
+ */
+export interface StarterWorkflow {
+  templateKey: string;
+  name: string;
+  description: string;
+  triggerEvent?: string;
+}
+
+/**
+ * Risk Checklist Item
+ */
+export interface RiskChecklistItem {
+  category: string;
+  item: string;
+  severity: RiskLevelType;
+  mitigation?: string;
+}
+
+/**
+ * Business Archetype
+ */
+export interface BusinessArchetype extends BaseEntity {
+  key: string;
+  name: string;
+  description: string;
+  icon?: string;
+  tags: string[];
+  recommendedEntityTypes: BusinessTypeValue[];
+  industryExamples: string[];
+  commonProcesses: StarterProcess[];
+  defaultKPIs: DefaultKPI[];
+  starterDocs: StarterDoc[];
+  starterWorkflows: StarterWorkflow[];
+  riskChecklist: RiskChecklistItem[];
+  commonLicenses?: string[];
+  commonPermits?: string[];
+  insuranceTypes?: string[];
+  isActive: boolean;
+  displayOrder: number;
+}
+
+/**
+ * Readiness Flags
+ */
+export interface ReadinessFlags {
+  profileComplete: boolean;
+  entitySelected: boolean;
+  stateSelected: boolean;
+  archetypeSelected: boolean;
+  addressVerified: boolean;
+  registeredAgentSet: boolean;
+  ownersAdded: boolean;
+  sosReadyToFile: boolean;
+  einReadyToApply: boolean;
+  documentsGenerated: boolean;
+  advisorAssigned: boolean;
+}
+
+/**
+ * Risk Profile
+ */
+export interface RiskProfile {
+  level: RiskLevelType;
+  factors: string[];
+  lastAssessedAt?: Date;
+}
+
+/**
+ * Enhanced Business Profile (extends existing)
+ */
+export interface BusinessProfileEnhanced extends BusinessProfile {
+  archetypeKey?: string;
+  naicsCode?: string;
+  sicCode?: string;
+  formationStatus: FormationStatusType;
+  sosConfirmationArtifactId?: string;
+  einStatus: EINStatusType;
+  einConfirmationArtifactId?: string;
+  readinessFlags: ReadinessFlags;
+  riskProfile?: RiskProfile;
+  setupCompletedAt?: Date;
+}
+
+/**
+ * Artifact
+ */
+export interface Artifact extends TenantScopedEntity {
+  type: ArtifactTypeValue;
+  name: string;
+  description?: string;
+  storageType: 'file' | 'url' | 'text' | 'json';
+  storageKey?: string;
+  storageUrl?: string;
+  textContent?: string;
+  jsonContent?: Record<string, unknown>;
+  mimeType?: string;
+  fileSize?: number;
+  checksum?: string;
+  linkedEntityType: string;
+  linkedEntityId: string;
+  linkedStepKey?: string;
+  tags: string[];
+  category?: string;
+  isVerified: boolean;
+  verifiedBy?: string;
+  verifiedAt?: Date;
+  verificationNotes?: string;
+  retentionDays?: number;
+  expiresAt?: Date;
+  isConfidential: boolean;
+  createdBy: string;
+  updatedBy?: string;
+}
+
+export interface ArtifactCreateRequest {
+  type: ArtifactTypeValue;
+  name: string;
+  description?: string;
+  storageType: 'file' | 'url' | 'text' | 'json';
+  storageKey?: string;
+  storageUrl?: string;
+  textContent?: string;
+  jsonContent?: Record<string, unknown>;
+  linkedEntityType: string;
+  linkedEntityId: string;
+  linkedStepKey?: string;
+  tags?: string[];
+  category?: string;
+  isConfidential?: boolean;
+}
+
+/**
+ * Step Requirement
+ */
+export interface StepRequirement {
+  type: 'artifact' | 'approval' | 'task_completion' | 'field_value' | 'external_verification';
+  description: string;
+  artifactType?: string;
+  taskCategory?: string;
+  fieldPath?: string;
+  fieldValue?: unknown;
+  isBlocking: boolean;
+}
+
+/**
+ * Workflow Step
+ */
+export interface WorkflowStep {
+  key: string;
+  name: string;
+  description: string;
+  order: number;
+  isRequired: boolean;
+  isSkippable: boolean;
+  requiresApproval: boolean;
+  approverRole?: string;
+  requirements: StepRequirement[];
+  expectedArtifacts: string[];
+  autoTasks: {
+    title: string;
+    category: string;
+    priority: string;
+    isRequired: boolean;
+  }[];
+  formSchema?: Record<string, unknown>;
+  guidance?: string;
+  helpUrl?: string;
+  rulesHooks?: string[];
+  estimatedMinutes?: number;
+}
+
+/**
+ * Workflow Phase Definition
+ */
+export interface WorkflowPhaseDefinition {
+  key: string;
+  name: string;
+  description: string;
+  order: number;
+  icon?: string;
+  steps: WorkflowStep[];
+  gateRequirements: StepRequirement[];
+  requiresPhaseApproval: boolean;
+  phaseApproverRole?: string;
+}
+
+/**
+ * Workflow Template
+ */
+export interface WorkflowTemplate extends BaseEntity {
+  key: string;
+  version: number;
+  name: string;
+  description: string;
+  category: WorkflowTemplateCategoryType;
+  tags: string[];
+  phases: WorkflowPhaseDefinition[];
+  requiredArtifacts: string[];
+  applicableArchetypes: string[];
+  applicableStates?: string[];
+  applicableEntityTypes?: string[];
+  rulesHooks?: string[];
+  isLatestVersion: boolean;
+  previousVersionId?: string;
+  isActive: boolean;
+  isPublished: boolean;
+  publishedAt?: Date;
+  publishedBy?: string;
+}
+
+/**
+ * Step State (for WorkflowInstance)
+ */
+export interface StepState {
+  status: StepStatusType;
+  data: Record<string, unknown>;
+  submittedAt?: Date;
+  submittedBy?: string;
+  approvedAt?: Date;
+  approvedBy?: string;
+  rejectedAt?: Date;
+  rejectedBy?: string;
+  rejectionReason?: string;
+  completedAt?: Date;
+  artifacts: string[];
+  tasks: string[];
+}
+
+/**
+ * Enhanced Workflow Instance
+ */
+export interface WorkflowInstanceEnhanced extends WorkflowInstance {
+  templateKey: string;
+  templateVersion: number;
+  stepStates: Record<string, StepState>;
+  computedChecklist: {
+    total: number;
+    completed: number;
+    blocked: number;
+  };
+}
+
+/**
+ * Rule Condition
+ */
+export interface RuleCondition {
+  field: string;
+  operator: string;
+  value?: unknown;
+  caseSensitive?: boolean;
+}
+
+/**
+ * Rule Condition Group
+ */
+export interface RuleConditionGroup {
+  logic: 'and' | 'or';
+  conditions: (RuleCondition | RuleConditionGroup)[];
+}
+
+/**
+ * Rule Action
+ */
+export interface RuleAction {
+  type: string;
+  target?: string;
+  value?: unknown;
+  reason: string;
+  priority?: number;
+}
+
+/**
+ * Rule
+ */
+export interface Rule extends BaseEntity {
+  key: string;
+  name: string;
+  description: string;
+  category: string;
+  tags: string[];
+  conditions: RuleConditionGroup;
+  actions: RuleAction[];
+  priority: number;
+  scope: 'global' | 'archetype' | 'state' | 'entity_type' | 'workflow';
+  scopeValue?: string;
+  applicableWorkflows?: string[];
+  applicablePhases?: string[];
+  applicableSteps?: string[];
+  isActive: boolean;
+  version: number;
+  effectiveFrom?: Date;
+  effectiveUntil?: Date;
+}
+
+/**
+ * Setup Status Response
+ */
+export interface SetupStatus {
+  hasStarted: boolean;
+  isComplete: boolean;
+  currentStep: string;
+  archetypeKey?: string;
+  entityType?: BusinessTypeValue;
+  state?: USStateType;
+  readinessFlags: ReadinessFlags;
+  businessProfileId?: string;
+}
+
+/**
+ * Setup Start Request
+ */
+export interface SetupStartRequest {
+  businessName: string;
+  email: string;
+}
+
+/**
+ * Archetype Selection Request
+ */
+export interface ArchetypeSelectionRequest {
+  archetypeKey: string;
+}
+
+/**
+ * Entity Type Selection Request
+ */
+export interface EntityTypeSelectionRequest {
+  entityType: BusinessTypeValue;
+}
+
+/**
+ * State Selection Request
+ */
+export interface StateSelectionRequest {
+  state: USStateType;
+}
+
+/**
+ * Setup Complete Request
+ */
+export interface SetupCompleteRequest {
+  businessName: string;
+  dbaName?: string;
+  email: string;
+  phone?: string;
+}
+
+// =============================================================================
+// ADDITIONAL BUSINESS APP TYPES (for future modules)
+// =============================================================================
+
+/**
+ * Rule Evaluation Result
+ */
+export interface RuleEvaluationResult {
+  ruleKey: string;
+  ruleName: string;
+  matched: boolean;
+  actions: RuleAction[];
+  evaluatedAt: Date;
+  context?: Record<string, unknown>;
+}
+
+/**
+ * Approval Request
+ */
+export interface ApprovalRequest extends TenantScopedEntity {
+  type: 'step' | 'phase' | 'document' | 'workflow';
+  targetType: string;
+  targetId: string;
+  targetName: string;
+  requestorId: string;
+  requestorName: string;
+  status: ApprovalStatusType;
+  assignedTo?: string;
+  assignedToRole?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  dueAt?: Date;
+  decidedAt?: Date;
+  decidedBy?: string;
+  decision?: 'approved' | 'rejected';
+  notes?: string;
+  context?: Record<string, unknown>;
+}
+
+/**
+ * Today View Item
+ */
+export interface TodayViewItem {
+  type: 'task' | 'approval' | 'blocker' | 'milestone' | 'alert';
+  id: string;
+  title: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  dueAt?: Date;
+  link: string;
+  status?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Dashboard KPI
+ */
+export interface DashboardKPI {
+  key: string;
+  name: string;
+  value: number | string;
+  unit?: string;
+  trend?: 'up' | 'down' | 'stable';
+  trendValue?: number;
+  target?: number;
+  status: 'good' | 'warning' | 'critical' | 'neutral';
+}
+
+/**
+ * Business Setup Request
+ */
+export interface BusinessSetupRequest {
+  businessName: string;
+  businessType: BusinessTypeValue;
+  formationState: USStateType;
+  archetypeKey: string;
+  email: string;
+  phone?: string;
+  isExistingBusiness?: boolean;
+}
+
+/**
+ * Start Workflow Request
+ */
+export interface StartWorkflowRequest {
+  templateKey: string;
+  name?: string;
+}
+
+/**
+ * Update Step Request
+ */
+export interface UpdateStepRequest {
+  data: Record<string, unknown>;
+  artifacts?: string[];
+  notes?: string;
+}
+
+/**
+ * Submit Step Request
+ */
+export interface SubmitStepRequest {
+  notes?: string;
+}
+
+/**
+ * Approve Step Request
+ */
+export interface ApproveStepRequest {
+  approved: boolean;
+  notes?: string;
 }

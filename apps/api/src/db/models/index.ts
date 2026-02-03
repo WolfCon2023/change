@@ -10,6 +10,10 @@ export {
   type IBusinessProfile,
   type IAddress,
   type IRegisteredAgent,
+  type IReadinessFlags,
+  type IRiskProfile,
+  type FormationStatusValue,
+  type EINStatusValue,
 } from './business-profile.model.js';
 export { Person, type IPerson, type IPersonRole, type IPersonAddress } from './person.model.js';
 export { Cohort, type ICohort, type ICohortSettings } from './cohort.model.js';
@@ -58,3 +62,34 @@ export {
   type IAccessReviewCampaignApprovals,
   type IAccessReviewCampaignWorkflow,
 } from './access-review-campaign.model.js';
+
+// Business App Models
+export {
+  BusinessArchetype,
+  type IBusinessArchetype,
+  type IStarterProcess,
+  type IDefaultKPI,
+  type IStarterDoc,
+  type IStarterWorkflow,
+  type IRiskChecklistItem,
+} from './business-archetype.model.js';
+export {
+  Artifact,
+  type IArtifact,
+} from './artifact.model.js';
+export {
+  WorkflowTemplate,
+  type IWorkflowTemplate,
+  type IWorkflowPhase,
+  type IWorkflowStep,
+  type IStepRequirement,
+} from './workflow-template.model.js';
+export {
+  Rule,
+  type IRule,
+  type IRuleCondition,
+  type IRuleConditionGroup,
+  type IRuleAction,
+  type ConditionOperator,
+  type ActionType,
+} from './rule.model.js';

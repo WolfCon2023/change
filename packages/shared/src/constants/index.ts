@@ -1390,3 +1390,257 @@ export const BulkActionType = {
 } as const;
 
 export type BulkActionTypeValue = (typeof BulkActionType)[keyof typeof BulkActionType];
+
+// =============================================================================
+// BUSINESS APP CONSTANTS
+// =============================================================================
+
+/**
+ * Formation Status
+ * Tracks the SOS formation filing status
+ */
+export const FormationStatus = {
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  PENDING_FILING: 'pending_filing',
+  FILED: 'filed',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+} as const;
+
+export type FormationStatusType = (typeof FormationStatus)[keyof typeof FormationStatus];
+
+/**
+ * EIN Status
+ * Tracks the EIN application status
+ */
+export const EINStatus = {
+  NOT_STARTED: 'not_started',
+  APPLICATION_PREPARED: 'application_prepared',
+  APPLICATION_SUBMITTED: 'application_submitted',
+  PENDING: 'pending',
+  RECEIVED: 'received',
+  FAILED: 'failed',
+} as const;
+
+export type EINStatusType = (typeof EINStatus)[keyof typeof EINStatus];
+
+/**
+ * Archetype Category
+ * Categories for business archetypes
+ */
+export const ArchetypeCategory = {
+  PROFESSIONAL_SERVICES: 'professional_services',
+  HOME_SERVICES: 'home_services',
+  ECOMMERCE: 'ecommerce',
+  RETAIL: 'retail',
+  FOOD_BUSINESS: 'food_business',
+  PERSONAL_CARE: 'personal_care',
+  FITNESS_COACHING: 'fitness_coaching',
+  REAL_ESTATE: 'real_estate',
+  CONSTRUCTION_TRADES: 'construction_trades',
+  TRANSPORTATION: 'transportation',
+  CHILDCARE: 'childcare',
+  NONPROFIT: 'nonprofit',
+  CREATIVE_SERVICES: 'creative_services',
+  HEALTHCARE_ADJACENT: 'healthcare_adjacent',
+} as const;
+
+export type ArchetypeCategoryType = (typeof ArchetypeCategory)[keyof typeof ArchetypeCategory];
+
+/**
+ * Artifact Type
+ * Types of artifacts/evidence stored
+ */
+export const ArtifactType = {
+  SOS_FILING: 'sos_filing',
+  SOS_CONFIRMATION: 'sos_confirmation',
+  EIN_APPLICATION: 'ein_application',
+  EIN_CONFIRMATION: 'ein_confirmation',
+  OPERATING_AGREEMENT: 'operating_agreement',
+  BYLAWS: 'bylaws',
+  ARTICLES: 'articles',
+  CERTIFICATE: 'certificate',
+  LICENSE: 'license',
+  PERMIT: 'permit',
+  CONTRACT: 'contract',
+  SCREENSHOT: 'screenshot',
+  FORM: 'form',
+  RECEIPT: 'receipt',
+  OTHER: 'other',
+} as const;
+
+export type ArtifactTypeValue = (typeof ArtifactType)[keyof typeof ArtifactType];
+
+/**
+ * Workflow Template Category
+ */
+export const WorkflowTemplateCategory = {
+  FORMATION: 'formation',
+  OPERATIONS: 'operations',
+  COMPLIANCE: 'compliance',
+  PROJECT: 'project',
+  ONBOARDING: 'onboarding',
+} as const;
+
+export type WorkflowTemplateCategoryType = (typeof WorkflowTemplateCategory)[keyof typeof WorkflowTemplateCategory];
+
+/**
+ * Workflow Instance Status
+ */
+export const WorkflowInstanceStatus = {
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  PAUSED: 'paused',
+  AWAITING_APPROVAL: 'awaiting_approval',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type WorkflowInstanceStatusType = (typeof WorkflowInstanceStatus)[keyof typeof WorkflowInstanceStatus];
+
+/**
+ * Step Status
+ */
+export const StepStatus = {
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  PENDING_REVIEW: 'pending_review',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  COMPLETED: 'completed',
+  SKIPPED: 'skipped',
+} as const;
+
+export type StepStatusType = (typeof StepStatus)[keyof typeof StepStatus];
+
+/**
+ * DMAIC Phase
+ */
+export const DMAICPhase = {
+  DEFINE: 'define',
+  MEASURE: 'measure',
+  ANALYZE: 'analyze',
+  IMPROVE: 'improve',
+  CONTROL: 'control',
+} as const;
+
+export type DMAICPhaseType = (typeof DMAICPhase)[keyof typeof DMAICPhase];
+
+export const DMAICPhaseLabels: Record<DMAICPhaseType, string> = {
+  [DMAICPhase.DEFINE]: 'Define',
+  [DMAICPhase.MEASURE]: 'Measure',
+  [DMAICPhase.ANALYZE]: 'Analyze',
+  [DMAICPhase.IMPROVE]: 'Improve',
+  [DMAICPhase.CONTROL]: 'Control',
+};
+
+/**
+ * SIPOC Element Type
+ */
+export const SIPOCElement = {
+  SUPPLIER: 'supplier',
+  INPUT: 'input',
+  PROCESS: 'process',
+  OUTPUT: 'output',
+  CUSTOMER: 'customer',
+} as const;
+
+export type SIPOCElementType = (typeof SIPOCElement)[keyof typeof SIPOCElement];
+
+/**
+ * Process Category
+ */
+export const ProcessCategory = {
+  OPERATIONS: 'operations',
+  FINANCE: 'finance',
+  MARKETING: 'marketing',
+  SALES: 'sales',
+  HR: 'hr',
+  COMPLIANCE: 'compliance',
+  CUSTOMER_SERVICE: 'customer_service',
+  IT: 'it',
+  ADMINISTRATION: 'administration',
+} as const;
+
+export type ProcessCategoryType = (typeof ProcessCategory)[keyof typeof ProcessCategory];
+
+/**
+ * KPI Frequency
+ */
+export const KPIFrequency = {
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly',
+  QUARTERLY: 'quarterly',
+  YEARLY: 'yearly',
+} as const;
+
+export type KPIFrequencyType = (typeof KPIFrequency)[keyof typeof KPIFrequency];
+
+/**
+ * Risk Level
+ */
+export const RiskLevel = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  CRITICAL: 'critical',
+} as const;
+
+export type RiskLevelType = (typeof RiskLevel)[keyof typeof RiskLevel];
+
+/**
+ * Approval Status
+ */
+export const ApprovalStatus = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  ESCALATED: 'escalated',
+} as const;
+
+export type ApprovalStatusType = (typeof ApprovalStatus)[keyof typeof ApprovalStatus];
+
+/**
+ * Business App Audit Actions
+ */
+export const BusinessAppAuditAction = {
+  // Setup
+  SETUP_STARTED: 'app.setup.started',
+  ARCHETYPE_SELECTED: 'app.setup.archetype_selected',
+  ENTITY_TYPE_SELECTED: 'app.setup.entity_type_selected',
+  STATE_SELECTED: 'app.setup.state_selected',
+  SETUP_COMPLETED: 'app.setup.completed',
+  
+  // Formation
+  FORMATION_STARTED: 'app.formation.started',
+  SOS_PREPARED: 'app.formation.sos_prepared',
+  SOS_FILED: 'app.formation.sos_filed',
+  SOS_APPROVED: 'app.formation.sos_approved',
+  EIN_PREPARED: 'app.formation.ein_prepared',
+  EIN_SUBMITTED: 'app.formation.ein_submitted',
+  EIN_RECEIVED: 'app.formation.ein_received',
+  FORMATION_COMPLETED: 'app.formation.completed',
+  
+  // Workflow
+  WORKFLOW_STARTED: 'app.workflow.started',
+  WORKFLOW_STEP_COMPLETED: 'app.workflow.step_completed',
+  WORKFLOW_PHASE_COMPLETED: 'app.workflow.phase_completed',
+  WORKFLOW_COMPLETED: 'app.workflow.completed',
+  
+  // Artifacts
+  ARTIFACT_UPLOADED: 'app.artifact.uploaded',
+  ARTIFACT_VERIFIED: 'app.artifact.verified',
+  
+  // SIPOC
+  PROCESS_CREATED: 'app.sipoc.process_created',
+  PROCESS_UPDATED: 'app.sipoc.process_updated',
+  
+  // DMAIC
+  DMAIC_PROJECT_CREATED: 'app.dmaic.project_created',
+  DMAIC_PHASE_COMPLETED: 'app.dmaic.phase_completed',
+  DMAIC_PROJECT_COMPLETED: 'app.dmaic.project_completed',
+} as const;
+
+export type BusinessAppAuditActionType = (typeof BusinessAppAuditAction)[keyof typeof BusinessAppAuditAction];

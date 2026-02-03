@@ -18,28 +18,100 @@ export interface IRegisteredAgent {
   phone?: string;
 }
 
+// Formation status tracking
+export type FormationStatusValue = 
+  | 'not_started'
+  | 'in_progress'
+  | 'pending_filing'
+  | 'filed'
+  | 'approved'
+  | 'rejected';
+
+// EIN status tracking
+export type EINStatusValue = 
+  | 'not_started'
+  | 'application_prepared'
+  | 'application_submitted'
+  | 'pending'
+  | 'received'
+  | 'failed';
+
+// Readiness flags
+export interface IReadinessFlags {
+  profileComplete: boolean;
+  entitySelected: boolean;
+  stateSelected: boolean;
+  archetypeSelected: boolean;
+  addressVerified: boolean;
+  registeredAgentSet: boolean;
+  ownersAdded: boolean;
+  sosReadyToFile: boolean;
+  einReadyToApply: boolean;
+  documentsGenerated: boolean;
+  advisorAssigned: boolean;
+}
+
+// Risk profile
+export interface IRiskProfile {
+  level: 'low' | 'medium' | 'high';
+  factors: string[];
+  lastAssessedAt?: Date;
+}
+
 export interface IBusinessProfile extends Document {
   _id: mongoose.Types.ObjectId;
   tenantId: mongoose.Types.ObjectId;
+  
+  // Basic info
   businessName: string;
   dbaName?: string;
   businessType: BusinessTypeValue;
   formationState: USStateType;
   isExistingBusiness: boolean;
   formationDate?: Date;
+  
+  // Archetype and classification
+  archetypeKey?: string;
+  naicsCode?: string;
+  sicCode?: string;
+  
+  // Contact
   email: string;
   phone?: string;
   website?: string;
+  
+  // Addresses
   businessAddress?: IAddress;
   mailingAddress?: IAddress;
   registeredAgent?: IRegisteredAgent;
-  ein?: string;
-  einApplicationDate?: Date;
+  
+  // Formation status
+  formationStatus: FormationStatusValue;
   sosFilingNumber?: string;
   sosFilingDate?: Date;
+  sosConfirmationArtifactId?: mongoose.Types.ObjectId;
+  
+  // EIN status
+  einStatus: EINStatusValue;
+  ein?: string;
+  einApplicationDate?: Date;
+  einConfirmationArtifactId?: mongoose.Types.ObjectId;
+  
+  // Legacy fields (keep for compatibility)
   industryCode?: string;
   sectorId?: string;
+  
+  // Readiness tracking
+  readinessFlags: IReadinessFlags;
+  
+  // Risk assessment
+  riskProfile?: IRiskProfile;
+  
+  // Completion tracking
   profileCompleteness: number;
+  setupCompletedAt?: Date;
+  
+  // Timestamps
   submittedAt?: Date;
   approvedAt?: Date;
   createdAt: Date;
@@ -47,6 +119,7 @@ export interface IBusinessProfile extends Document {
 
   // Methods
   calculateCompleteness(): number;
+  updateReadinessFlags(): void;
 }
 
 const addressSchema = new Schema<IAddress>(
@@ -72,6 +145,32 @@ const registeredAgentSchema = new Schema<IRegisteredAgent>(
     address: { type: addressSchema, required: true },
     email: { type: String, lowercase: true },
     phone: { type: String },
+  },
+  { _id: false }
+);
+
+const readinessFlagsSchema = new Schema<IReadinessFlags>(
+  {
+    profileComplete: { type: Boolean, default: false },
+    entitySelected: { type: Boolean, default: false },
+    stateSelected: { type: Boolean, default: false },
+    archetypeSelected: { type: Boolean, default: false },
+    addressVerified: { type: Boolean, default: false },
+    registeredAgentSet: { type: Boolean, default: false },
+    ownersAdded: { type: Boolean, default: false },
+    sosReadyToFile: { type: Boolean, default: false },
+    einReadyToApply: { type: Boolean, default: false },
+    documentsGenerated: { type: Boolean, default: false },
+    advisorAssigned: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
+const riskProfileSchema = new Schema<IRiskProfile>(
+  {
+    level: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
+    factors: [{ type: String }],
+    lastAssessedAt: { type: Date },
   },
   { _id: false }
 );
@@ -115,6 +214,19 @@ const businessProfileSchema = new Schema<IBusinessProfile>(
     formationDate: {
       type: Date,
     },
+    // Archetype and classification
+    archetypeKey: {
+      type: String,
+      index: true,
+    },
+    naicsCode: {
+      type: String,
+      maxlength: 6,
+    },
+    sicCode: {
+      type: String,
+      maxlength: 4,
+    },
     email: {
       type: String,
       required: true,
@@ -136,12 +248,12 @@ const businessProfileSchema = new Schema<IBusinessProfile>(
     registeredAgent: {
       type: registeredAgentSchema,
     },
-    ein: {
+    // Formation status
+    formationStatus: {
       type: String,
-      match: /^\d{2}-\d{7}$/,
-    },
-    einApplicationDate: {
-      type: Date,
+      enum: ['not_started', 'in_progress', 'pending_filing', 'filed', 'approved', 'rejected'],
+      default: 'not_started',
+      index: true,
     },
     sosFilingNumber: {
       type: String,
@@ -150,18 +262,52 @@ const businessProfileSchema = new Schema<IBusinessProfile>(
     sosFilingDate: {
       type: Date,
     },
-    // Phase 2+ placeholders
+    sosConfirmationArtifactId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Artifact',
+    },
+    // EIN status
+    einStatus: {
+      type: String,
+      enum: ['not_started', 'application_prepared', 'application_submitted', 'pending', 'received', 'failed'],
+      default: 'not_started',
+      index: true,
+    },
+    ein: {
+      type: String,
+      match: /^\d{2}-\d{7}$/,
+    },
+    einApplicationDate: {
+      type: Date,
+    },
+    einConfirmationArtifactId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Artifact',
+    },
+    // Legacy fields
     industryCode: {
       type: String,
     },
     sectorId: {
       type: String,
     },
+    // Readiness tracking
+    readinessFlags: {
+      type: readinessFlagsSchema,
+      default: () => ({}),
+    },
+    // Risk assessment
+    riskProfile: {
+      type: riskProfileSchema,
+    },
     profileCompleteness: {
       type: Number,
       default: 0,
       min: 0,
       max: 100,
+    },
+    setupCompletedAt: {
+      type: Date,
     },
     submittedAt: {
       type: Date,
@@ -217,9 +363,26 @@ businessProfileSchema.methods.calculateCompleteness = function (): number {
   return Math.round((completedWeight / totalWeight) * 100);
 };
 
-// Pre-save hook to update completeness
+// Update readiness flags
+businessProfileSchema.methods.updateReadinessFlags = function (): void {
+  const flags = this.readinessFlags || {};
+  
+  flags.entitySelected = !!this.businessType;
+  flags.stateSelected = !!this.formationState;
+  flags.archetypeSelected = !!this.archetypeKey;
+  flags.addressVerified = !!this.businessAddress?.street1;
+  flags.registeredAgentSet = !!this.registeredAgent?.name;
+  flags.profileComplete = this.profileCompleteness >= 80;
+  flags.sosReadyToFile = flags.profileComplete && flags.addressVerified && flags.registeredAgentSet;
+  flags.einReadyToApply = this.formationStatus === 'approved' || this.formationStatus === 'filed';
+  
+  this.readinessFlags = flags;
+};
+
+// Pre-save hook to update completeness and readiness
 businessProfileSchema.pre('save', function (next) {
   this.profileCompleteness = this.calculateCompleteness();
+  this.updateReadinessFlags();
   next();
 });
 
