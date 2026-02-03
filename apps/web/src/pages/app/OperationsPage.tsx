@@ -23,6 +23,11 @@ import {
   Shield,
   DollarSign,
   CheckCircle,
+  Users,
+  Scale,
+  Trash2,
+  Plus,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -30,7 +35,9 @@ import { Label } from '../../components/ui/label';
 import { 
   useProfile, 
   useUpdateBankingStatus,
+  useUpdateOperatingAgreementStatus,
   type BankAccount,
+  type OperatingAgreement,
 } from '../../lib/app-api';
 
 // Popular business banks with info
@@ -387,6 +394,428 @@ function BusinessBankingStep({
   );
 }
 
+// Operating Agreement resources
+const AGREEMENT_RESOURCES = [
+  {
+    name: 'LegalZoom',
+    description: 'Professional templates with attorney review',
+    url: 'https://www.legalzoom.com/business/business-formation/',
+    type: 'Paid Service',
+  },
+  {
+    name: 'Rocket Lawyer',
+    description: 'Customizable templates with legal assistance',
+    url: 'https://www.rocketlawyer.com/',
+    type: 'Paid Service',
+  },
+  {
+    name: 'Northwest Registered Agent',
+    description: 'Free operating agreement templates',
+    url: 'https://www.northwestregisteredagent.com/',
+    type: 'Free Template',
+  },
+  {
+    name: 'Incfile',
+    description: 'Free LLC operating agreement generator',
+    url: 'https://www.incfile.com/free-llc-operating-agreement/',
+    type: 'Free Template',
+  },
+];
+
+// What to include in operating agreement
+const AGREEMENT_SECTIONS_LLC = [
+  { title: 'Ownership Structure', description: 'Percentage ownership for each member' },
+  { title: 'Capital Contributions', description: 'Initial and ongoing investment by members' },
+  { title: 'Profit & Loss Distribution', description: 'How profits and losses are allocated' },
+  { title: 'Management Structure', description: 'Member-managed vs. manager-managed' },
+  { title: 'Voting Rights', description: 'How decisions are made and voting thresholds' },
+  { title: 'Member Withdrawal/Buyout', description: 'Process for members leaving the company' },
+  { title: 'Transfer of Ownership', description: 'Rules for selling or transferring membership' },
+  { title: 'Dissolution Procedures', description: 'How to wind down the business' },
+];
+
+const AGREEMENT_SECTIONS_CORP = [
+  { title: 'Share Structure', description: 'Classes of stock and shareholder rights' },
+  { title: 'Board of Directors', description: 'Size, election, and responsibilities' },
+  { title: 'Officer Roles', description: 'Positions, duties, and authority' },
+  { title: 'Shareholder Meetings', description: 'Annual and special meeting procedures' },
+  { title: 'Voting Procedures', description: 'Quorum requirements and voting rules' },
+  { title: 'Dividend Policy', description: 'How profits are distributed to shareholders' },
+  { title: 'Stock Transfer Restrictions', description: 'Right of first refusal, drag-along rights' },
+  { title: 'Amendment Process', description: 'How to modify the bylaws' },
+];
+
+// Operating Agreement Step Component
+function OperatingAgreementStep({ 
+  profile, 
+  onComplete,
+  isSaving,
+}: { 
+  profile: any;
+  onComplete: (data: Partial<OperatingAgreement>) => void;
+  isSaving: boolean;
+}) {
+  const [agreementType, setAgreementType] = useState<'standard' | 'custom' | 'attorney_drafted'>(
+    profile?.operatingAgreement?.type || 'standard'
+  );
+  const [signatories, setSignatories] = useState<string[]>(
+    profile?.operatingAgreement?.signatories || []
+  );
+  const [newSignatory, setNewSignatory] = useState('');
+  const [signedDate, setSignedDate] = useState(
+    profile?.operatingAgreement?.signedDate || ''
+  );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Determine document type based on business type
+  const isLLC = profile?.businessType?.toLowerCase().includes('llc');
+  const documentName = isLLC ? 'Operating Agreement' : 'Bylaws';
+  const sections = isLLC ? AGREEMENT_SECTIONS_LLC : AGREEMENT_SECTIONS_CORP;
+
+  const handleCopyUrl = async (url: string, name: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(name);
+      setTimeout(() => setCopied(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a PDF, PNG, or JPG file.');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB.');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleAddSignatory = () => {
+    if (newSignatory.trim() && !signatories.includes(newSignatory.trim())) {
+      setSignatories([...signatories, newSignatory.trim()]);
+      setNewSignatory('');
+    }
+  };
+
+  const handleRemoveSignatory = (name: string) => {
+    setSignatories(signatories.filter(s => s !== name));
+  };
+
+  const isValid = agreementType && signatories.length > 0 && signedDate;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100">
+        <h4 className="font-semibold text-indigo-900 text-lg flex items-center gap-2">
+          <Scale className="h-5 w-5" />
+          {documentName}
+        </h4>
+        <p className="text-indigo-800 mt-1 text-sm">
+          {isLLC 
+            ? 'An Operating Agreement establishes the rules for how your LLC will be run, including ownership percentages, voting rights, and profit distribution.'
+            : 'Bylaws are the internal rules governing your corporation, including board procedures, officer roles, and shareholder rights.'
+          }
+        </p>
+      </div>
+
+      {/* Why it matters */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
+        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <h4 className="font-medium text-amber-900">Why This Matters</h4>
+          <ul className="text-sm text-amber-800 mt-1 space-y-1">
+            <li>• <strong>Liability Protection:</strong> Without it, your LLC/Corp may not provide full liability protection</li>
+            <li>• <strong>Bank Requirement:</strong> Many banks require this to open a business account</li>
+            <li>• <strong>Dispute Resolution:</strong> Prevents conflicts by establishing clear rules upfront</li>
+            <li>• <strong>Legal Compliance:</strong> Some states require operating agreements/bylaws</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Agreement type selection */}
+      <div className="border rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-3">Document Type</h4>
+        <div className="space-y-3">
+          {[
+            { 
+              value: 'standard' as const, 
+              label: 'Standard Template', 
+              description: 'Use a free or low-cost template from an online service',
+              icon: FileText,
+            },
+            { 
+              value: 'custom' as const, 
+              label: 'Custom Agreement', 
+              description: 'Modified template tailored to your specific needs',
+              icon: BookOpen,
+            },
+            { 
+              value: 'attorney_drafted' as const, 
+              label: 'Attorney-Drafted', 
+              description: 'Custom document created by a licensed attorney',
+              icon: Scale,
+            },
+          ].map((option) => {
+            const Icon = option.icon;
+            return (
+              <label
+                key={option.value}
+                className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  agreementType === option.value 
+                    ? 'border-indigo-500 bg-indigo-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="agreementType"
+                  value={option.value}
+                  checked={agreementType === option.value}
+                  onChange={() => setAgreementType(option.value)}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-4 w-4 ${agreementType === option.value ? 'text-indigo-600' : 'text-gray-500'}`} />
+                    <span className={`font-medium ${agreementType === option.value ? 'text-indigo-900' : 'text-gray-900'}`}>
+                      {option.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-0.5">{option.description}</p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Key sections checklist */}
+      <div className="border rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-3">Key Sections to Include</h4>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {sections.map((section) => (
+            <div key={section.title} className="flex items-start gap-2 p-2 bg-gray-50 rounded">
+              <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{section.title}</p>
+                <p className="text-xs text-gray-600">{section.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Resources */}
+      <div className="border rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-3">Template Resources</h4>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {AGREEMENT_RESOURCES.map((resource) => (
+            <div 
+              key={resource.name}
+              className="border rounded-lg p-3 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h5 className="font-medium text-gray-900 text-sm">{resource.name}</h5>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    resource.type === 'Free Template' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {resource.type}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  <a
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 hover:bg-indigo-100 rounded"
+                    title="Visit website"
+                  >
+                    <ExternalLink className="h-4 w-4 text-indigo-600" />
+                  </a>
+                  <button
+                    onClick={() => handleCopyUrl(resource.url, resource.name)}
+                    className="p-1.5 hover:bg-indigo-100 rounded"
+                    title="Copy link"
+                  >
+                    {copied === resource.name ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">{resource.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Signatories */}
+      <div className="border rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Signatories
+        </h4>
+        <p className="text-sm text-gray-600 mb-3">
+          Add all members/shareholders who will sign the {documentName.toLowerCase()}.
+        </p>
+        
+        {/* Existing signatories */}
+        {signatories.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {signatories.map((name) => (
+              <div key={name} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <span className="text-indigo-700 font-medium text-sm">
+                      {name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{name}</span>
+                </div>
+                <button
+                  onClick={() => handleRemoveSignatory(name)}
+                  className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Add signatory */}
+        <div className="flex gap-2">
+          <Input
+            value={newSignatory}
+            onChange={(e) => setNewSignatory(e.target.value)}
+            placeholder="Enter signatory name"
+            onKeyPress={(e) => e.key === 'Enter' && handleAddSignatory()}
+          />
+          <Button 
+            variant="outline" 
+            onClick={handleAddSignatory}
+            disabled={!newSignatory.trim()}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </div>
+      </div>
+
+      {/* Signed date */}
+      <div>
+        <Label htmlFor="signedDate">Date Signed</Label>
+        <Input
+          id="signedDate"
+          type="date"
+          value={signedDate}
+          onChange={(e) => setSignedDate(e.target.value)}
+          className="mt-1 max-w-xs"
+        />
+      </div>
+
+      {/* Upload signed document */}
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept=".pdf,.png,.jpg,.jpeg"
+          className="hidden"
+        />
+        {selectedFile ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2 text-green-600">
+              <CheckCircle className="h-6 w-6" />
+              <span className="font-medium">Document uploaded</span>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3 inline-flex items-center gap-3">
+              <FileText className="h-5 w-5 text-slate-500" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]">{selectedFile.name}</p>
+                <p className="text-xs text-slate-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+              </div>
+              <button
+                onClick={handleRemoveFile}
+                className="p-1 hover:bg-slate-200 rounded"
+                title="Remove file"
+              >
+                <X className="h-4 w-4 text-slate-500" />
+              </button>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose Different File
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-600">Upload signed {documentName.toLowerCase()}</p>
+            <p className="text-xs text-gray-500 mt-1">PDF, PNG, or JPG up to 10MB</p>
+            <Button 
+              variant="outline" 
+              className="mt-3" 
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose File
+            </Button>
+          </>
+        )}
+      </div>
+
+      {/* Tips */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="font-medium text-blue-900 flex items-center gap-2 mb-2">
+          <Info className="h-4 w-4" />
+          Best Practices
+        </h4>
+        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+          <li>Keep the original signed document in a safe place</li>
+          <li>Provide copies to all members/shareholders</li>
+          <li>Review and update annually or when major changes occur</li>
+          <li>Consider having an attorney review before signing</li>
+        </ul>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button 
+          onClick={() => onComplete({ type: agreementType, signatories, signedDate })} 
+          disabled={!isValid || isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Mark as Complete'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // Step indicator component
 function StepIndicator({ 
   step, 
@@ -470,12 +899,17 @@ export default function OperationsPage() {
   const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useProfile();
   const updateBankingStatusMutation = useUpdateBankingStatus();
+  const updateOperatingAgreementStatusMutation = useUpdateOperatingAgreementStatus();
   
   const [activeModal, setActiveModal] = useState<string | null>(null);
   
   // Check if formation is complete
   const formationComplete = profile?.einStatus === 'received' || 
     (profile?.formationStatus === 'filed' || profile?.formationStatus === 'approved');
+  
+  // Determine document name based on business type
+  const isLLC = profile?.businessType?.toLowerCase().includes('llc');
+  const documentName = isLLC ? 'Operating Agreement' : 'Bylaws';
   
   // Operations steps
   const steps = [
@@ -489,9 +923,9 @@ export default function OperationsPage() {
     },
     {
       key: 'operating-agreement',
-      title: 'Operating Agreement',
-      description: 'Create or upload your operating agreement/bylaws',
-      icon: FileText,
+      title: documentName,
+      description: `Create or upload your ${documentName.toLowerCase()}`,
+      icon: Scale,
       status: profile?.readinessFlags?.operatingAgreementSigned ? 'complete' : 
         formationComplete ? 'pending' : 'locked',
     },
@@ -509,13 +943,23 @@ export default function OperationsPage() {
   const progress = Math.round((steps.filter(s => s.status === 'complete').length / steps.length) * 100);
   
   const isLoading = profileLoading;
-  const isSaving = updateBankingStatusMutation.isPending;
+  const isSaving = updateBankingStatusMutation.isPending || updateOperatingAgreementStatusMutation.isPending;
   
   // Save handler for banking
   const handleCompleteBanking = async (bankAccount: Partial<BankAccount>) => {
     await updateBankingStatusMutation.mutateAsync({
       status: 'account_opened',
       bankAccount,
+    });
+    await refetchProfile();
+    setActiveModal(null);
+  };
+  
+  // Save handler for operating agreement
+  const handleCompleteOperatingAgreement = async (data: Partial<OperatingAgreement>) => {
+    await updateOperatingAgreementStatusMutation.mutateAsync({
+      status: 'signed',
+      operatingAgreement: data,
     });
     await refetchProfile();
     setActiveModal(null);
@@ -642,13 +1086,26 @@ export default function OperationsPage() {
         </div>
       )}
       
-      {/* Placeholder modals for future steps */}
+      {/* Modal for Operating Agreement Step */}
       {activeModal === 'operating-agreement' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Operating Agreement</h2>
-            <p className="text-gray-600 mb-4">This feature is coming soon.</p>
-            <Button onClick={() => setActiveModal(null)}>Close</Button>
+          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">{documentName}</h2>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <OperatingAgreementStep
+                profile={profile}
+                onComplete={handleCompleteOperatingAgreement}
+                isSaving={isSaving}
+              />
+            </div>
           </div>
         </div>
       )}
