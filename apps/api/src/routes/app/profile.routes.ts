@@ -356,6 +356,16 @@ const addOwnersSchema = z.object({
   owners: z.array(ownerSchema).min(1),
 });
 
+// Map frontend title to Person role type
+function titleToRoleType(title: string): 'owner' | 'member' | 'manager' | 'officer' | 'director' {
+  const lowerTitle = title.toLowerCase();
+  if (lowerTitle.includes('director')) return 'director';
+  if (lowerTitle.includes('officer') || lowerTitle.includes('ceo') || lowerTitle.includes('president')) return 'officer';
+  if (lowerTitle.includes('manager') || lowerTitle.includes('managing')) return 'manager';
+  if (lowerTitle.includes('member')) return 'member';
+  return 'owner';
+}
+
 /**
  * POST /app/profile/owners
  * Add or replace owners/officers
@@ -363,7 +373,6 @@ const addOwnersSchema = z.object({
 router.post('/owners', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.user?.tenantId;
-    const userId = req.user?.id;
     
     if (!tenantId) {
       return res.status(400).json({
@@ -410,21 +419,29 @@ router.post('/owners', async (req: Request, res: Response, next: NextFunction) =
     await Person.deleteMany({ 
       tenantId, 
       businessProfileId: profile._id,
-      type: 'owner',
     });
     
-    // Create new owner records
+    // Create new owner records with proper schema
     const ownerDocs = owners.map(owner => ({
       tenantId,
       businessProfileId: profile._id,
-      type: 'owner',
       firstName: owner.firstName,
       lastName: owner.lastName,
-      title: owner.title,
+      email: owner.email || `${owner.firstName.toLowerCase()}.${owner.lastName.toLowerCase()}@placeholder.local`,
       ownershipPercentage: owner.ownershipPercentage,
-      email: owner.email,
-      createdBy: userId,
+      roles: [{
+        type: titleToRoleType(owner.title),
+        title: owner.title,
+        startDate: new Date(),
+      }],
+      isSigningAuthority: owner.ownershipPercentage >= 25,
+      isPrimaryContact: false,
     }));
+    
+    // Set first owner as primary contact
+    if (ownerDocs.length > 0) {
+      ownerDocs[0].isPrimaryContact = true;
+    }
     
     await Person.insertMany(ownerDocs);
     
