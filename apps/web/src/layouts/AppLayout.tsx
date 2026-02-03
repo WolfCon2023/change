@@ -163,12 +163,12 @@ export default function AppLayout() {
         `}
       >
         {/* Logo */}
-        <div className="h-24 flex items-center justify-center px-4 border-b bg-white">
+        <div className="h-28 flex items-center justify-center px-2 border-b bg-white">
           <Link to="/app/home" className="flex items-center">
             <img 
               src="/logo.png" 
               alt="C.H.A.N.G.E. Business Application" 
-              className="h-16 w-auto"
+              className="h-24 w-auto"
             />
           </Link>
         </div>
