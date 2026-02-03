@@ -321,15 +321,16 @@ router.get(
       
       // Find users with admin roles through groups
       const adminGroups = allGroups.filter(g => 
-        g.roles?.some((roleId: string) => adminRoleIds.has(roleId.toString()))
+        g.roles?.some((roleId: unknown) => adminRoleIds.has(String(roleId)))
       );
       const usersInAdminGroups = new Set<string>();
       adminGroups.forEach(g => {
-        g.members?.forEach((m: { userId: string }) => usersInAdminGroups.add(m.userId.toString()));
+        // members is an array of ObjectIds (user IDs)
+        g.members?.forEach((memberId: unknown) => usersInAdminGroups.add(String(memberId)));
       });
 
       const usersWithAdminAccess = allUsers.filter(u => 
-        u.roles?.some((r: string) => adminRoleIds.has(r.toString())) ||
+        u.roles?.some((r: unknown) => adminRoleIds.has(String(r))) ||
         usersInAdminGroups.has(u._id.toString())
       );
 
@@ -416,7 +417,8 @@ router.get(
       // =========================================================================
       const allGroupMemberIds = new Set<string>();
       allGroups.forEach(g => {
-        g.members?.forEach((m: { userId: string }) => allGroupMemberIds.add(m.userId.toString()));
+        // members is an array of ObjectIds (user IDs)
+        g.members?.forEach((memberId: unknown) => allGroupMemberIds.add(String(memberId)));
       });
 
       const usersWithoutGroups = allUsers.filter(u => !allGroupMemberIds.has(u._id.toString()));
@@ -444,13 +446,13 @@ router.get(
       const usersWithConflicts: Array<{ user: typeof allUsers[0]; conflicts: string[] }> = [];
       
       for (const user of allUsers) {
-        const userRoleIds = new Set(user.roles?.map((r: string) => r.toString()) || []);
-        const userGroupIds = user.groups?.map((g: string) => g.toString()) || [];
+        const userRoleIds = new Set(user.roles?.map((r: unknown) => String(r)) || []);
+        const userGroupIds = user.groups?.map((g: unknown) => String(g)) || [];
         
         // Get all roles from user's groups
         for (const group of allGroups) {
           if (userGroupIds.includes(group._id.toString())) {
-            group.roles?.forEach((r: string) => userRoleIds.add(r.toString()));
+            group.roles?.forEach((r: unknown) => userRoleIds.add(String(r)));
           }
         }
         
