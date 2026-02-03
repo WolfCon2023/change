@@ -50,7 +50,7 @@ function Disclaimer() {
 }
 
 // Progress indicator component
-function ProgressIndicator({ progress }: { progress: { overall: number; setup: number; formation: number } }) {
+function ProgressIndicator({ progress }: { progress: { overall: number; setup: number; formation: number; operations: number } }) {
   return (
     <div className="bg-white border rounded-lg p-4 mb-4">
       <div className="flex items-center justify-between mb-2">
@@ -63,7 +63,7 @@ function ProgressIndicator({ progress }: { progress: { overall: number; setup: n
           style={{ width: `${progress.overall}%` }}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="flex items-center gap-1">
           {progress.setup === 100 ? (
             <CheckCircle className="h-3 w-3 text-green-500" />
@@ -79,6 +79,14 @@ function ProgressIndicator({ progress }: { progress: { overall: number; setup: n
             <Clock className="h-3 w-3 text-amber-500" />
           )}
           <span className="text-gray-600">Formation: {progress.formation}%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {progress.operations === 100 ? (
+            <CheckCircle className="h-3 w-3 text-green-500" />
+          ) : (
+            <Clock className="h-3 w-3 text-amber-500" />
+          )}
+          <span className="text-gray-600">Ops: {progress.operations}%</span>
         </div>
       </div>
     </div>

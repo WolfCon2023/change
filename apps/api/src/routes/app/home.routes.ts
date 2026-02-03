@@ -94,7 +94,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const flags = profile.readinessFlags || {};
     const setupProgress = calculateSetupProgress(profile);
     const formationProgress = calculateFormationProgress(profile);
-    const overallProgress = Math.round((setupProgress + formationProgress) / 2);
+    const operationsProgress = calculateOperationsProgress(profile);
+    const overallProgress = Math.round((setupProgress + formationProgress + operationsProgress) / 3);
     
     // Determine blockers
     const blockers: Array<{ id: string; type: string; title: string; description: string; route?: string }> = [];
@@ -181,7 +182,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           overall: overallProgress,
           setup: setupProgress,
           formation: formationProgress,
-          operations: 0,
+          operations: operationsProgress,
         },
         nextAction,
         blockers,
@@ -222,12 +223,44 @@ function calculateFormationProgress(profile: any): number {
   let progress = 0;
   const flags = profile.readinessFlags || {};
   
-  if (flags.addressVerified) progress += 15;
-  if (flags.registeredAgentSet) progress += 15;
-  if (flags.ownersAdded) progress += 15;
+  // Address and Registered Agent (20% each)
+  if (flags.addressVerified) progress += 20;
+  if (flags.registeredAgentSet) progress += 20;
+  
+  // Owners added (10%)
+  if (flags.ownersAdded) progress += 10;
+  
+  // Formation filed (25%)
   if (profile.formationStatus === 'filed' || profile.formationStatus === 'approved') progress += 25;
-  if (profile.einStatus === 'received') progress += 20;
-  if (flags.documentsGenerated) progress += 10;
+  
+  // EIN received (25%)
+  if (profile.einStatus === 'received') progress += 25;
+  
+  return Math.min(progress, 100);
+}
+
+/**
+ * Calculate operations progress percentage
+ */
+function calculateOperationsProgress(profile: any): number {
+  // Operations requires formation to be complete
+  if (profile.einStatus !== 'received' && 
+      profile.formationStatus !== 'filed' && 
+      profile.formationStatus !== 'approved') {
+    return 0;
+  }
+  
+  let progress = 0;
+  const flags = profile.readinessFlags || {};
+  
+  // Bank account opened (33%)
+  if (flags.bankAccountOpened) progress += 33;
+  
+  // Operating agreement signed (33%)
+  if (flags.operatingAgreementSigned) progress += 33;
+  
+  // Compliance calendar set up (34%)
+  if (flags.complianceCalendarSetup) progress += 34;
   
   return Math.min(progress, 100);
 }
