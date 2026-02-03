@@ -417,6 +417,68 @@ export function useUpdateEINStatus() {
   });
 }
 
+export function useUpdateFormationState() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (stateCode: string) => {
+      const { data } = await api.put('/app/profile/formation-state', { stateCode });
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['setup-status'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+      queryClient.invalidateQueries({ queryKey: ['state-portal'] });
+    },
+  });
+}
+
+export function useStatePortal() {
+  return useQuery({
+    queryKey: ['state-portal'],
+    queryFn: async () => {
+      const { data } = await api.get('/app/profile/state-portal');
+      return data.data;
+    },
+  });
+}
+
+// =============================================================================
+// Reference Data Hooks
+// =============================================================================
+
+export interface StateFilingPortalData {
+  code: string;
+  state: string;
+  agencyName: string;
+  registrationUrl: string;
+  notes?: string;
+}
+
+export function useStateFilingPortals() {
+  return useQuery({
+    queryKey: ['state-filing-portals'],
+    queryFn: async () => {
+      const { data } = await api.get('/app/reference/state-filing-portals');
+      return data.data as StateFilingPortalData[];
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour - this data rarely changes
+  });
+}
+
+export function useStateFilingPortal(code: string) {
+  return useQuery({
+    queryKey: ['state-filing-portal', code],
+    queryFn: async () => {
+      const { data } = await api.get(`/app/reference/state-filing-portals/${code}`);
+      return data.data as StateFilingPortalData;
+    },
+    enabled: !!code,
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+}
+
 // =============================================================================
 // Home Hooks
 // =============================================================================

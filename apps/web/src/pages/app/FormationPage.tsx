@@ -19,10 +19,14 @@ import {
   Plus,
   Trash2,
   Upload,
+  ExternalLink,
+  Copy,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { StateSelectorMap } from '../../components/state';
+import { getStatePortal } from '@change/shared';
 import { 
   useProfile, 
   useSetupStatus, 
@@ -30,6 +34,7 @@ import {
   useAddOwners,
   useUpdateFormationStatus,
   useUpdateEINStatus,
+  useUpdateFormationState,
 } from '../../lib/app-api';
 
 // US States for dropdown
@@ -483,30 +488,85 @@ function OwnersForm({
   );
 }
 
-// SOS Filing Step
-function SOSFilingStep({ 
+// State Business Filing Step
+function StateFilingStep({ 
   profile, 
   onComplete,
+  onStateChange,
   isSaving,
 }: { 
   profile: any;
   onComplete: () => void;
+  onStateChange: (stateCode: string) => void;
   isSaving: boolean;
 }) {
   const [hasConfirmation, setHasConfirmation] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  // Get state portal info from registry
+  const statePortal = profile?.formationState ? getStatePortal(profile.formationState) : null;
+  
+  // Handle copy link
+  const handleCopyLink = async () => {
+    if (statePortal?.registrationUrl) {
+      try {
+        await navigator.clipboard.writeText(statePortal.registrationUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
   
   return (
     <div className="space-y-4">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h4 className="font-medium text-blue-900">Filing with {profile?.formationState} Secretary of State</h4>
-        <p className="text-sm text-blue-800 mt-1">
-          You will need to file your formation documents with your state. This platform helps you prepare 
-          but does not submit filings on your behalf.
-        </p>
+      {/* Header with state info */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+        <h4 className="font-semibold text-blue-900 text-lg">State Business Filing Portal</h4>
+        {statePortal ? (
+          <>
+            <p className="text-blue-800 mt-1">Filing in <strong>{statePortal.state}</strong></p>
+            <p className="text-sm text-blue-700 mt-1">
+              Agency: {statePortal.agencyName}
+            </p>
+          </>
+        ) : (
+          <p className="text-blue-800 mt-1">Please select your formation state</p>
+        )}
       </div>
       
+      {/* State selector toggle */}
+      <div className="border rounded-lg p-3">
+        <button
+          onClick={() => setShowMap(!showMap)}
+          className="flex items-center justify-between w-full text-left"
+        >
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-slate-600" />
+            <span className="font-medium text-slate-900">
+              {statePortal ? `Change formation state` : 'Select formation state'}
+            </span>
+          </div>
+          <span className="text-sm text-blue-600">{showMap ? 'Hide' : 'Show'} map</span>
+        </button>
+        
+        {showMap && (
+          <div className="mt-3">
+            <StateSelectorMap
+              selectedState={profile?.formationState}
+              onStateSelect={onStateChange}
+              showPortalInfo={false}
+              compact
+            />
+          </div>
+        )}
+      </div>
+      
+      {/* Checklist */}
       <div className="border rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-3">Checklist</h4>
+        <h4 className="font-medium text-gray-900 mb-3">Prerequisites Checklist</h4>
         <ul className="space-y-2 text-sm">
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-600" />
@@ -523,16 +583,49 @@ function SOSFilingStep({
         </ul>
       </div>
       
+      {/* Next Steps */}
       <div className="border rounded-lg p-4">
         <h4 className="font-medium text-gray-900 mb-3">Next Steps</h4>
-        <ol className="space-y-2 text-sm list-decimal list-inside">
-          <li>Download or generate your Articles of Organization</li>
-          <li>File with {profile?.formationState} Secretary of State</li>
+        <ol className="space-y-2 text-sm list-decimal list-inside text-slate-700">
+          <li>Download or generate your formation documents (Articles of Organization, Articles of Incorporation, etc.)</li>
+          <li>Open the official state business filing portal</li>
           <li>Pay the filing fee (varies by state)</li>
-          <li>Upload your filing confirmation below</li>
+          <li>Upload your filing confirmation in this step</li>
         </ol>
       </div>
       
+      {/* Portal link buttons */}
+      {statePortal && (
+        <div className="bg-white border rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href={statePortal.registrationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1"
+            >
+              <Button className="w-full" size="lg">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Go to official filing portal
+              </Button>
+            </a>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleCopyLink}
+              className="sm:w-auto"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              {copied ? 'Copied!' : 'Copy link'}
+            </Button>
+          </div>
+          <p className="text-xs text-slate-500 mt-2 text-center">
+            Opens {statePortal.agencyName} in a new tab
+          </p>
+        </div>
+      )}
+      
+      {/* Upload section */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
         <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
         <p className="text-sm text-gray-600">Upload filing confirmation</p>
@@ -542,6 +635,16 @@ function SOSFilingStep({
         </Button>
       </div>
       
+      {/* Disclaimer */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
+        <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-800">
+          This platform helps you prepare but does not submit filings on your behalf.
+          You are responsible for filing with your state's business registration agency.
+        </p>
+      </div>
+      
+      {/* Confirmation checkbox */}
       <label className="flex items-start gap-2 cursor-pointer">
         <input 
           type="checkbox" 
@@ -550,12 +653,12 @@ function SOSFilingStep({
           className="mt-1 h-4 w-4"
         />
         <span className="text-sm text-gray-700">
-          I confirm that I have filed my formation documents with the Secretary of State
+          I confirm that I have filed my formation documents with the state business registration agency
         </span>
       </label>
       
       <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-        <Button onClick={onComplete} disabled={!hasConfirmation || isSaving}>
+        <Button onClick={onComplete} disabled={!hasConfirmation || !statePortal || isSaving}>
           {isSaving ? 'Saving...' : 'Mark as Complete'}
         </Button>
       </div>
@@ -723,6 +826,7 @@ export default function FormationPage() {
   const addOwnersMutation = useAddOwners();
   const updateFormationStatusMutation = useUpdateFormationStatus();
   const updateEINStatusMutation = useUpdateEINStatus();
+  const updateFormationStateMutation = useUpdateFormationState();
   
   const [activeModal, setActiveModal] = useState<string | null>(null);
   
@@ -751,8 +855,8 @@ export default function FormationPage() {
     },
     {
       key: 'sos',
-      title: 'Secretary of State Filing',
-      description: 'Generate formation documents and file with your state',
+      title: 'State Business Filing',
+      description: 'File formation documents with your state business registration agency',
       icon: Building,
       status: profile?.formationStatus === 'filed' || profile?.formationStatus === 'approved' ? 'complete' : 'pending',
     },
@@ -770,7 +874,8 @@ export default function FormationPage() {
   
   const isLoading = profileLoading || setupLoading;
   const isSaving = updateProfileMutation.isPending || addOwnersMutation.isPending || 
-    updateFormationStatusMutation.isPending || updateEINStatusMutation.isPending;
+    updateFormationStatusMutation.isPending || updateEINStatusMutation.isPending ||
+    updateFormationStateMutation.isPending;
   
   // Save handlers
   const handleSaveAddress = async (data: AddressFormData) => {
@@ -819,6 +924,11 @@ export default function FormationPage() {
     );
     await refetchProfile();
     setActiveModal(null);
+  };
+  
+  const handleStateChange = async (stateCode: string) => {
+    await updateFormationStateMutation.mutateAsync(stateCode);
+    await refetchProfile();
   };
   
   const handleSOSComplete = async () => {
@@ -969,11 +1079,12 @@ export default function FormationPage() {
       <Modal 
         isOpen={activeModal === 'sos'} 
         onClose={() => setActiveModal(null)}
-        title="Secretary of State Filing"
+        title="State Business Filing Portal"
       >
-        <SOSFilingStep
+        <StateFilingStep
           profile={profile}
           onComplete={handleSOSComplete}
+          onStateChange={handleStateChange}
           isSaving={isSaving}
         />
       </Modal>

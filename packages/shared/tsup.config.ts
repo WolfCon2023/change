@@ -6,6 +6,7 @@ export default defineConfig({
     'types/index': 'src/types/index.ts',
     'schemas/index': 'src/schemas/index.ts',
     'constants/index': 'src/constants/index.ts',
+    'registries/index': 'src/registries/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,

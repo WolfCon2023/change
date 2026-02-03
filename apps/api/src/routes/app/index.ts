@@ -13,6 +13,7 @@ import archetypesRoutes from './archetypes.routes.js';
 import setupRoutes from './setup.routes.js';
 import profileRoutes from './profile.routes.js';
 import homeRoutes from './home.routes.js';
+import referenceRoutes from './reference.routes.js';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.use('/archetypes', archetypesRoutes);
 router.use('/setup', setupRoutes);
 router.use('/profile', profileRoutes);
 router.use('/home', homeRoutes);
+router.use('/reference', referenceRoutes);
 
 // Health check for app routes
 router.get('/health', (_req: Request, res: Response) => {

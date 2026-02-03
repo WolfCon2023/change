@@ -25,6 +25,11 @@
       "import": "./dist/constants/index.mjs",
       "require": "./dist/constants/index.js",
       "types": "./dist/constants/index.d.ts"
+    },
+    "./registries": {
+      "import": "./dist/registries/index.mjs",
+      "require": "./dist/registries/index.js",
+      "types": "./dist/registries/index.d.ts"
     }
   },
   "scripts": {

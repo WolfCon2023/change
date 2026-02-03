@@ -7,7 +7,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { BusinessProfile, Person, BusinessArchetype } from '../../db/models/index.js';
-import { USState } from '@change/shared';
+import { USState, isValidStateCode, getStatePortal, STATE_CODES } from '@change/shared';
 
 const router = Router();
 
@@ -570,6 +570,132 @@ router.post('/ein-status', async (req: Request, res: Response, next: NextFunctio
       data: {
         einStatus: profile.einStatus,
         readinessFlags: profile.readinessFlags,
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /app/profile/formation-state
+ * Update business formation state with validation against registry
+ */
+router.put('/formation-state', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const { stateCode } = req.body;
+    
+    if (!stateCode || typeof stateCode !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'MISSING_STATE', message: 'State code is required' },
+      });
+    }
+    
+    const upperCode = stateCode.toUpperCase();
+    
+    // Validate against registry
+    if (!isValidStateCode(upperCode)) {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          code: 'INVALID_STATE_CODE', 
+          message: `Invalid state code: ${stateCode}. Must be a valid US state or DC.`,
+          validCodes: STATE_CODES,
+        },
+      });
+    }
+    
+    // Get portal info for response
+    const portal = getStatePortal(upperCode);
+    
+    const profile = await BusinessProfile.findOneAndUpdate(
+      { tenantId },
+      { 
+        $set: { 
+          formationState: upperCode,
+          'readinessFlags.stateSelected': true,
+        } 
+      },
+      { new: true }
+    );
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        formationState: profile.formationState,
+        statePortal: portal,
+        readinessFlags: profile.readinessFlags,
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /app/profile/state-portal
+ * Get the state filing portal info for the current profile's formation state
+ */
+router.get('/state-portal', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const profile = await BusinessProfile.findOne({ tenantId }).lean();
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    if (!profile.formationState) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_STATE', message: 'Formation state not set on profile' },
+      });
+    }
+    
+    const portal = getStatePortal(profile.formationState);
+    
+    if (!portal) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'PORTAL_NOT_FOUND', message: 'State portal not found for formation state' },
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        formationState: profile.formationState,
+        portal,
       },
       meta: { timestamp: new Date().toISOString() },
     });
