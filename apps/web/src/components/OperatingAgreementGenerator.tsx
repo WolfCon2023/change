@@ -757,9 +757,317 @@ export function OperatingAgreementGenerator({ profile, onComplete, onClose }: Op
     setSigningMember(null);
   };
 
-  // Print/Download PDF
+  // Print/Download PDF - Opens in new window for clean printing
   const handlePrint = () => {
-    window.print();
+    const stateName = STATE_NAMES[data.stateFiled] || data.stateFiled;
+    const governingStateName = STATE_NAMES[data.stateGoverning] || data.stateGoverning;
+    
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to print the document');
+      return;
+    }
+    
+    // Generate signature images HTML
+    const signatureImages = data.members.map((_, idx) => {
+      const sig = data.signatures[idx];
+      return sig?.signatureData 
+        ? `<img src="${sig.signatureData}" alt="Signature" style="height: 40px; object-fit: contain;" />`
+        : '';
+    });
+    
+    // Build the HTML document
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Operating Agreement - ${data.companyName}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap" rel="stylesheet">
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #000;
+            padding: 1in;
+            max-width: 8.5in;
+            margin: 0 auto;
+          }
+          h1 {
+            font-size: 18pt;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+          }
+          h2 {
+            font-size: 16pt;
+            text-align: center;
+            margin-bottom: 8px;
+          }
+          h3 {
+            font-size: 14pt;
+            margin: 24px 0 12px 0;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+          }
+          .subtitle {
+            color: #666;
+            font-size: 11pt;
+          }
+          section {
+            margin-bottom: 20px;
+          }
+          p {
+            margin-bottom: 12px;
+            text-align: justify;
+          }
+          strong {
+            font-weight: bold;
+          }
+          em {
+            font-style: italic;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 11pt;
+          }
+          th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+          }
+          th {
+            background: #f5f5f5;
+          }
+          .signature-block {
+            margin-top: 48px;
+            page-break-inside: avoid;
+          }
+          .signature-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #ccc;
+          }
+          .signature-area {
+            width: 60%;
+          }
+          .signature-box {
+            border-bottom: 1px solid #000;
+            height: 50px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: flex-end;
+          }
+          .signature-name {
+            font-size: 10pt;
+          }
+          .signature-title {
+            font-size: 9pt;
+            color: #666;
+          }
+          .date-area {
+            width: 30%;
+          }
+          .date-box {
+            border-bottom: 1px solid #000;
+            height: 24px;
+            margin-bottom: 4px;
+          }
+          .date-label {
+            font-size: 10pt;
+          }
+          @media print {
+            body {
+              padding: 0;
+            }
+            @page {
+              margin: 1in;
+              size: letter;
+            }
+          }
+          .no-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 1000;
+          }
+          .no-print button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+          }
+          .btn-print {
+            background: #2563eb;
+            color: white;
+          }
+          .btn-print:hover {
+            background: #1d4ed8;
+          }
+          .btn-close {
+            background: #f3f4f6;
+            color: #374151;
+          }
+          .btn-close:hover {
+            background: #e5e7eb;
+          }
+          @media print {
+            .no-print {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print">
+          <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
+          <button class="btn-close" onclick="window.close()">Close</button>
+        </div>
+        
+        <div class="header">
+          <h1>Operating Agreement</h1>
+          <h2>${data.companyName || '[Company Name]'}</h2>
+          <p class="subtitle">A ${stateName} Limited Liability Company</p>
+        </div>
+        
+        <section>
+          <p>
+            This Operating Agreement (the "<strong>Agreement</strong>") of <strong>${data.companyName || '[Company Name]'}</strong>, 
+            a limited liability company organized under the laws of the State of ${stateName} (the "<strong>Company</strong>"), 
+            is entered into and effective as of <strong>${formatDate(data.effectiveDate) || '[Effective Date]'}</strong>, 
+            by and among the members whose names and addresses are set forth in <em>Schedule A</em> attached hereto 
+            (individually, a "<strong>Member</strong>" and collectively, the "<strong>Members</strong>").
+          </p>
+        </section>
+        
+        <section>
+          <h3>ARTICLE I - FORMATION AND NAME</h3>
+          <p><strong>1.1 Formation.</strong> The Company was formed as a limited liability company under the laws of the State of ${stateName} upon the filing of Articles of Organization with the Secretary of State.</p>
+          <p><strong>1.2 Name.</strong> The name of the Company is <strong>${data.companyName || '[Company Name]'}</strong>.</p>
+          <p><strong>1.3 Principal Office.</strong> The principal place of business of the Company shall be at <strong>${data.principalAddress || '[Address]'}</strong>, or such other location as the Members may determine.</p>
+          <p><strong>1.4 Purpose.</strong> The Company is organized for the purpose of ${data.businessPurpose || 'engaging in any lawful business activity'} and any other lawful purpose permitted under the ${stateName} Limited Liability Company Act.</p>
+        </section>
+        
+        <section>
+          <h3>ARTICLE II - MEMBERS AND CAPITAL CONTRIBUTIONS</h3>
+          <p><strong>2.1 Initial Members.</strong> The initial Members of the Company, their addresses, capital contributions, and ownership percentages are set forth in <em>Schedule A</em>.</p>
+          <p><strong>2.2 Capital Contributions.</strong> Each Member has contributed or agrees to contribute the amount of capital set forth opposite such Member's name in <em>Schedule A</em>.</p>
+          ${data.members.length > 0 ? `
+            <p><strong>Schedule A - Members:</strong></p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Address</th>
+                  <th>Capital Contribution</th>
+                  <th>Ownership %</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.members.map(m => `
+                  <tr>
+                    <td>${m.name}</td>
+                    <td>${m.address || 'N/A'}</td>
+                    <td>${formatCurrency(m.capitalContribution)}</td>
+                    <td>${m.ownershipPercentage}%</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : ''}
+        </section>
+        
+        <section>
+          <h3>ARTICLE III - MANAGEMENT</h3>
+          <p><strong>3.1 Management Structure.</strong> The Company shall be <strong>${data.managementType === 'member-managed' ? 'member-managed' : 'manager-managed'}</strong>. ${data.managementType === 'member-managed' 
+            ? 'Each Member shall have the authority to bind the Company and participate in the management of the Company\'s business affairs.'
+            : `The Manager(s) shall have full authority to manage the business and affairs of the Company. The initial Manager(s) shall be: ${data.managers.join(', ') || '[Manager Names]'}.`
+          }</p>
+          <p><strong>3.2 Duties.</strong> The ${data.managementType === 'member-managed' ? 'Members' : 'Manager(s)'} shall manage the Company in good faith and in a manner reasonably believed to be in the best interests of the Company.</p>
+        </section>
+        
+        <section>
+          <h3>ARTICLE IV - ALLOCATIONS AND DISTRIBUTIONS</h3>
+          <p><strong>4.1 Profits and Losses.</strong> The profits and losses of the Company shall be allocated among the Members ${data.profitDistribution === 'ownership' ? 'in proportion to their respective ownership percentages' : 'as determined by the Members from time to time'}.</p>
+          <p><strong>4.2 Distributions.</strong> Distributions of available cash shall be made to the Members ${data.distributionFrequency === 'quarterly' ? 'on a quarterly basis' : data.distributionFrequency === 'annually' ? 'on an annual basis' : 'at such times as determined by the Members'}, in proportion to their respective ownership percentages, subject to the retention of reasonable reserves for Company operations.</p>
+          <p><strong>4.3 Fiscal Year.</strong> The fiscal year of the Company shall end on <strong>${data.fiscalYearEnd || 'December 31'}</strong> of each year.</p>
+        </section>
+        
+        <section>
+          <h3>ARTICLE V - VOTING AND DECISION MAKING</h3>
+          <p><strong>5.1 Voting Rights.</strong> Each Member shall be entitled to vote on Company matters in proportion to such Member's ownership percentage.</p>
+          <p><strong>5.2 Ordinary Decisions.</strong> Except as otherwise provided herein, decisions on ordinary business matters shall be made by a ${data.votingThreshold === 'majority' ? 'majority vote (more than 50%)' : data.votingThreshold === 'supermajority' ? 'supermajority vote (at least 67%)' : 'unanimous vote'} of the Members.</p>
+          <p><strong>5.3 Major Decisions.</strong> The following decisions shall require a ${data.majorDecisionThreshold === 'majority' ? 'majority vote' : data.majorDecisionThreshold === 'supermajority' ? 'supermajority vote (at least 67%)' : 'unanimous vote'} of the Members: (a) admission of new Members; (b) sale of substantially all assets; (c) merger or dissolution of the Company; (d) amendment of this Agreement; and (e) any single expenditure exceeding $10,000.</p>
+        </section>
+        
+        <section>
+          <h3>ARTICLE VI - TRANSFER OF MEMBERSHIP INTERESTS</h3>
+          <p><strong>6.1 Restrictions on Transfer.</strong> ${data.transferRestrictions === 'rofr' 
+            ? 'No Member may transfer, sell, or assign their membership interest without first offering the interest to the other Members on the same terms (Right of First Refusal).'
+            : data.transferRestrictions === 'consent'
+            ? 'No Member may transfer, sell, or assign their membership interest without the prior written consent of all other Members.'
+            : 'Members may freely transfer their membership interests, subject to compliance with applicable securities laws.'
+          }</p>
+          <p><strong>6.2 Buyout Valuation.</strong> In the event of a buyout of a Member's interest, the purchase price shall be determined based on ${data.buyoutMethod === 'fair-market' ? 'fair market value as determined by an independent appraiser' : data.buyoutMethod === 'book-value' ? 'the book value of the Member\'s capital account' : 'a formula agreed upon by the Members'}.</p>
+        </section>
+        
+        <section>
+          <h3>ARTICLE VII - DISSOLUTION AND WINDING UP</h3>
+          <p><strong>7.1 Events of Dissolution.</strong> The Company shall be dissolved upon: (a) the unanimous vote of all Members to dissolve; (b) the occurrence of any event that makes it unlawful for the Company's business to be continued; or (c) any other event specified in the Articles of Organization.</p>
+          <p><strong>7.2 Winding Up.</strong> Upon dissolution, the Company's affairs shall be wound up, its assets liquidated, and the proceeds distributed: first, to creditors; second, to Members in respect of their capital accounts.</p>
+        </section>
+        
+        <section>
+          <h3>ARTICLE VIII - GENERAL PROVISIONS</h3>
+          <p><strong>8.1 Governing Law.</strong> This Agreement shall be governed by and construed in accordance with the laws of the State of ${governingStateName}, without regard to conflicts of law principles.</p>
+          <p><strong>8.2 Amendments.</strong> This Agreement may be amended only by a written instrument signed by all Members.</p>
+          <p><strong>8.3 Entire Agreement.</strong> This Agreement constitutes the entire agreement among the Members with respect to the subject matter hereof and supersedes all prior agreements and understandings.</p>
+          <p><strong>8.4 Severability.</strong> If any provision of this Agreement is held invalid, the remaining provisions shall continue in full force and effect.</p>
+        </section>
+        
+        <div class="signature-block">
+          <p><strong>IN WITNESS WHEREOF</strong>, the undersigned have executed this Operating Agreement as of the date first written above.</p>
+          
+          ${data.members.map((member, idx) => `
+            <div class="signature-line">
+              <div class="signature-area">
+                <div class="signature-box">${signatureImages[idx]}</div>
+                <div class="signature-name">${member.name}</div>
+                <div class="signature-title">Member</div>
+              </div>
+              <div class="date-area">
+                <div class="date-box"></div>
+                <div class="date-label">Date</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
   };
 
   // Calculate total ownership
@@ -1350,21 +1658,33 @@ export function OperatingAgreementGenerator({ profile, onComplete, onClose }: Op
       case 6: // Preview & Sign
         return (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h4 className="font-medium text-gray-900">Review Your Operating Agreement</h4>
-                <p className="text-sm text-gray-600">Review the document and add signatures</p>
+                <p className="text-sm text-gray-600">Review the document, add signatures, then download</p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setShowPreview(!showPreview)}>
                   <Eye className="h-4 w-4 mr-2" />
-                  {showPreview ? 'Hide Preview' : 'Show Preview'}
+                  {showPreview ? 'Hide' : 'Preview'}
                 </Button>
-                <Button variant="outline" onClick={handlePrint}>
+                <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white">
                   <Printer className="h-4 w-4 mr-2" />
-                  Print / Save PDF
+                  Download / Print PDF
                 </Button>
               </div>
+            </div>
+            
+            {/* Download instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-medium text-blue-900 mb-2">How to Download Your Agreement</h4>
+              <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                <li>Add signatures for all members below</li>
+                <li>Click "<strong>Download / Print PDF</strong>" button above</li>
+                <li>A new window will open with your formatted document</li>
+                <li>Click "<strong>Print / Save as PDF</strong>" in that window</li>
+                <li>Choose "Save as PDF" as your printer to download, or select your printer to print</li>
+              </ol>
             </div>
 
             {/* Signatures Section */}
