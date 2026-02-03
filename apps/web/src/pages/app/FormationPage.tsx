@@ -21,6 +21,8 @@ import {
   Upload,
   ExternalLink,
   Copy,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -854,8 +856,61 @@ function EINApplicationStep({
   onComplete: (einNumber: string) => void;
   isSaving: boolean;
 }) {
-  const [hasEIN, setHasEIN] = useState(false);
   const [localEinNumber, setLocalEinNumber] = useState('');
+  const [showEIN, setShowEIN] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Format EIN as user types (XX-XXXXXXX)
+  const handleEINChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9]/g, ''); // Only allow digits
+    if (value.length > 9) value = value.slice(0, 9); // Max 9 digits
+    
+    // Add hyphen after first 2 digits
+    if (value.length > 2) {
+      value = value.slice(0, 2) + '-' + value.slice(2);
+    }
+    setLocalEinNumber(value);
+  };
+  
+  // Mask EIN for display (show only last 4 digits)
+  const getMaskedEIN = () => {
+    if (!localEinNumber) return '';
+    const digitsOnly = localEinNumber.replace('-', '');
+    if (digitsOnly.length <= 4) return localEinNumber;
+    const masked = '••-•••' + digitsOnly.slice(-4);
+    return masked;
+  };
+  
+  // Validate EIN format (XX-XXXXXXX = 9 digits)
+  const isValidEIN = () => {
+    const digitsOnly = localEinNumber.replace('-', '');
+    return digitsOnly.length === 9;
+  };
+  
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a PDF, PNG, or JPG file.');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB.');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+  
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
   
   return (
     <div className="space-y-4">
@@ -877,41 +932,108 @@ function EINApplicationStep({
         </ol>
       </div>
       
+      {/* EIN Input with visibility toggle */}
       <div>
         <Label htmlFor="einNumber">EIN Number</Label>
-        <Input
-          id="einNumber"
-          value={localEinNumber}
-          onChange={(e) => setLocalEinNumber(e.target.value)}
-          placeholder="XX-XXXXXXX"
-          className="mt-1 max-w-xs"
-        />
-        <p className="text-xs text-gray-500 mt-1">Format: XX-XXXXXXX</p>
+        <div className="relative mt-1 max-w-xs">
+          <Input
+            id="einNumber"
+            type="text"
+            value={showEIN ? localEinNumber : getMaskedEIN()}
+            onChange={handleEINChange}
+            onFocus={() => setShowEIN(true)}
+            placeholder="XX-XXXXXXX"
+            className="pr-10 font-mono"
+            maxLength={10}
+          />
+          <button
+            type="button"
+            onClick={() => setShowEIN(!showEIN)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+            title={showEIN ? 'Hide EIN' : 'Show EIN'}
+          >
+            {showEIN ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">Format: XX-XXXXXXX (9 digits)</p>
+        {localEinNumber && !isValidEIN() && (
+          <p className="text-xs text-amber-600 mt-1">Please enter a complete 9-digit EIN</p>
+        )}
+        {isValidEIN() && (
+          <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+            <Check className="h-3 w-3" /> Valid EIN format
+          </p>
+        )}
       </div>
       
+      {/* File upload */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-        <p className="text-sm text-gray-600">Upload EIN confirmation letter</p>
-        <p className="text-xs text-gray-500 mt-1">PDF or image up to 10MB</p>
-        <Button variant="outline" className="mt-3" size="sm">
-          Choose File
-        </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept=".pdf,.png,.jpg,.jpeg"
+          className="hidden"
+        />
+        {selectedFile ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2 text-green-600">
+              <Check className="h-6 w-6" />
+              <span className="font-medium">File selected</span>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3 inline-flex items-center gap-3">
+              <FileText className="h-5 w-5 text-slate-500" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]">{selectedFile.name}</p>
+                <p className="text-xs text-slate-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+              </div>
+              <button
+                onClick={handleRemoveFile}
+                className="p-1 hover:bg-slate-200 rounded"
+                title="Remove file"
+              >
+                <X className="h-4 w-4 text-slate-500" />
+              </button>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose Different File
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-600">Upload EIN confirmation letter</p>
+            <p className="text-xs text-gray-500 mt-1">PDF or image up to 10MB</p>
+            <Button 
+              variant="outline" 
+              className="mt-3" 
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose File
+            </Button>
+          </>
+        )}
       </div>
       
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input 
-          type="checkbox" 
-          checked={hasEIN}
-          onChange={(e) => setHasEIN(e.target.checked)}
-          className="mt-1 h-4 w-4"
-        />
-        <span className="text-sm text-gray-700">
-          I have received my EIN from the IRS
-        </span>
-      </label>
+      {/* Security note */}
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex gap-2">
+        <ShieldCheck className="h-4 w-4 text-slate-600 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-slate-600">
+          Your EIN is stored securely and masked by default for your protection. 
+          Only you can view the full number by clicking the eye icon.
+        </p>
+      </div>
       
       <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-        <Button onClick={() => onComplete(localEinNumber)} disabled={!hasEIN || !localEinNumber || isSaving}>
+        <Button 
+          onClick={() => onComplete(localEinNumber)} 
+          disabled={!isValidEIN() || isSaving}
+        >
           {isSaving ? 'Saving...' : 'Complete Formation'}
         </Button>
       </div>
