@@ -3,6 +3,7 @@
  * KPI dashboards by archetype
  */
 
+import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, 
   Target, 
@@ -14,10 +15,12 @@ import {
   Calendar,
   Clock,
   AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { useProfile, useHomeData } from '../../lib/app-api';
 
 export default function DashboardsPage() {
+  const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: homeData, isLoading: homeLoading } = useHomeData();
   
@@ -214,31 +217,55 @@ export default function DashboardsPage() {
             Compliance Overview
           </h3>
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="bg-blue-50 rounded-lg p-4 text-center">
+            <button 
+              onClick={() => navigate('/app/tasks?category=compliance')}
+              className="bg-blue-50 rounded-lg p-4 text-center hover:bg-blue-100 transition-colors cursor-pointer group"
+            >
               <div className="text-3xl font-bold text-blue-700">{complianceItems.length}</div>
-              <div className="text-sm text-blue-600">Total Items</div>
-            </div>
-            <div className="bg-amber-50 rounded-lg p-4 text-center">
+              <div className="text-sm text-blue-600 flex items-center justify-center gap-1">
+                Total Items
+                <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+            <button 
+              onClick={() => navigate('/app/tasks?filter=pending&category=compliance')}
+              className="bg-amber-50 rounded-lg p-4 text-center hover:bg-amber-100 transition-colors cursor-pointer group"
+            >
               <div className="text-3xl font-bold text-amber-700">{pendingCompliance}</div>
-              <div className="text-sm text-amber-600">Pending</div>
-            </div>
-            <div className={`rounded-lg p-4 text-center ${overdueCompliance > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+              <div className="text-sm text-amber-600 flex items-center justify-center gap-1">
+                Pending
+                <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+            <button 
+              onClick={() => navigate('/app/tasks?filter=overdue&category=compliance')}
+              className={`rounded-lg p-4 text-center transition-colors cursor-pointer group ${
+                overdueCompliance > 0 ? 'bg-red-50 hover:bg-red-100' : 'bg-green-50 hover:bg-green-100'
+              }`}
+            >
               <div className={`text-3xl font-bold ${overdueCompliance > 0 ? 'text-red-700' : 'text-green-700'}`}>
                 {overdueCompliance}
               </div>
-              <div className={`text-sm ${overdueCompliance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {overdueCompliance > 0 ? 'Overdue' : 'Overdue'}
+              <div className={`text-sm flex items-center justify-center gap-1 ${
+                overdueCompliance > 0 ? 'text-red-600' : 'text-green-600'
+              }`}>
+                Overdue
+                <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-            </div>
+            </button>
           </div>
           {overdueCompliance > 0 && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+            <button 
+              onClick={() => navigate('/app/tasks?filter=overdue&category=compliance')}
+              className="mt-4 w-full p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 hover:bg-red-100 transition-colors cursor-pointer"
+            >
               <AlertCircle className="h-5 w-5 text-red-600" />
-              <span className="text-red-700 text-sm">
+              <span className="text-red-700 text-sm flex-1 text-left">
                 You have {overdueCompliance} overdue compliance item{overdueCompliance > 1 ? 's' : ''}. 
-                Please review your compliance calendar.
+                Click to review.
               </span>
-            </div>
+              <ArrowRight className="h-4 w-4 text-red-600" />
+            </button>
           )}
         </div>
       )}

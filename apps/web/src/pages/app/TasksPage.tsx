@@ -3,7 +3,8 @@
  * Task management with auto-generated and custom tasks
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   ClipboardList, 
   Plus, 
@@ -42,13 +43,14 @@ const PRIORITY_CONFIG = {
 };
 
 export default function TasksPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data, isLoading, error, refetch } = useTasks();
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
   
   const [showAddModal, setShowAddModal] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'overdue'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({
@@ -59,10 +61,53 @@ export default function TasksPage() {
     dueDate: '',
   });
   
+  // Read URL params on mount and when they change
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    const categoryParam = searchParams.get('category');
+    
+    if (filterParam === 'pending' || filterParam === 'completed' || filterParam === 'overdue') {
+      setFilter(filterParam);
+    }
+    if (categoryParam && categoryParam in CATEGORY_CONFIG) {
+      setCategoryFilter(categoryParam);
+    }
+  }, [searchParams]);
+  
+  // Update URL when filters change
+  const handleFilterChange = (newFilter: 'all' | 'pending' | 'completed' | 'overdue') => {
+    setFilter(newFilter);
+    const params = new URLSearchParams(searchParams);
+    if (newFilter === 'all') {
+      params.delete('filter');
+    } else {
+      params.set('filter', newFilter);
+    }
+    setSearchParams(params);
+  };
+  
+  const handleCategoryChange = (category: string | null) => {
+    setCategoryFilter(category);
+    const params = new URLSearchParams(searchParams);
+    if (category) {
+      params.set('category', category);
+    } else {
+      params.delete('category');
+    }
+    setSearchParams(params);
+  };
+  
+  // Check if task is overdue
+  const isOverdue = (task: SimpleTask) => {
+    if (!task.dueDate || task.status === 'completed') return false;
+    return new Date(task.dueDate) < new Date();
+  };
+  
   // Filter tasks
   const filteredTasks = data?.tasks.filter(task => {
     if (filter === 'pending' && task.status === 'completed') return false;
     if (filter === 'completed' && task.status !== 'completed') return false;
+    if (filter === 'overdue' && !isOverdue(task)) return false;
     if (categoryFilter && task.category !== categoryFilter) return false;
     return true;
   }) || [];
@@ -101,12 +146,6 @@ export default function TasksPage() {
     if (confirm('Are you sure you want to delete this task?')) {
       await deleteTaskMutation.mutateAsync(id);
     }
-  };
-  
-  // Check if task is overdue
-  const isOverdue = (task: SimpleTask) => {
-    if (task.status === 'completed' || !task.dueDate) return false;
-    return new Date(task.dueDate) < new Date();
   };
   
   // Format date
@@ -181,7 +220,7 @@ export default function TasksPage() {
       <div className="flex items-center gap-3 mb-4">
         <div className="flex bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => setFilter('all')}
+            onClick={() => handleFilterChange('all')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               filter === 'all' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
             }`}
@@ -189,7 +228,7 @@ export default function TasksPage() {
             All
           </button>
           <button
-            onClick={() => setFilter('pending')}
+            onClick={() => handleFilterChange('pending')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               filter === 'pending' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
             }`}
@@ -197,18 +236,26 @@ export default function TasksPage() {
             Active
           </button>
           <button
-            onClick={() => setFilter('completed')}
+            onClick={() => handleFilterChange('completed')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               filter === 'completed' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             Completed
           </button>
+          <button
+            onClick={() => handleFilterChange('overdue')}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+              filter === 'overdue' ? 'bg-white shadow text-red-600' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Overdue
+          </button>
         </div>
         
         <select
           value={categoryFilter || ''}
-          onChange={(e) => setCategoryFilter(e.target.value || null)}
+          onChange={(e) => handleCategoryChange(e.target.value || null)}
           className="border rounded-md px-3 py-1.5 text-sm"
         >
           <option value="">All Categories</option>
@@ -217,13 +264,13 @@ export default function TasksPage() {
           ))}
         </select>
         
-        {categoryFilter && (
+        {(categoryFilter || filter !== 'all') && (
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => setCategoryFilter(null)}
+            onClick={() => { handleFilterChange('all'); handleCategoryChange(null); }}
           >
-            Clear
+            Clear Filters
             <X className="h-3 w-3 ml-1" />
           </Button>
         )}
