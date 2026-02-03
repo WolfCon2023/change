@@ -716,6 +716,47 @@ export function useDeleteDocument() {
 }
 
 // =============================================================================
+// File Upload Hooks
+// =============================================================================
+
+export function useUploadFile() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ file, type, name, description, category }: {
+      file: File;
+      type?: string;
+      name?: string;
+      description?: string;
+      category?: string;
+    }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (type) formData.append('type', type);
+      if (name) formData.append('name', name);
+      if (description) formData.append('description', description);
+      if (category) formData.append('category', category);
+      
+      const { data } = await api.post('/app/uploads', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
+export function getFileDownloadUrl(documentId: string, download = false): string {
+  const token = useAuthStore.getState().accessToken;
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+  return `${baseUrl}/app/uploads/${documentId}?download=${download}&token=${token}`;
+}
+
+// =============================================================================
 // Tasks Hooks
 // =============================================================================
 
