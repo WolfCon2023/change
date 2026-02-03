@@ -84,6 +84,23 @@ export interface SetupStatus {
   };
 }
 
+export interface Address {
+  street1: string;
+  street2?: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country?: string;
+}
+
+export interface RegisteredAgent {
+  type: 'self' | 'commercial' | 'individual';
+  name: string;
+  address: Address;
+  email?: string;
+  phone?: string;
+}
+
 export interface BusinessProfile {
   id: string;
   businessName: string;
@@ -98,6 +115,9 @@ export interface BusinessProfile {
   einStatus: string;
   profileCompleteness: number;
   readinessFlags: Record<string, boolean>;
+  businessAddress?: Address;
+  mailingAddress?: Address;
+  registeredAgent?: RegisteredAgent;
   archetype?: {
     key: string;
     name: string;
