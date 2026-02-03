@@ -101,6 +101,33 @@ export interface RegisteredAgent {
   phone?: string;
 }
 
+export interface BankAccount {
+  bankName: string;
+  accountType: 'checking' | 'savings' | 'both';
+  lastFourDigits?: string;
+  openedDate?: string;
+  verifiedAt?: string;
+}
+
+export interface OperatingAgreement {
+  type: 'standard' | 'custom' | 'attorney_drafted';
+  signedDate?: string;
+  artifactId?: string;
+  signatories?: string[];
+}
+
+export interface ComplianceItem {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate: string;
+  frequency: 'once' | 'annual' | 'quarterly' | 'monthly';
+  category: 'state_filing' | 'federal_tax' | 'state_tax' | 'license' | 'insurance' | 'other';
+  status: 'pending' | 'completed' | 'overdue';
+  completedAt?: string;
+  reminderDays?: number;
+}
+
 export interface BusinessProfile {
   id: string;
   businessName: string;
@@ -125,6 +152,13 @@ export interface BusinessProfile {
     icon?: string;
   };
   ownersCount: number;
+  // Operations fields
+  bankingStatus?: string;
+  bankAccount?: BankAccount;
+  operatingAgreementStatus?: string;
+  operatingAgreement?: OperatingAgreement;
+  complianceCalendarStatus?: string;
+  complianceItems?: ComplianceItem[];
 }
 
 export interface HomeData {
@@ -440,6 +474,84 @@ export function useStatePortal() {
     queryFn: async () => {
       const { data } = await api.get('/app/profile/state-portal');
       return data.data;
+    },
+  });
+}
+
+// =============================================================================
+// Operations Hooks
+// =============================================================================
+
+export function useUpdateBankingStatus() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: { 
+      status: 'not_started' | 'researching' | 'application_submitted' | 'account_opened' | 'verified';
+      bankAccount?: Partial<BankAccount>;
+    }) => {
+      const { data } = await api.post('/app/profile/banking-status', payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+    },
+  });
+}
+
+export function useUpdateOperatingAgreementStatus() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: { 
+      status: 'not_started' | 'drafting' | 'review' | 'signed' | 'filed';
+      operatingAgreement?: Partial<OperatingAgreement>;
+    }) => {
+      const { data } = await api.post('/app/profile/operating-agreement-status', payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+    },
+  });
+}
+
+export function useUpdateComplianceCalendarStatus() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: { 
+      status: 'not_started' | 'setup_in_progress' | 'active';
+      complianceItems?: ComplianceItem[];
+    }) => {
+      const { data } = await api.post('/app/profile/compliance-calendar-status', payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+    },
+  });
+}
+
+export function useUpdateComplianceItem() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: { 
+      itemId: string;
+      status?: 'pending' | 'completed' | 'overdue';
+      completedAt?: string;
+    }) => {
+      const { itemId, ...rest } = payload;
+      const { data } = await api.put(`/app/profile/compliance-item/${itemId}`, rest);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
     },
   });
 }

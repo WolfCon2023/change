@@ -28,9 +28,9 @@ const navItems = [
   { path: '/app/home', label: 'Home', icon: Home },
   { path: '/app/setup', label: 'Business Setup', icon: Rocket },
   { path: '/app/formation', label: 'Formation', icon: FileText },
+  { path: '/app/operations', label: 'Operations', icon: BarChart3 },
   { path: '/app/tasks', label: 'Tasks', icon: ClipboardList },
   { path: '/app/documents', label: 'Documents', icon: FileText },
-  { path: '/app/dashboards', label: 'Dashboards', icon: BarChart3 },
 ];
 
 // Disclaimer component

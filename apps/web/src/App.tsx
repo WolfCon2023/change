@@ -45,6 +45,7 @@ import {
   AppHomePage,
   BusinessSetupWizardPage,
   FormationPage,
+  OperationsPage,
   TasksPage,
   DocumentsPage,
   DashboardsPage,
@@ -195,6 +196,7 @@ function App() {
           <Route path="home" element={<AppHomePage />} />
           <Route path="setup" element={<BusinessSetupWizardPage />} />
           <Route path="formation" element={<FormationPage />} />
+          <Route path="operations" element={<OperationsPage />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="dashboards" element={<DashboardsPage />} />

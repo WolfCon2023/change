@@ -704,4 +704,270 @@ router.get('/state-portal', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
+// =============================================================================
+// OPERATIONS ENDPOINTS
+// =============================================================================
+
+/**
+ * POST /app/profile/banking-status
+ * Update business banking status
+ */
+router.post('/banking-status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const { status, bankAccount } = req.body;
+    
+    if (!['not_started', 'researching', 'application_submitted', 'account_opened', 'verified'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid banking status' },
+      });
+    }
+    
+    const updateData: Record<string, unknown> = { 
+      bankingStatus: status,
+      'readinessFlags.bankAccountOpened': status === 'account_opened' || status === 'verified',
+    };
+    
+    if (bankAccount) {
+      updateData.bankAccount = {
+        bankName: bankAccount.bankName,
+        accountType: bankAccount.accountType,
+        lastFourDigits: bankAccount.lastFourDigits,
+        openedDate: bankAccount.openedDate ? new Date(bankAccount.openedDate) : new Date(),
+        verifiedAt: status === 'verified' ? new Date() : undefined,
+      };
+    }
+    
+    const profile = await BusinessProfile.findOneAndUpdate(
+      { tenantId },
+      { $set: updateData },
+      { new: true }
+    );
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        bankingStatus: profile.bankingStatus,
+        bankAccount: profile.bankAccount,
+        readinessFlags: profile.readinessFlags,
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /app/profile/operating-agreement-status
+ * Update operating agreement status
+ */
+router.post('/operating-agreement-status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const { status, operatingAgreement } = req.body;
+    
+    if (!['not_started', 'drafting', 'review', 'signed', 'filed'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid operating agreement status' },
+      });
+    }
+    
+    const updateData: Record<string, unknown> = { 
+      operatingAgreementStatus: status,
+      'readinessFlags.operatingAgreementSigned': status === 'signed' || status === 'filed',
+    };
+    
+    if (operatingAgreement) {
+      updateData.operatingAgreement = {
+        type: operatingAgreement.type,
+        signedDate: operatingAgreement.signedDate ? new Date(operatingAgreement.signedDate) : undefined,
+        signatories: operatingAgreement.signatories || [],
+      };
+    }
+    
+    const profile = await BusinessProfile.findOneAndUpdate(
+      { tenantId },
+      { $set: updateData },
+      { new: true }
+    );
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        operatingAgreementStatus: profile.operatingAgreementStatus,
+        operatingAgreement: profile.operatingAgreement,
+        readinessFlags: profile.readinessFlags,
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /app/profile/compliance-calendar-status
+ * Update compliance calendar status
+ */
+router.post('/compliance-calendar-status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const { status, complianceItems } = req.body;
+    
+    if (!['not_started', 'setup_in_progress', 'active'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid compliance calendar status' },
+      });
+    }
+    
+    const updateData: Record<string, unknown> = { 
+      complianceCalendarStatus: status,
+      'readinessFlags.complianceCalendarSetup': status === 'active',
+    };
+    
+    if (complianceItems && Array.isArray(complianceItems)) {
+      updateData.complianceItems = complianceItems.map((item: any) => ({
+        id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: item.title,
+        description: item.description,
+        dueDate: new Date(item.dueDate),
+        frequency: item.frequency,
+        category: item.category,
+        status: item.status || 'pending',
+        completedAt: item.completedAt ? new Date(item.completedAt) : undefined,
+        reminderDays: item.reminderDays || 30,
+      }));
+    }
+    
+    const profile = await BusinessProfile.findOneAndUpdate(
+      { tenantId },
+      { $set: updateData },
+      { new: true }
+    );
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        complianceCalendarStatus: profile.complianceCalendarStatus,
+        complianceItems: profile.complianceItems,
+        readinessFlags: profile.readinessFlags,
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /app/profile/compliance-item/:itemId
+ * Update a single compliance item
+ */
+router.put('/compliance-item/:itemId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    const { itemId } = req.params;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const { status, completedAt } = req.body;
+    
+    const profile = await BusinessProfile.findOne({ tenantId });
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    const items = profile.complianceItems || [];
+    const itemIndex = items.findIndex((i: any) => i.id === itemId);
+    
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'ITEM_NOT_FOUND', message: 'Compliance item not found' },
+      });
+    }
+    
+    // Update the item
+    if (status) {
+      items[itemIndex].status = status;
+    }
+    if (status === 'completed') {
+      items[itemIndex].completedAt = completedAt ? new Date(completedAt) : new Date();
+    }
+    
+    await BusinessProfile.updateOne(
+      { _id: profile._id },
+      { $set: { complianceItems: items } }
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        item: items[itemIndex],
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

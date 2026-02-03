@@ -36,6 +36,56 @@ export type EINStatusValue =
   | 'received'
   | 'failed';
 
+// Operations status tracking
+export type BankingStatusValue = 
+  | 'not_started'
+  | 'researching'
+  | 'application_submitted'
+  | 'account_opened'
+  | 'verified';
+
+export type OperatingAgreementStatusValue = 
+  | 'not_started'
+  | 'drafting'
+  | 'review'
+  | 'signed'
+  | 'filed';
+
+export type ComplianceCalendarStatusValue =
+  | 'not_started'
+  | 'setup_in_progress'
+  | 'active';
+
+// Bank account info
+export interface IBankAccount {
+  bankName: string;
+  accountType: 'checking' | 'savings' | 'both';
+  lastFourDigits?: string;
+  openedDate?: Date;
+  verifiedAt?: Date;
+}
+
+// Operating agreement info
+export interface IOperatingAgreement {
+  type: 'standard' | 'custom' | 'attorney_drafted';
+  signedDate?: Date;
+  artifactId?: mongoose.Types.ObjectId;
+  signatories?: string[];
+}
+
+// Compliance calendar item
+export interface IComplianceItem {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate: Date;
+  frequency: 'once' | 'annual' | 'quarterly' | 'monthly';
+  category: 'state_filing' | 'federal_tax' | 'state_tax' | 'license' | 'insurance' | 'other';
+  status: 'pending' | 'completed' | 'overdue';
+  completedAt?: Date;
+  reminderDays?: number;
+}
+
 // Readiness flags
 export interface IReadinessFlags {
   profileComplete: boolean;
@@ -49,6 +99,10 @@ export interface IReadinessFlags {
   einReadyToApply: boolean;
   documentsGenerated: boolean;
   advisorAssigned: boolean;
+  // Operations flags
+  bankAccountOpened: boolean;
+  operatingAgreementSigned: boolean;
+  complianceCalendarSetup: boolean;
 }
 
 // Risk profile
@@ -96,6 +150,14 @@ export interface IBusinessProfile extends Document {
   ein?: string;
   einApplicationDate?: Date;
   einConfirmationArtifactId?: mongoose.Types.ObjectId;
+  
+  // Operations tracking
+  bankingStatus: BankingStatusValue;
+  bankAccount?: IBankAccount;
+  operatingAgreementStatus: OperatingAgreementStatusValue;
+  operatingAgreement?: IOperatingAgreement;
+  complianceCalendarStatus: ComplianceCalendarStatusValue;
+  complianceItems?: IComplianceItem[];
   
   // Legacy fields (keep for compatibility)
   industryCode?: string;
@@ -162,6 +224,49 @@ const readinessFlagsSchema = new Schema<IReadinessFlags>(
     einReadyToApply: { type: Boolean, default: false },
     documentsGenerated: { type: Boolean, default: false },
     advisorAssigned: { type: Boolean, default: false },
+    bankAccountOpened: { type: Boolean, default: false },
+    operatingAgreementSigned: { type: Boolean, default: false },
+    complianceCalendarSetup: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
+const bankAccountSchema = new Schema<IBankAccount>(
+  {
+    bankName: { type: String, required: true, maxlength: 200 },
+    accountType: { type: String, enum: ['checking', 'savings', 'both'], required: true },
+    lastFourDigits: { type: String, maxlength: 4 },
+    openedDate: { type: Date },
+    verifiedAt: { type: Date },
+  },
+  { _id: false }
+);
+
+const operatingAgreementSchema = new Schema<IOperatingAgreement>(
+  {
+    type: { type: String, enum: ['standard', 'custom', 'attorney_drafted'], required: true },
+    signedDate: { type: Date },
+    artifactId: { type: Schema.Types.ObjectId, ref: 'Artifact' },
+    signatories: [{ type: String }],
+  },
+  { _id: false }
+);
+
+const complianceItemSchema = new Schema<IComplianceItem>(
+  {
+    id: { type: String, required: true },
+    title: { type: String, required: true, maxlength: 200 },
+    description: { type: String, maxlength: 500 },
+    dueDate: { type: Date, required: true },
+    frequency: { type: String, enum: ['once', 'annual', 'quarterly', 'monthly'], required: true },
+    category: { 
+      type: String, 
+      enum: ['state_filing', 'federal_tax', 'state_tax', 'license', 'insurance', 'other'], 
+      required: true 
+    },
+    status: { type: String, enum: ['pending', 'completed', 'overdue'], default: 'pending' },
+    completedAt: { type: Date },
+    reminderDays: { type: Number, default: 30 },
   },
   { _id: false }
 );
@@ -284,6 +389,35 @@ const businessProfileSchema = new Schema<IBusinessProfile>(
       type: Schema.Types.ObjectId,
       ref: 'Artifact',
     },
+    // Operations tracking
+    bankingStatus: {
+      type: String,
+      enum: ['not_started', 'researching', 'application_submitted', 'account_opened', 'verified'],
+      default: 'not_started',
+      index: true,
+    },
+    bankAccount: {
+      type: bankAccountSchema,
+    },
+    operatingAgreementStatus: {
+      type: String,
+      enum: ['not_started', 'drafting', 'review', 'signed', 'filed'],
+      default: 'not_started',
+      index: true,
+    },
+    operatingAgreement: {
+      type: operatingAgreementSchema,
+    },
+    complianceCalendarStatus: {
+      type: String,
+      enum: ['not_started', 'setup_in_progress', 'active'],
+      default: 'not_started',
+      index: true,
+    },
+    complianceItems: {
+      type: [complianceItemSchema],
+      default: [],
+    },
     // Legacy fields
     industryCode: {
       type: String,
@@ -375,6 +509,11 @@ businessProfileSchema.methods.updateReadinessFlags = function (): void {
   flags.profileComplete = this.profileCompleteness >= 80;
   flags.sosReadyToFile = flags.profileComplete && flags.addressVerified && flags.registeredAgentSet;
   flags.einReadyToApply = this.formationStatus === 'approved' || this.formationStatus === 'filed';
+  
+  // Operations flags
+  flags.bankAccountOpened = this.bankingStatus === 'account_opened' || this.bankingStatus === 'verified';
+  flags.operatingAgreementSigned = this.operatingAgreementStatus === 'signed' || this.operatingAgreementStatus === 'filed';
+  flags.complianceCalendarSetup = this.complianceCalendarStatus === 'active';
   
   this.readinessFlags = flags;
 };
