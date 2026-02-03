@@ -1167,7 +1167,8 @@ export default function FormationPage() {
       title: 'EIN Application',
       description: 'Apply for your Employer Identification Number with the IRS',
       icon: FileText,
-      status: profile?.einStatus === 'received' ? 'complete' : profile?.formationStatus === 'approved' ? 'pending' : 'locked',
+      status: profile?.einStatus === 'received' ? 'complete' : 
+        (profile?.formationStatus === 'filed' || profile?.formationStatus === 'approved') ? 'pending' : 'locked',
     },
   ];
   
