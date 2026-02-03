@@ -89,12 +89,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center h-16 px-6 border-b">
-            <Link to="/dashboard" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">C</span>
-              </div>
-              <span className="font-semibold text-lg">C.H.A.N.G.E.</span>
+          <div className="flex items-center h-16 px-4 border-b">
+            <Link to="/dashboard">
+              <img 
+                src="/logo.png" 
+                alt="C.H.A.N.G.E. Business Application" 
+                className="h-10 w-auto"
+              />
             </Link>
           </div>
 
