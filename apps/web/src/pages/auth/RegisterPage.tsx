@@ -39,7 +39,7 @@ export function RegisterPage() {
       });
       toast({
         title: 'Account created!',
-        description: 'Welcome to the CHANGE Platform.',
+        description: 'Welcome to the C.H.A.N.G.E. Platform.',
       });
       navigate('/dashboard');
     } catch (error) {

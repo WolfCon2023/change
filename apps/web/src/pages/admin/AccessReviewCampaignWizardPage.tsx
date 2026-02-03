@@ -472,7 +472,7 @@ export function AccessReviewCampaignWizardPage() {
                   <Input
                     value={campaignData.systemName || ''}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setCampaignData({ ...campaignData, systemName: e.target.value })}
-                    placeholder="CHANGE Platform"
+                    placeholder="C.H.A.N.G.E. Platform"
                   />
                 </div>
                 <div>

@@ -118,7 +118,7 @@ export default function AppHomePage() {
             <Rocket className="h-8 w-8 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome to CHANGE
+            Welcome to C.H.A.N.G.E.
           </h1>
           <p className="text-gray-600">
             Your guided platform for forming and operating your business

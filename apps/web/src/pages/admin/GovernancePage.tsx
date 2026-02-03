@@ -1,6 +1,6 @@
 /**
  * Governance Page
- * Shows alignment between IAM, SIPOC, DMAIC, and CHANGE methodologies
+ * Shows alignment between IAM, SIPOC, DMAIC, and C.H.A.N.G.E. methodologies
  */
 
 import {
@@ -348,7 +348,7 @@ export function GovernancePage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Governance</h1>
         <p className="text-gray-500">
-          IAM alignment with SIPOC, DMAIC, and CHANGE methodologies
+          IAM alignment with SIPOC, DMAIC, and C.H.A.N.G.E. methodologies
         </p>
       </div>
 
@@ -463,14 +463,14 @@ export function GovernancePage() {
         </div>
       </section>
 
-      {/* CHANGE Phase Gates Section */}
+      {/* C.H.A.N.G.E. Phase Gates Section */}
       <section>
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <Shield className="h-5 w-5 mr-2 text-purple-600" />
-          CHANGE Phase Gates - IAM Readiness
+          C.H.A.N.G.E. Phase Gates - IAM Readiness
         </h2>
         <p className="text-sm text-gray-600 mb-4">
-          IAM readiness checks for each phase of the CHANGE methodology
+          IAM readiness checks for each phase of the C.H.A.N.G.E. methodology
         </p>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {changePhases.map((phase) => {

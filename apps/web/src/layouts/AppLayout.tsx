@@ -149,7 +149,7 @@ export default function AppLayout() {
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 -ml-2">
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
-        <span className="font-semibold text-gray-900">CHANGE</span>
+        <span className="font-semibold text-gray-900">C.H.A.N.G.E.</span>
         <div className="w-9" /> {/* Spacer */}
       </header>
       
@@ -168,7 +168,7 @@ export default function AppLayout() {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">C</span>
             </div>
-            <span className="font-bold text-gray-900">CHANGE</span>
+            <span className="font-bold text-gray-900">C.H.A.N.G.E.</span>
           </Link>
         </div>
         

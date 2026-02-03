@@ -94,7 +94,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">C</span>
               </div>
-              <span className="font-semibold text-lg">CHANGE</span>
+              <span className="font-semibold text-lg">C.H.A.N.G.E.</span>
             </Link>
           </div>
 

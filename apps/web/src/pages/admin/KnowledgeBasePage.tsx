@@ -303,12 +303,12 @@ export function KnowledgeBasePage() {
                     Introduction
                   </CardTitle>
                   <CardDescription>
-                    About the CHANGE Platform Admin Portal
+                    About the C.H.A.N.G.E. Platform Admin Portal
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-gray-700">
-                    The CHANGE Platform Admin Portal is a comprehensive Identity and Access Management (IAM) 
+                    The C.H.A.N.G.E. Platform Admin Portal is a comprehensive Identity and Access Management (IAM) 
                     solution designed for enterprise environments. It provides centralized control over user 
                     identities, access permissions, security compliance, and audit trails.
                   </p>
@@ -1383,7 +1383,7 @@ export function KnowledgeBasePage() {
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-600">
             <div>
-              <strong>CHANGE Platform Admin Portal User Guide</strong> - Version 1.0
+              <strong>C.H.A.N.G.E. Platform Admin Portal User Guide</strong> - Version 1.0
             </div>
             <div>
               Last Updated: February 2026

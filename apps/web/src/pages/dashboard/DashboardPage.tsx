@@ -19,7 +19,7 @@ const workflowSteps = [
   {
     phase: WorkflowPhase.ENROLLMENT,
     title: 'Program Enrollment',
-    description: 'Enroll in a CHANGE cohort',
+    description: 'Enroll in a C.H.A.N.G.E. cohort',
     icon: GraduationCap,
     href: '/enrollment',
     color: 'text-purple-500',
