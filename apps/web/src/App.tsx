@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { AdminLayout } from '@/layouts/AdminLayout';
+import AppLayout from '@/layouts/AppLayout';
 
 // Auth Pages
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -40,6 +41,16 @@ import { SecurityGapAnalysisPage } from '@/pages/admin/SecurityGapAnalysisPage';
 
 // Knowledge Base Page
 import { KnowledgeBasePage } from '@/pages/admin/KnowledgeBasePage';
+
+// App Pages (Business Application)
+import {
+  AppHomePage,
+  BusinessSetupWizardPage,
+  FormationPage,
+  TasksPage,
+  DocumentsPage,
+  DashboardsPage,
+} from '@/pages/app';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -174,6 +185,24 @@ function App() {
           <Route path="access-review-campaigns/new" element={<AccessReviewCampaignWizardPage />} />
           <Route path="access-review-campaigns/:id" element={<AccessReviewCampaignDetailPage />} />
           <Route path="access-review-campaigns/:id/edit" element={<AccessReviewCampaignDetailPage />} />
+        </Route>
+
+        {/* Business App Routes */}
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/app/home" replace />} />
+          <Route path="home" element={<AppHomePage />} />
+          <Route path="setup" element={<BusinessSetupWizardPage />} />
+          <Route path="formation" element={<FormationPage />} />
+          <Route path="tasks" element={<TasksPage />} />
+          <Route path="documents" element={<DocumentsPage />} />
+          <Route path="dashboards" element={<DashboardsPage />} />
         </Route>
 
         {/* Catch-all redirect */}

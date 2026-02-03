@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { type AuthTokenPayload, type UserRoleType, UserRole, IamAuditAction } from '@change/shared';
+import { type AuthTokenPayload, type UserRoleType, UserRole, PrimaryRole, IamAuditAction } from '@change/shared';
 import { config } from '../config/index.js';
 import { User, type IUser, Tenant } from '../db/models/index.js';
 import { UnauthorizedError, ConflictError, NotFoundError } from '../middleware/error-handler.js';
@@ -109,9 +109,10 @@ export class AuthService {
 
   /**
    * Register a new user
+   * If no tenantId is provided, automatically creates a tenant for the user
    */
   static async register(params: RegisterParams): Promise<AuthResult> {
-    const { email, password, firstName, lastName, role, tenantId } = params;
+    const { email, password, firstName, lastName, role, tenantId: providedTenantId } = params;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -119,12 +120,32 @@ export class AuthService {
       throw new ConflictError('User with this email already exists');
     }
 
+    let tenantId = providedTenantId;
+
     // Validate tenant if provided
     if (tenantId) {
       const tenant = await Tenant.findById(tenantId);
       if (!tenant || !tenant.isActive) {
         throw new NotFoundError('Tenant');
       }
+    } else {
+      // Auto-create a tenant for the new user
+      const slug = this.generateTenantSlug(email);
+      const tenant = new Tenant({
+        name: `${firstName}'s Business`,
+        slug,
+        email: email.toLowerCase(),
+        industry: 'other',
+        companySize: 'solo',
+        isActive: true,
+        subscription: {
+          plan: 'starter',
+          status: 'active',
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year trial
+        },
+      });
+      await tenant.save();
+      tenantId = tenant._id.toString();
     }
 
     // Create user
@@ -134,7 +155,8 @@ export class AuthService {
       firstName,
       lastName,
       role: role ?? UserRole.CLIENT_OWNER,
-      tenantId: tenantId ? new mongoose.Types.ObjectId(tenantId) : undefined,
+      primaryRole: PrimaryRole.CUSTOMER, // Default to CUSTOMER for self-registered users
+      tenantId: new mongoose.Types.ObjectId(tenantId),
       isActive: true,
       emailVerified: false,
     });
@@ -160,6 +182,15 @@ export class AuthService {
       user: user.toPublicJSON() as Omit<IUser, 'passwordHash'>,
       tokens,
     };
+  }
+
+  /**
+   * Generate a unique tenant slug from email
+   */
+  private static generateTenantSlug(email: string): string {
+    const baseSlug = email.split('@')[0]?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'user';
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    return `${baseSlug}-${randomSuffix}`;
   }
 
   /**

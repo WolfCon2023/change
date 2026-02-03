@@ -3,6 +3,7 @@ import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
 import tenantRoutes from './tenant.routes.js';
 import adminRoutes from './admin/index.js';
+import appRoutes from './app/index.js';
 
 const router = Router();
 
@@ -18,6 +19,9 @@ router.use('/tenants', tenantRoutes);
 // Admin Portal IAM routes
 router.use('/admin', adminRoutes);
 
+// Business App routes
+router.use('/app', appRoutes);
+
 // API info
 router.get('/', (_req, res) => {
   res.json({
@@ -31,6 +35,7 @@ router.get('/', (_req, res) => {
         auth: '/api/v1/auth',
         tenants: '/api/v1/tenants',
         admin: '/api/v1/admin',
+        app: '/api/v1/app',
         businessProfiles: '/api/v1/business-profiles',
         enrollments: '/api/v1/enrollments',
         workflows: '/api/v1/workflows',

@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "seed": "tsx src/scripts/seed.ts",
+    "seed:archetypes": "tsx src/scripts/seed-archetypes.ts",
     "db:migrate": "tsx src/scripts/migrate.ts"
   },
   "dependencies": {
