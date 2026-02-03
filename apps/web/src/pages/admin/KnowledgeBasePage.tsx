@@ -25,6 +25,7 @@ import {
   Info,
   Printer,
   BookOpen,
+  ArrowUp,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -117,6 +118,28 @@ const glossaryTerms = [
   { term: 'Subject', definition: 'A user being reviewed in an access review campaign' },
   { term: 'Tenant', definition: 'An isolated organizational unit within the platform' },
 ];
+
+// Back to TOC button component
+function BackToTOC() {
+  const scrollToTop = () => {
+    const tocElement = document.getElementById('table-of-contents');
+    if (tocElement) {
+      tocElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <button
+      onClick={scrollToTop}
+      className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:underline mt-4 transition-colors"
+    >
+      <ArrowUp className="h-4 w-4" />
+      Back to Table of Contents
+    </button>
+  );
+}
 
 export function KnowledgeBasePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -230,7 +253,7 @@ export function KnowledgeBasePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Table of Contents Sidebar */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1" id="table-of-contents">
           <Card className="sticky top-6">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Table of Contents</CardTitle>
@@ -354,6 +377,7 @@ export function KnowledgeBasePage() {
                       </tbody>
                     </table>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -406,6 +430,7 @@ export function KnowledgeBasePage() {
                       </li>
                     </ul>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -477,6 +502,7 @@ export function KnowledgeBasePage() {
                       <li>Process pending access requests promptly</li>
                     </ul>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -555,6 +581,7 @@ export function KnowledgeBasePage() {
                       Best Practice: Never delete user accounts. Deactivate them to preserve audit trail integrity.
                     </p>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -644,6 +671,7 @@ export function KnowledgeBasePage() {
                       <p className="text-sm text-gray-600">Use descriptive names like "Access Request Approver" not "Role 1"</p>
                     </div>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -685,6 +713,7 @@ export function KnowledgeBasePage() {
                       <li>Prefer group-based role assignment over direct assignment</li>
                     </ul>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -725,6 +754,7 @@ export function KnowledgeBasePage() {
                       <li>The requester is notified of the decision</li>
                     </ol>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -784,6 +814,7 @@ export function KnowledgeBasePage() {
                       <p className="text-sm text-gray-600">Use secrets managers, not code repos</p>
                     </div>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -860,6 +891,7 @@ export function KnowledgeBasePage() {
                       <p className="text-sm text-gray-600">Non-Production</p>
                     </div>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -907,6 +939,7 @@ export function KnowledgeBasePage() {
                       Modify - Access level should change
                     </Badge>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -984,6 +1017,7 @@ export function KnowledgeBasePage() {
                     <li><strong>Permissions Review:</strong> Verify the group's roles are appropriate</li>
                     <li>A group is fully certified when both aspects are validated</li>
                   </ul>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -1074,6 +1108,7 @@ export function KnowledgeBasePage() {
                       <p className="text-sm text-yellow-700"><strong>Fix:</strong> Create new Access Review Campaign → Complete within 30 days</p>
                     </div>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -1130,13 +1165,14 @@ export function KnowledgeBasePage() {
                       </div>
                     </div>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* Compliance Tab */}
             <TabsContent value="compliance" className="space-y-6 mt-6">
-              <Card>
+              <Card id="compliance" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-blue-600" />
@@ -1177,6 +1213,7 @@ export function KnowledgeBasePage() {
                       </div>
                     ))}
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -1239,13 +1276,14 @@ export function KnowledgeBasePage() {
                       </div>
                     </div>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* Glossary Tab */}
             <TabsContent value="glossary" className="space-y-6 mt-6">
-              <Card>
+              <Card id="glossary" className="transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <HelpCircle className="h-5 w-5 text-purple-600" />
@@ -1264,6 +1302,7 @@ export function KnowledgeBasePage() {
                       </div>
                     ))}
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
 
@@ -1331,6 +1370,7 @@ export function KnowledgeBasePage() {
                       <li><strong>Security Issues:</strong> Report immediately to security team</li>
                     </ul>
                   </div>
+                  <BackToTOC />
                 </CardContent>
               </Card>
             </TabsContent>
