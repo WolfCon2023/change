@@ -1,6 +1,7 @@
 /**
  * App Layout
  * Main layout for the business application with sidebar, progress, and disclaimer
+ * Updated: 2026-02-03 - New logo deployment
  */
 
 import { useState } from 'react';
