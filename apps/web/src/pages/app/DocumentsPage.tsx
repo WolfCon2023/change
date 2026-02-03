@@ -23,11 +23,12 @@ import {
   File,
   Image,
   FileType,
+  Edit,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useDocuments, useCreateDocument, useDeleteDocument, useUploadFile, type Document } from '../../lib/app-api';
+import { useDocuments, useCreateDocument, useDeleteDocument, useUpdateDocument, useUploadFile, type Document } from '../../lib/app-api';
 
 // Document type configurations
 const DOCUMENT_TYPES = {
@@ -88,6 +89,7 @@ export default function DocumentsPage() {
   const { data, isLoading, error } = useDocuments();
   const createDocumentMutation = useCreateDocument();
   const deleteDocumentMutation = useDeleteDocument();
+  const updateDocumentMutation = useUpdateDocument();
   const uploadFileMutation = useUploadFile();
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -95,11 +97,16 @@ export default function DocumentsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState<Document | null>(null);
+  const [showEditModal, setShowEditModal] = useState<Document | null>(null);
   const [newDocument, setNewDocument] = useState({
     name: '',
     description: '',
     type: 'document',
     textContent: '',
+  });
+  const [editDocument, setEditDocument] = useState({
+    name: '',
+    description: '',
   });
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadDetails, setUploadDetails] = useState({
@@ -200,9 +207,34 @@ export default function DocumentsPage() {
   
   // Handle delete document
   const handleDeleteDocument = async (id: string) => {
+    if (!id) {
+      alert('Cannot delete: Document ID is missing');
+      return;
+    }
     if (confirm('Are you sure you want to delete this document?')) {
       await deleteDocumentMutation.mutateAsync(id);
     }
+  };
+  
+  // Handle edit document
+  const handleOpenEditModal = (doc: Document) => {
+    setEditDocument({
+      name: doc.name,
+      description: doc.description || '',
+    });
+    setShowEditModal(doc);
+  };
+  
+  const handleSaveEdit = async () => {
+    if (!showEditModal?.id) return;
+    
+    await updateDocumentMutation.mutateAsync({
+      id: showEditModal.id,
+      name: editDocument.name,
+      description: editDocument.description,
+    });
+    
+    setShowEditModal(null);
   };
   
   // Get document type info
@@ -415,6 +447,13 @@ export default function DocumentsPage() {
                           title="View"
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(doc)}
+                          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-amber-600"
+                          title="Edit"
+                        >
+                          <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteDocument(doc.id)}
@@ -707,6 +746,64 @@ export default function DocumentsPage() {
                 disabled={!uploadFile || uploadProgress}
               >
                 {uploadProgress ? 'Uploading...' : 'Upload'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Edit Document Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Document</h3>
+              <button onClick={() => setShowEditModal(null)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="editName">Document Name *</Label>
+                <Input
+                  id="editName"
+                  value={editDocument.name}
+                  onChange={(e) => setEditDocument({ ...editDocument, name: e.target.value })}
+                  placeholder="Document name"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="editDesc">Description</Label>
+                <textarea
+                  id="editDesc"
+                  value={editDocument.description}
+                  onChange={(e) => setEditDocument({ ...editDocument, description: e.target.value })}
+                  placeholder="Brief description"
+                  className="mt-1 w-full border rounded-md px-3 py-2 text-sm min-h-[80px]"
+                />
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                <p>Type: {getDocTypeInfo(showEditModal.type).label}</p>
+                <p>Added: {formatDate(showEditModal.createdAt)}</p>
+                {showEditModal.storageType === 'file' && showEditModal.fileSize && (
+                  <p>Size: {formatFileSize(showEditModal.fileSize)}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setShowEditModal(null)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveEdit}
+                disabled={!editDocument.name.trim() || updateDocumentMutation.isPending}
+              >
+                {updateDocumentMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>

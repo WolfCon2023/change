@@ -41,9 +41,16 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     }
     
     // Get all artifacts/documents for this tenant
-    const documents = await Artifact.find({ tenantId })
+    const rawDocuments = await Artifact.find({ tenantId })
       .sort({ createdAt: -1 })
       .lean();
+    
+    // Transform _id to id for frontend compatibility
+    const documents = rawDocuments.map(doc => ({
+      ...doc,
+      id: doc._id.toString(),
+      _id: undefined,
+    }));
     
     // Categorize documents
     const categorized = {
@@ -96,14 +103,21 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       });
     }
     
-    const document = await Artifact.findOne({ _id: id, tenantId }).lean();
+    const rawDoc = await Artifact.findOne({ _id: id, tenantId }).lean();
     
-    if (!document) {
+    if (!rawDoc) {
       return res.status(404).json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Document not found' },
       });
     }
+    
+    // Transform _id to id
+    const document = {
+      ...rawDoc,
+      id: rawDoc._id.toString(),
+      _id: undefined,
+    };
     
     res.json({
       success: true,
@@ -188,7 +202,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
     
     const { name, description, tags, isVerified, verificationNotes } = req.body;
     
-    const document = await Artifact.findOneAndUpdate(
+    const rawDoc = await Artifact.findOneAndUpdate(
       { _id: id, tenantId },
       {
         ...(name && { name }),
@@ -205,12 +219,19 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
       { new: true }
     ).lean();
     
-    if (!document) {
+    if (!rawDoc) {
       return res.status(404).json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Document not found' },
       });
     }
+    
+    // Transform _id to id
+    const document = {
+      ...rawDoc,
+      id: rawDoc._id.toString(),
+      _id: undefined,
+    };
     
     res.json({
       success: true,
@@ -224,7 +245,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 /**
  * DELETE /app/documents/:id
- * Delete a document
+ * Delete a document (handles file cleanup if needed)
  */
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -238,14 +259,41 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
       });
     }
     
-    const result = await Artifact.findOneAndDelete({ _id: id, tenantId });
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ID', message: 'Document ID is required' },
+      });
+    }
     
-    if (!result) {
+    // Find the document first to check if it has a file
+    const artifact = await Artifact.findOne({ _id: id, tenantId });
+    
+    if (!artifact) {
       return res.status(404).json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Document not found' },
       });
     }
+    
+    // If it's a file, try to delete the physical file
+    if (artifact.storageType === 'file' && artifact.storageKey) {
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
+        const filePath = path.default.join(UPLOAD_DIR, artifact.storageKey);
+        if (fs.default.existsSync(filePath)) {
+          fs.default.unlinkSync(filePath);
+        }
+      } catch (fileErr) {
+        console.error('Failed to delete file:', fileErr);
+        // Continue with database deletion even if file deletion fails
+      }
+    }
+    
+    // Delete the database record
+    await Artifact.deleteOne({ _id: id, tenantId });
     
     res.json({
       success: true,
