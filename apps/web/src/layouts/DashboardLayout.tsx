@@ -81,7 +81,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside
         style={{ left: 0 }}
         className={cn(
-          'fixed top-0 z-50 h-screen w-64 bg-card border-r transition-transform duration-200 ease-in-out',
+          'fixed top-0 z-50 h-screen w-80 bg-card border-r transition-transform duration-200 ease-in-out',
           // Mobile: hidden by default, shown when sidebarOpen
           // Desktop: always visible
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -89,12 +89,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center h-20 px-3 border-b">
+          <div className="flex items-center justify-center h-24 px-4 border-b">
             <Link to="/dashboard">
               <img 
                 src="/logo.png" 
                 alt="C.H.A.N.G.E. Business Application" 
-                className="h-14 w-auto max-w-full"
+                className="h-16 w-auto"
               />
             </Link>
           </div>
@@ -153,7 +153,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-80">
         {/* Top bar */}
         <header className="sticky top-0 z-30 h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="flex items-center justify-between h-full px-4">

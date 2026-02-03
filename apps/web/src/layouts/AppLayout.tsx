@@ -156,19 +156,19 @@ export default function AppLayout() {
       {/* Sidebar */}
       <aside 
         className={`
-          fixed top-0 left-0 bottom-0 w-72 bg-white border-r z-40
+          fixed top-0 left-0 bottom-0 w-80 bg-white border-r z-40
           transform transition-transform duration-200 ease-in-out
           lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {/* Logo */}
-        <div className="h-20 flex items-center px-3 border-b">
+        <div className="h-24 flex items-center justify-center px-4 border-b bg-white">
           <Link to="/app/home" className="flex items-center">
             <img 
               src="/logo.png" 
               alt="C.H.A.N.G.E. Business Application" 
-              className="h-14 w-auto max-w-full"
+              className="h-16 w-auto"
             />
           </Link>
         </div>
@@ -270,7 +270,7 @@ export default function AppLayout() {
       )}
       
       {/* Main content */}
-      <main className="lg:ml-72 pt-14 lg:pt-0 min-h-screen">
+      <main className="lg:ml-80 pt-16 lg:pt-0 min-h-screen">
         {/* Disclaimer banner */}
         <Disclaimer />
         

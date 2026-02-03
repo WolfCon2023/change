@@ -188,18 +188,18 @@ export function AdminLayout() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 transform transition-transform duration-200 ease-in-out lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-30 w-80 bg-gray-900 transform transition-transform duration-200 ease-in-out lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center h-20 px-3 border-b border-gray-800">
+          <div className="flex items-center justify-center h-24 px-4 border-b border-gray-800">
             <div className="bg-white rounded-lg px-3 py-2">
               <img 
                 src="/logo.png" 
                 alt="C.H.A.N.G.E. Admin" 
-                className="h-10 w-auto"
+                className="h-14 w-auto"
               />
             </div>
           </div>
@@ -263,7 +263,7 @@ export function AdminLayout() {
       )}
 
       {/* Main content */}
-      <main className="lg:pl-64 pt-14 lg:pt-0">
+      <main className="lg:pl-80 pt-14 lg:pt-0">
         <div className="p-6">
           <Outlet />
         </div>
