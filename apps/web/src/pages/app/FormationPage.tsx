@@ -3,7 +3,7 @@
  * Stepper-based formation workflow with functional forms
  */
 
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -586,6 +586,8 @@ function StateFilingStep({
   const [showMap, setShowMap] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showDocsInfo, setShowDocsInfo] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Get state portal info from registry
   const statePortal = profile?.formationState ? getStatePortal(profile.formationState) : null;
@@ -600,6 +602,33 @@ function StateFilingStep({
       } catch (err) {
         console.error('Failed to copy:', err);
       }
+    }
+  };
+  
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a PDF, PNG, or JPG file.');
+        return;
+      }
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB.');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+  
+  // Handle file removal
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
   
@@ -734,12 +763,56 @@ function StateFilingStep({
       
       {/* Upload section */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-        <p className="text-sm text-gray-600">Upload filing confirmation</p>
-        <p className="text-xs text-gray-500 mt-1">PDF, PNG, or JPG up to 10MB</p>
-        <Button variant="outline" className="mt-3" size="sm">
-          Choose File
-        </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept=".pdf,.png,.jpg,.jpeg"
+          className="hidden"
+        />
+        {selectedFile ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2 text-green-600">
+              <Check className="h-6 w-6" />
+              <span className="font-medium">File selected</span>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3 inline-flex items-center gap-3">
+              <FileText className="h-5 w-5 text-slate-500" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]">{selectedFile.name}</p>
+                <p className="text-xs text-slate-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+              </div>
+              <button
+                onClick={handleRemoveFile}
+                className="p-1 hover:bg-slate-200 rounded"
+                title="Remove file"
+              >
+                <X className="h-4 w-4 text-slate-500" />
+              </button>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose Different File
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-600">Upload filing confirmation</p>
+            <p className="text-xs text-gray-500 mt-1">PDF, PNG, or JPG up to 10MB</p>
+            <Button 
+              variant="outline" 
+              className="mt-3" 
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose File
+            </Button>
+          </>
+        )}
       </div>
       
       {/* Disclaimer */}
