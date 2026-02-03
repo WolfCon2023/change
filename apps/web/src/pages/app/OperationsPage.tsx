@@ -3,7 +3,7 @@
  * Post-formation business operations setup
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -27,6 +27,16 @@ import {
   Scale,
   Trash2,
   Plus,
+  Calendar,
+  Clock,
+  Bell,
+  CalendarDays,
+  CalendarCheck,
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  ListTodo,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -36,8 +46,10 @@ import {
   useProfile, 
   useUpdateBankingStatus,
   useUpdateOperatingAgreementStatus,
+  useUpdateComplianceCalendarStatus,
   type BankAccount,
   type OperatingAgreement,
+  type ComplianceItem,
 } from '../../lib/app-api';
 
 // Popular business banks with info
@@ -782,6 +794,772 @@ function OperatingAgreementStep({
   );
 }
 
+// Generate default compliance items based on business type and state
+function generateDefaultComplianceItems(
+  businessType: string, 
+  state: string, 
+  formationDate?: string
+): Omit<ComplianceItem, 'id'>[] {
+  const isLLC = businessType?.toLowerCase().includes('llc');
+  const isCorp = businessType?.toLowerCase().includes('corp') || businessType?.toLowerCase().includes('inc');
+  const today = new Date();
+  const yearEnd = new Date(today.getFullYear(), 11, 31);
+  const nextYearEnd = new Date(today.getFullYear() + 1, 11, 31);
+  
+  // Calculate annual report due date (varies by state)
+  const getAnnualReportDueDate = () => {
+    // Most states have it due on anniversary or within first quarter
+    const baseDate = formationDate ? new Date(formationDate) : today;
+    const dueDate = new Date(today.getFullYear() + 1, baseDate.getMonth(), baseDate.getDate());
+    if (dueDate <= today) {
+      dueDate.setFullYear(dueDate.getFullYear() + 1);
+    }
+    return dueDate.toISOString().split('T')[0];
+  };
+
+  const items: Omit<ComplianceItem, 'id'>[] = [
+    // State Annual Report
+    {
+      title: `${state} Annual Report`,
+      description: `File your annual report with the ${state} Secretary of State to maintain good standing.`,
+      dueDate: getAnnualReportDueDate(),
+      frequency: 'annual',
+      category: 'state_filing',
+      status: 'pending',
+      reminderDays: 30,
+    },
+    // Federal Tax Return
+    {
+      title: 'Federal Tax Return',
+      description: isCorp 
+        ? 'File Form 1120 (C-Corp) or 1120-S (S-Corp) with the IRS.'
+        : isLLC 
+          ? 'File Form 1065 (Partnership) or Schedule C (Single-member) with the IRS.'
+          : 'File your business federal tax return with the IRS.',
+      dueDate: `${today.getFullYear() + 1}-03-15`,
+      frequency: 'annual',
+      category: 'federal_tax',
+      status: 'pending',
+      reminderDays: 60,
+    },
+    // State Tax Return
+    {
+      title: `${state} State Tax Return`,
+      description: `File your state business tax return with ${state} Department of Revenue.`,
+      dueDate: `${today.getFullYear() + 1}-04-15`,
+      frequency: 'annual',
+      category: 'state_tax',
+      status: 'pending',
+      reminderDays: 60,
+    },
+  ];
+
+  // Quarterly estimated taxes
+  const quarterDates = [
+    { quarter: 'Q1', date: `${today.getFullYear()}-04-15` },
+    { quarter: 'Q2', date: `${today.getFullYear()}-06-15` },
+    { quarter: 'Q3', date: `${today.getFullYear()}-09-15` },
+    { quarter: 'Q4', date: `${today.getFullYear() + 1}-01-15` },
+  ];
+
+  quarterDates.forEach(({ quarter, date }) => {
+    if (new Date(date) > today) {
+      items.push({
+        title: `${quarter} Estimated Tax Payment`,
+        description: 'Pay quarterly estimated federal and state taxes if applicable.',
+        dueDate: date,
+        frequency: 'quarterly',
+        category: 'federal_tax',
+        status: 'pending',
+        reminderDays: 14,
+      });
+    }
+  });
+
+  // Business license renewal (typically annual)
+  items.push({
+    title: 'Business License Renewal',
+    description: 'Renew your local business license to continue operations.',
+    dueDate: yearEnd.toISOString().split('T')[0],
+    frequency: 'annual',
+    category: 'license',
+    status: 'pending',
+    reminderDays: 30,
+  });
+
+  // Insurance review
+  items.push({
+    title: 'Business Insurance Review',
+    description: 'Review and renew business insurance policies (liability, property, etc.).',
+    dueDate: nextYearEnd.toISOString().split('T')[0],
+    frequency: 'annual',
+    category: 'insurance',
+    status: 'pending',
+    reminderDays: 45,
+  });
+
+  // Sort by due date
+  return items.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+}
+
+// Compliance category colors and icons
+const CATEGORY_CONFIG: Record<string, { color: string; bgColor: string; icon: React.ElementType; label: string }> = {
+  state_filing: { color: 'text-purple-700', bgColor: 'bg-purple-100', icon: Building2, label: 'State Filing' },
+  federal_tax: { color: 'text-blue-700', bgColor: 'bg-blue-100', icon: DollarSign, label: 'Federal Tax' },
+  state_tax: { color: 'text-indigo-700', bgColor: 'bg-indigo-100', icon: DollarSign, label: 'State Tax' },
+  license: { color: 'text-amber-700', bgColor: 'bg-amber-100', icon: FileText, label: 'License' },
+  insurance: { color: 'text-green-700', bgColor: 'bg-green-100', icon: Shield, label: 'Insurance' },
+  other: { color: 'text-gray-700', bgColor: 'bg-gray-100', icon: CalendarDays, label: 'Other' },
+};
+
+// Frequency labels
+const FREQUENCY_LABELS: Record<string, string> = {
+  once: 'One-time',
+  annual: 'Annual',
+  quarterly: 'Quarterly',
+  monthly: 'Monthly',
+};
+
+// Compliance Calendar Step Component
+function ComplianceCalendarStep({
+  profile,
+  onComplete,
+  isSaving,
+}: {
+  profile: any;
+  onComplete: (items: ComplianceItem[]) => void;
+  isSaving: boolean;
+}) {
+  const [view, setView] = useState<'timeline' | 'list' | 'calendar'>('timeline');
+  const [items, setItems] = useState<ComplianceItem[]>(() => {
+    // Use existing items or generate defaults
+    if (profile?.complianceItems?.length > 0) {
+      return profile.complianceItems;
+    }
+    return generateDefaultComplianceItems(
+      profile?.businessType || 'LLC',
+      profile?.formationState || 'NC',
+      profile?.createdAt
+    ).map((item, index) => ({ ...item, id: `item-${index}` }));
+  });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItem, setNewItem] = useState<Partial<ComplianceItem>>({
+    title: '',
+    description: '',
+    dueDate: '',
+    frequency: 'annual',
+    category: 'other',
+    status: 'pending',
+    reminderDays: 30,
+  });
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDays = new Date(today);
+    thirtyDays.setDate(thirtyDays.getDate() + 30);
+
+    return {
+      total: items.length,
+      completed: items.filter(i => i.status === 'completed').length,
+      upcoming: items.filter(i => {
+        const due = new Date(i.dueDate);
+        return i.status === 'pending' && due >= today && due <= thirtyDays;
+      }).length,
+      overdue: items.filter(i => {
+        const due = new Date(i.dueDate);
+        return i.status === 'pending' && due < today;
+      }).length,
+    };
+  }, [items]);
+
+  // Group items by month for timeline
+  const itemsByMonth = useMemo(() => {
+    const grouped: Record<string, ComplianceItem[]> = {};
+    const sorted = [...items].sort((a, b) => 
+      new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    );
+    
+    sorted.forEach(item => {
+      const date = new Date(item.dueDate);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    });
+    
+    return grouped;
+  }, [items]);
+
+  // Handle marking item complete
+  const handleToggleComplete = (itemId: string) => {
+    setItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const isCompleting = item.status !== 'completed';
+        return {
+          ...item,
+          status: isCompleting ? 'completed' : 'pending',
+          completedAt: isCompleting ? new Date().toISOString() : undefined,
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Handle adding new item
+  const handleAddItem = () => {
+    if (!newItem.title || !newItem.dueDate) return;
+    
+    const item: ComplianceItem = {
+      id: `custom-${Date.now()}`,
+      title: newItem.title!,
+      description: newItem.description,
+      dueDate: newItem.dueDate!,
+      frequency: newItem.frequency || 'annual',
+      category: newItem.category || 'other',
+      status: 'pending',
+      reminderDays: newItem.reminderDays || 30,
+    };
+    
+    setItems(prev => [...prev, item].sort((a, b) => 
+      new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    ));
+    setNewItem({
+      title: '',
+      description: '',
+      dueDate: '',
+      frequency: 'annual',
+      category: 'other',
+      status: 'pending',
+      reminderDays: 30,
+    });
+    setShowAddModal(false);
+  };
+
+  // Handle removing item
+  const handleRemoveItem = (itemId: string) => {
+    setItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  // Format date for display
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Get days until due
+  const getDaysUntil = (dateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dateStr);
+    due.setHours(0, 0, 0, 0);
+    return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  // Get status badge for an item
+  const getStatusBadge = (item: ComplianceItem) => {
+    if (item.status === 'completed') {
+      return (
+        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <CheckCircle className="h-3 w-3" />
+          Completed
+        </span>
+      );
+    }
+    
+    const daysUntil = getDaysUntil(item.dueDate);
+    if (daysUntil < 0) {
+      return (
+        <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          {Math.abs(daysUntil)} days overdue
+        </span>
+      );
+    }
+    if (daysUntil <= 7) {
+      return (
+        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Due in {daysUntil} days
+        </span>
+      );
+    }
+    if (daysUntil <= 30) {
+      return (
+        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <CalendarClock className="h-3 w-3" />
+          Due in {daysUntil} days
+        </span>
+      );
+    }
+    return (
+      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+        {formatDate(item.dueDate)}
+      </span>
+    );
+  };
+
+  // Render calendar grid
+  const renderCalendar = () => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    const days = [];
+    // Empty cells before first day
+    for (let i = 0; i < startDay; i++) {
+      days.push(<div key={`empty-${i}`} className="h-24 bg-gray-50 border" />);
+    }
+    // Days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayItems = items.filter(item => item.dueDate === dateStr);
+      const isToday = new Date().toISOString().split('T')[0] === dateStr;
+      
+      days.push(
+        <div 
+          key={day} 
+          className={`h-24 border p-1 overflow-hidden ${isToday ? 'bg-blue-50 border-blue-300' : 'bg-white'}`}
+        >
+          <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-gray-700'}`}>
+            {day}
+          </div>
+          <div className="space-y-0.5">
+            {dayItems.slice(0, 2).map(item => {
+              const config = CATEGORY_CONFIG[item.category];
+              return (
+                <div 
+                  key={item.id}
+                  className={`text-xs px-1 py-0.5 rounded truncate ${config.bgColor} ${config.color} ${
+                    item.status === 'completed' ? 'line-through opacity-50' : ''
+                  }`}
+                  title={item.title}
+                >
+                  {item.title}
+                </div>
+              );
+            })}
+            {dayItems.length > 2 && (
+              <div className="text-xs text-gray-500 px-1">+{dayItems.length - 2} more</div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
+    return days;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-lg border border-emerald-100">
+        <h4 className="font-semibold text-emerald-900 text-lg flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Compliance Calendar
+        </h4>
+        <p className="text-emerald-800 mt-1 text-sm">
+          Never miss an important deadline. Track annual reports, tax filings, license renewals, and more.
+        </p>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="bg-white border rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-xs text-gray-600">Total Items</div>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-green-700">{stats.completed}</div>
+          <div className="text-xs text-green-600">Completed</div>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-amber-700">{stats.upcoming}</div>
+          <div className="text-xs text-amber-600">Due in 30 Days</div>
+        </div>
+        <div className={`rounded-lg p-3 text-center ${stats.overdue > 0 ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border'}`}>
+          <div className={`text-2xl font-bold ${stats.overdue > 0 ? 'text-red-700' : 'text-gray-400'}`}>{stats.overdue}</div>
+          <div className={`text-xs ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-500'}`}>Overdue</div>
+        </div>
+      </div>
+
+      {/* View toggle and add button */}
+      <div className="flex items-center justify-between">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setView('timeline')}
+            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
+              view === 'timeline' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <ListTodo className="h-4 w-4" />
+            Timeline
+          </button>
+          <button
+            onClick={() => setView('list')}
+            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
+              view === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <CalendarCheck className="h-4 w-4" />
+            List
+          </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
+              view === 'calendar' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <CalendarDays className="h-4 w-4" />
+            Calendar
+          </button>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add Item
+        </Button>
+      </div>
+
+      {/* Timeline View */}
+      {view === 'timeline' && (
+        <div className="space-y-6">
+          {Object.entries(itemsByMonth).map(([monthKey, monthItems]) => {
+            const [year, month] = monthKey.split('-');
+            const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', { 
+              month: 'long', year: 'numeric' 
+            });
+            
+            return (
+              <div key={monthKey}>
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-gray-500" />
+                  {monthName}
+                </h4>
+                <div className="space-y-2 ml-6 border-l-2 border-gray-200 pl-4">
+                  {monthItems.map(item => {
+                    const config = CATEGORY_CONFIG[item.category];
+                    const Icon = config.icon;
+                    const isCompleted = item.status === 'completed';
+                    
+                    return (
+                      <div 
+                        key={item.id}
+                        className={`relative flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                          isCompleted 
+                            ? 'bg-gray-50 border-gray-200 opacity-75' 
+                            : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        }`}
+                      >
+                        {/* Timeline dot */}
+                        <div className={`absolute -left-[1.65rem] w-3 h-3 rounded-full border-2 border-white ${
+                          isCompleted ? 'bg-green-500' : config.bgColor.replace('bg-', 'bg-')
+                        }`} style={{ top: '1.1rem' }} />
+                        
+                        {/* Category icon */}
+                        <div className={`w-10 h-10 rounded-lg ${config.bgColor} flex items-center justify-center flex-shrink-0`}>
+                          <Icon className={`h-5 w-5 ${config.color}`} />
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h5 className={`font-medium text-gray-900 ${isCompleted ? 'line-through' : ''}`}>
+                                {item.title}
+                              </h5>
+                              {item.description && (
+                                <p className="text-sm text-gray-600 mt-0.5">{item.description}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className={`text-xs px-2 py-0.5 rounded ${config.bgColor} ${config.color}`}>
+                                  {config.label}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {FREQUENCY_LABELS[item.frequency]}
+                                </span>
+                                {item.reminderDays && (
+                                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                                    <Bell className="h-3 w-3" />
+                                    {item.reminderDays}d reminder
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(item)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Actions */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleToggleComplete(item.id)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              isCompleted 
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                : 'hover:bg-gray-100 text-gray-400 hover:text-green-600'
+                            }`}
+                            title={isCompleted ? 'Mark as pending' : 'Mark as complete'}
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Remove item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* List View */}
+      {view === 'list' && (
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {items.map(item => {
+                const config = CATEGORY_CONFIG[item.category];
+                const isCompleted = item.status === 'completed';
+                
+                return (
+                  <tr key={item.id} className={isCompleted ? 'bg-gray-50' : 'bg-white hover:bg-gray-50'}>
+                    <td className="px-4 py-3">
+                      <div className={`font-medium text-gray-900 ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                        {item.title}
+                      </div>
+                      {item.description && (
+                        <div className="text-sm text-gray-500 truncate max-w-xs">{item.description}</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-1 rounded ${config.bgColor} ${config.color}`}>
+                        {config.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {formatDate(item.dueDate)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {getStatusBadge(item)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleToggleComplete(item.id)}
+                          className={`p-1.5 rounded transition-colors ${
+                            isCompleted ? 'text-green-600' : 'text-gray-400 hover:text-green-600'
+                          }`}
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="p-1.5 rounded text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Calendar View */}
+      {view === 'calendar' && (
+        <div className="border rounded-lg overflow-hidden">
+          {/* Calendar header */}
+          <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-b">
+            <button
+              onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))}
+              className="p-1 hover:bg-gray-200 rounded"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <h4 className="font-medium text-gray-900">
+              {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h4>
+            <button
+              onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))}
+              className="p-1 hover:bg-gray-200 rounded"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+          {/* Day headers */}
+          <div className="grid grid-cols-7 bg-gray-100 border-b">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="px-2 py-2 text-center text-xs font-medium text-gray-500">
+                {day}
+              </div>
+            ))}
+          </div>
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7">
+            {renderCalendar()}
+          </div>
+        </div>
+      )}
+
+      {/* Tips */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="font-medium text-blue-900 flex items-center gap-2 mb-2">
+          <Info className="h-4 w-4" />
+          Compliance Tips
+        </h4>
+        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+          <li>Set calendar reminders on your phone or email for important deadlines</li>
+          <li>Keep copies of all filed documents in a secure location</li>
+          <li>Review your compliance calendar quarterly to catch any changes</li>
+          <li>Late filings can result in penalties, fees, or loss of good standing</li>
+        </ul>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button 
+          onClick={() => onComplete(items)} 
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save & Complete Setup'}
+        </Button>
+      </div>
+
+      {/* Add Item Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add Compliance Item</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="itemTitle">Title *</Label>
+                <Input
+                  id="itemTitle"
+                  value={newItem.title}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="e.g., Quarterly Sales Tax Filing"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="itemDescription">Description</Label>
+                <Input
+                  id="itemDescription"
+                  value={newItem.description}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Optional details about this item"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="itemDueDate">Due Date *</Label>
+                <Input
+                  id="itemDueDate"
+                  type="date"
+                  value={newItem.dueDate}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, dueDate: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Frequency</Label>
+                  <select
+                    value={newItem.frequency}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, frequency: e.target.value as any }))}
+                    className="mt-1 w-full border rounded-md px-3 py-2 text-sm"
+                  >
+                    <option value="once">One-time</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="annual">Annual</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Category</Label>
+                  <select
+                    value={newItem.category}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value as any }))}
+                    className="mt-1 w-full border rounded-md px-3 py-2 text-sm"
+                  >
+                    <option value="state_filing">State Filing</option>
+                    <option value="federal_tax">Federal Tax</option>
+                    <option value="state_tax">State Tax</option>
+                    <option value="license">License</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="reminderDays">Reminder (days before)</Label>
+                <Input
+                  id="reminderDays"
+                  type="number"
+                  min="1"
+                  max="90"
+                  value={newItem.reminderDays}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, reminderDays: parseInt(e.target.value) || 30 }))}
+                  className="mt-1 w-24"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddItem}
+                disabled={!newItem.title || !newItem.dueDate}
+              >
+                Add Item
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Step indicator component
 function StepIndicator({ 
   step, 
@@ -866,6 +1644,7 @@ export default function OperationsPage() {
   const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useProfile();
   const updateBankingStatusMutation = useUpdateBankingStatus();
   const updateOperatingAgreementStatusMutation = useUpdateOperatingAgreementStatus();
+  const updateComplianceCalendarStatusMutation = useUpdateComplianceCalendarStatus();
   
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showGenerator, setShowGenerator] = useState(false);
@@ -910,7 +1689,9 @@ export default function OperationsPage() {
   const progress = Math.round((steps.filter(s => s.status === 'complete').length / steps.length) * 100);
   
   const isLoading = profileLoading;
-  const isSaving = updateBankingStatusMutation.isPending || updateOperatingAgreementStatusMutation.isPending;
+  const isSaving = updateBankingStatusMutation.isPending || 
+    updateOperatingAgreementStatusMutation.isPending || 
+    updateComplianceCalendarStatusMutation.isPending;
   
   // Save handler for banking
   const handleCompleteBanking = async (bankAccount: Partial<BankAccount>) => {
@@ -927,6 +1708,16 @@ export default function OperationsPage() {
     await updateOperatingAgreementStatusMutation.mutateAsync({
       status: 'signed',
       operatingAgreement: data,
+    });
+    await refetchProfile();
+    setActiveModal(null);
+  };
+  
+  // Save handler for compliance calendar
+  const handleCompleteComplianceCalendar = async (items: ComplianceItem[]) => {
+    await updateComplianceCalendarStatusMutation.mutateAsync({
+      status: 'active',
+      complianceItems: items,
     });
     await refetchProfile();
     setActiveModal(null);
@@ -1096,10 +1887,23 @@ export default function OperationsPage() {
       
       {activeModal === 'compliance' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Compliance Calendar</h2>
-            <p className="text-gray-600 mb-4">This feature is coming soon.</p>
-            <Button onClick={() => setActiveModal(null)}>Close</Button>
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900">Compliance Calendar</h2>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <ComplianceCalendarStep
+                profile={profile}
+                onComplete={handleCompleteComplianceCalendar}
+                isSaving={isSaving}
+              />
+            </div>
           </div>
         </div>
       )}
