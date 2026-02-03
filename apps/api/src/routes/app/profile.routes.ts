@@ -147,10 +147,30 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
     
     const updateData = validation.data;
     
+    // Build update object with readiness flags
+    const updateObj: Record<string, unknown> = { ...updateData };
+    
+    // Auto-update readiness flags based on what was updated
+    if (updateData.businessAddress) {
+      // Check if address is complete (all required fields)
+      const addr = updateData.businessAddress;
+      if (addr.street1 && addr.city && addr.state && addr.zipCode) {
+        updateObj['readinessFlags.addressVerified'] = true;
+      }
+    }
+    
+    if (updateData.registeredAgent) {
+      // Check if registered agent is complete
+      const agent = updateData.registeredAgent;
+      if (agent.name && agent.address?.street1 && agent.address?.city && agent.address?.state && agent.address?.zipCode) {
+        updateObj['readinessFlags.registeredAgentSet'] = true;
+      }
+    }
+    
     // Update profile
     const profile = await BusinessProfile.findOneAndUpdate(
       { tenantId },
-      { $set: updateData },
+      { $set: updateObj },
       { new: true }
     );
     
@@ -161,11 +181,25 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       });
     }
     
+    // Recalculate profile completeness
+    const flags = profile.readinessFlags || {};
+    const flagsSet = Object.values(flags).filter(Boolean).length;
+    const totalFlags = 11;
+    const profileCompleteness = Math.round((flagsSet / totalFlags) * 100);
+    
+    // Update completeness if changed
+    if (profile.profileCompleteness !== profileCompleteness) {
+      await BusinessProfile.updateOne(
+        { _id: profile._id },
+        { $set: { profileCompleteness } }
+      );
+    }
+    
     res.json({
       success: true,
       data: {
         id: profile._id.toString(),
-        profileCompleteness: profile.profileCompleteness,
+        profileCompleteness,
         readinessFlags: profile.readinessFlags,
       },
       meta: { timestamp: new Date().toISOString() },
@@ -303,6 +337,224 @@ router.get('/people', async (req: Request, res: Response, next: NextFunction) =>
         timestamp: new Date().toISOString(),
         count: transformed.length,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Owner validation schema
+const ownerSchema = z.object({
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  title: z.string().min(1).max(100),
+  ownershipPercentage: z.number().min(0).max(100),
+  email: z.string().email().optional(),
+});
+
+const addOwnersSchema = z.object({
+  owners: z.array(ownerSchema).min(1),
+});
+
+/**
+ * POST /app/profile/owners
+ * Add or replace owners/officers
+ */
+router.post('/owners', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.id;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const validation = addOwnersSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          code: 'VALIDATION_ERROR', 
+          message: 'Invalid input',
+          details: validation.error.errors,
+        },
+      });
+    }
+    
+    const { owners } = validation.data;
+    
+    // Validate total ownership equals 100%
+    const totalOwnership = owners.reduce((sum, o) => sum + o.ownershipPercentage, 0);
+    if (totalOwnership !== 100) {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          code: 'INVALID_OWNERSHIP', 
+          message: `Total ownership must equal 100%, got ${totalOwnership}%`,
+        },
+      });
+    }
+    
+    const profile = await BusinessProfile.findOne({ tenantId });
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    // Delete existing owners for this profile
+    await Person.deleteMany({ 
+      tenantId, 
+      businessProfileId: profile._id,
+      type: 'owner',
+    });
+    
+    // Create new owner records
+    const ownerDocs = owners.map(owner => ({
+      tenantId,
+      businessProfileId: profile._id,
+      type: 'owner',
+      firstName: owner.firstName,
+      lastName: owner.lastName,
+      title: owner.title,
+      ownershipPercentage: owner.ownershipPercentage,
+      email: owner.email,
+      createdBy: userId,
+    }));
+    
+    await Person.insertMany(ownerDocs);
+    
+    // Update readiness flag
+    await BusinessProfile.updateOne(
+      { _id: profile._id },
+      { $set: { 'readinessFlags.ownersAdded': true } }
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        ownersCount: owners.length,
+        readinessFlags: { ...profile.readinessFlags, ownersAdded: true },
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /app/profile/formation-status
+ * Update formation status (SOS filing complete)
+ */
+router.post('/formation-status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const { status } = req.body;
+    
+    if (!['pending', 'filed', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid formation status' },
+      });
+    }
+    
+    const profile = await BusinessProfile.findOneAndUpdate(
+      { tenantId },
+      { 
+        $set: { 
+          formationStatus: status,
+          'readinessFlags.sosFilingComplete': status === 'filed' || status === 'approved',
+        } 
+      },
+      { new: true }
+    );
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        formationStatus: profile.formationStatus,
+        readinessFlags: profile.readinessFlags,
+      },
+      meta: { timestamp: new Date().toISOString() },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /app/profile/ein-status
+ * Update EIN status
+ */
+router.post('/ein-status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+      });
+    }
+    
+    const { status, einNumber } = req.body;
+    
+    if (!['pending', 'applied', 'received'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid EIN status' },
+      });
+    }
+    
+    const updateData: Record<string, unknown> = { 
+      einStatus: status,
+      'readinessFlags.einReceived': status === 'received',
+    };
+    
+    if (einNumber) {
+      updateData.einNumber = einNumber;
+    }
+    
+    const profile = await BusinessProfile.findOneAndUpdate(
+      { tenantId },
+      { $set: updateData },
+      { new: true }
+    );
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Business profile not found' },
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        einStatus: profile.einStatus,
+        readinessFlags: profile.readinessFlags,
+      },
+      meta: { timestamp: new Date().toISOString() },
     });
   } catch (error) {
     next(error);

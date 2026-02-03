@@ -361,6 +361,62 @@ export function useReadiness() {
   });
 }
 
+export interface Owner {
+  firstName: string;
+  lastName: string;
+  title: string;
+  ownershipPercentage: number;
+  email?: string;
+}
+
+export function useAddOwners() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (owners: Owner[]) => {
+      const { data } = await api.post('/app/profile/owners', { owners });
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['setup-status'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+    },
+  });
+}
+
+export function useUpdateFormationStatus() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (status: 'pending' | 'filed' | 'approved' | 'rejected') => {
+      const { data } = await api.post('/app/profile/formation-status', { status });
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['setup-status'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+    },
+  });
+}
+
+export function useUpdateEINStatus() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: { status: 'pending' | 'applied' | 'received'; einNumber?: string }) => {
+      const { data } = await api.post('/app/profile/ein-status', payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['setup-status'] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+    },
+  });
+}
+
 // =============================================================================
 // Home Hooks
 // =============================================================================

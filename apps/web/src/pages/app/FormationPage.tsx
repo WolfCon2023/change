@@ -23,7 +23,14 @@ import {
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useProfile, useSetupStatus, useUpdateProfile } from '../../lib/app-api';
+import { 
+  useProfile, 
+  useSetupStatus, 
+  useUpdateProfile,
+  useAddOwners,
+  useUpdateFormationStatus,
+  useUpdateEINStatus,
+} from '../../lib/app-api';
 
 // US States for dropdown
 const usStates = [
@@ -561,11 +568,11 @@ function EINApplicationStep({
   onComplete,
   isSaving,
 }: { 
-  onComplete: () => void;
+  onComplete: (einNumber: string) => void;
   isSaving: boolean;
 }) {
   const [hasEIN, setHasEIN] = useState(false);
-  const [einNumber, setEinNumber] = useState('');
+  const [localEinNumber, setLocalEinNumber] = useState('');
   
   return (
     <div className="space-y-4">
@@ -591,8 +598,8 @@ function EINApplicationStep({
         <Label htmlFor="einNumber">EIN Number</Label>
         <Input
           id="einNumber"
-          value={einNumber}
-          onChange={(e) => setEinNumber(e.target.value)}
+          value={localEinNumber}
+          onChange={(e) => setLocalEinNumber(e.target.value)}
           placeholder="XX-XXXXXXX"
           className="mt-1 max-w-xs"
         />
@@ -621,7 +628,7 @@ function EINApplicationStep({
       </label>
       
       <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-        <Button onClick={onComplete} disabled={!hasEIN || !einNumber || isSaving}>
+        <Button onClick={() => onComplete(localEinNumber)} disabled={!hasEIN || !localEinNumber || isSaving}>
           {isSaving ? 'Saving...' : 'Complete Formation'}
         </Button>
       </div>
@@ -713,6 +720,9 @@ export default function FormationPage() {
   const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useProfile();
   const { data: setupStatus, isLoading: setupLoading } = useSetupStatus();
   const updateProfileMutation = useUpdateProfile();
+  const addOwnersMutation = useAddOwners();
+  const updateFormationStatusMutation = useUpdateFormationStatus();
+  const updateEINStatusMutation = useUpdateEINStatus();
   
   const [activeModal, setActiveModal] = useState<string | null>(null);
   
@@ -759,7 +769,8 @@ export default function FormationPage() {
   const progress = Math.round((steps.filter(s => s.status === 'complete').length / steps.length) * 100);
   
   const isLoading = profileLoading || setupLoading;
-  const isSaving = updateProfileMutation.isPending;
+  const isSaving = updateProfileMutation.isPending || addOwnersMutation.isPending || 
+    updateFormationStatusMutation.isPending || updateEINStatusMutation.isPending;
   
   // Save handlers
   const handleSaveAddress = async (data: AddressFormData) => {
@@ -796,20 +807,31 @@ export default function FormationPage() {
     setActiveModal(null);
   };
   
-  const handleSaveOwners = async (_owners: Owner[]) => {
-    // For now, just mark as complete since we don't have a full Person API
-    // In a full implementation, this would create Person records
-    await updateProfileMutation.mutateAsync({});
+  const handleSaveOwners = async (owners: Owner[]) => {
+    await addOwnersMutation.mutateAsync(
+      owners.map(o => ({
+        firstName: o.firstName,
+        lastName: o.lastName,
+        title: o.title,
+        ownershipPercentage: parseFloat(o.ownershipPercentage) || 0,
+        email: o.email || undefined,
+      }))
+    );
     await refetchProfile();
     setActiveModal(null);
   };
   
   const handleSOSComplete = async () => {
+    await updateFormationStatusMutation.mutateAsync('filed');
     await refetchProfile();
     setActiveModal(null);
   };
   
-  const handleEINComplete = async () => {
+  const handleEINComplete = async (ein: string) => {
+    await updateEINStatusMutation.mutateAsync({ 
+      status: 'received', 
+      einNumber: ein || undefined 
+    });
     await refetchProfile();
     setActiveModal(null);
   };
