@@ -10,7 +10,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
           <img 
-            src="/logo.png" 
+            src="/logo-v2.png" 
             alt="C.H.A.N.G.E. Business Application" 
             className="h-32 w-auto mx-auto mb-4"
           />

@@ -197,7 +197,7 @@ export function AdminLayout() {
           <div className="flex items-center justify-center h-32 px-2 border-b border-gray-800">
             <div className="bg-white rounded-lg px-2 py-1">
               <img 
-                src="/logo.png" 
+                src="/logo-v2.png" 
                 alt="C.H.A.N.G.E. Admin" 
                 className="h-24 w-auto"
               />

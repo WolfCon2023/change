@@ -149,7 +149,7 @@ export default function AppLayout() {
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 -ml-2">
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
-        <img src="/logo.png" alt="C.H.A.N.G.E." className="h-12 w-auto max-w-[200px]" />
+        <img src="/logo-v2.png" alt="C.H.A.N.G.E." className="h-12 w-auto max-w-[200px]" />
         <div className="w-9" /> {/* Spacer */}
       </header>
       
@@ -166,7 +166,7 @@ export default function AppLayout() {
         <div className="h-32 flex items-center justify-center px-2 border-b bg-white">
           <Link to="/app/home" className="flex items-center">
             <img 
-              src="/logo.png" 
+              src="/logo-v2.png" 
               alt="C.H.A.N.G.E. Business Application" 
               className="h-28 w-auto"
             />
