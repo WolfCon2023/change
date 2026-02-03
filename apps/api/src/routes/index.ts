@@ -4,11 +4,15 @@ import authRoutes from './auth.routes.js';
 import tenantRoutes from './tenant.routes.js';
 import adminRoutes from './admin/index.js';
 import appRoutes from './app/index.js';
+import downloadsRoutes from './downloads.routes.js';
 
 const router = Router();
 
 // Health checks (no auth)
 router.use('/health', healthRoutes);
+
+// Public downloads (token in query string)
+router.use('/downloads', downloadsRoutes);
 
 // Authentication routes
 router.use('/auth', authRoutes);

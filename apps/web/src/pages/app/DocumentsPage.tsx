@@ -29,6 +29,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { useDocuments, useCreateDocument, useDeleteDocument, useUpdateDocument, useUploadFile, type Document } from '../../lib/app-api';
+import { useAuthStore } from '../../stores/auth.store';
 
 // Document type configurations
 const DOCUMENT_TYPES = {
@@ -197,16 +198,18 @@ export default function DocumentsPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
   
-  // Get download URL
+  // Get download URL (uses public endpoint with token in query string)
   const getDownloadUrl = (docId: string) => {
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-    return `${baseUrl}/app/uploads/${docId}?download=true`;
+    const token = useAuthStore.getState().accessToken;
+    return `${baseUrl}/downloads/${docId}?download=true&token=${token}`;
   };
   
-  // Get view URL
+  // Get view URL (uses public endpoint with token in query string)
   const getViewUrl = (docId: string) => {
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-    return `${baseUrl}/app/uploads/${docId}`;
+    const token = useAuthStore.getState().accessToken;
+    return `${baseUrl}/downloads/${docId}?token=${token}`;
   };
   
   // Handle delete document

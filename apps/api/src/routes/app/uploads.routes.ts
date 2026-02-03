@@ -8,8 +8,11 @@ import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { Artifact, BusinessProfile } from '../../db/models/index.js';
+import { config } from '../../config/index.js';
+import type { AuthTokenPayload } from '@change/shared';
 
 const router = Router();
 
