@@ -20,6 +20,7 @@ import {
   Compass,
   ClipboardList,
   ShieldAlert,
+  Book,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -112,6 +113,12 @@ const navItems: NavItem[] = [
     href: '/admin/governance',
     icon: Compass,
     // Visible to all admin portal users - informational only
+  },
+  {
+    label: 'Knowledge Base',
+    href: '/admin/knowledge-base',
+    icon: Book,
+    // Visible to all admin portal users - training/documentation
   },
 ];
 

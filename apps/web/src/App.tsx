@@ -38,6 +38,9 @@ import { AccessReviewCampaignWizardPage } from '@/pages/admin/AccessReviewCampai
 // Security Gap Analysis Page
 import { SecurityGapAnalysisPage } from '@/pages/admin/SecurityGapAnalysisPage';
 
+// Knowledge Base Page
+import { KnowledgeBasePage } from '@/pages/admin/KnowledgeBasePage';
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -164,6 +167,8 @@ function App() {
           <Route path="governance" element={<GovernancePage />} />
           {/* Security Gap Analysis */}
           <Route path="security-gaps" element={<SecurityGapAnalysisPage />} />
+          {/* Knowledge Base */}
+          <Route path="knowledge-base" element={<KnowledgeBasePage />} />
           {/* Access Review Campaigns */}
           <Route path="access-review-campaigns" element={<AccessReviewCampaignsPage />} />
           <Route path="access-review-campaigns/new" element={<AccessReviewCampaignWizardPage />} />
