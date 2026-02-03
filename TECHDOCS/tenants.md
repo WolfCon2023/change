@@ -1,6 +1,6 @@
 # Tenants in the CHANGE Platform
 
-## What is a Tenant?
+## What is a Tenant??
 
 In the CHANGE Platform, a **tenant** represents a separate customer organization or business that uses the platform.
 
