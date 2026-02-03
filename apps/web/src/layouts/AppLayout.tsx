@@ -145,11 +145,11 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b z-30 px-4 h-14 flex items-center justify-between">
+      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b z-30 px-4 h-16 flex items-center justify-between">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 -ml-2">
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
-        <img src="/logo.png" alt="C.H.A.N.G.E." className="h-8 w-auto" />
+        <img src="/logo.png" alt="C.H.A.N.G.E." className="h-12 w-auto max-w-[200px]" />
         <div className="w-9" /> {/* Spacer */}
       </header>
       
@@ -163,12 +163,12 @@ export default function AppLayout() {
         `}
       >
         {/* Logo */}
-        <div className="h-14 lg:h-16 flex items-center px-4 border-b">
+        <div className="h-20 flex items-center px-3 border-b">
           <Link to="/app/home" className="flex items-center">
             <img 
               src="/logo.png" 
               alt="C.H.A.N.G.E. Business Application" 
-              className="h-10 w-auto"
+              className="h-14 w-auto max-w-full"
             />
           </Link>
         </div>

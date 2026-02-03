@@ -12,7 +12,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           <img 
             src="/logo.png" 
             alt="C.H.A.N.G.E. Business Application" 
-            className="h-16 w-auto mx-auto mb-4"
+            className="h-20 w-auto mx-auto mb-4"
           />
           <p className="text-muted-foreground">Business Formation & Advisory System</p>
         </div>

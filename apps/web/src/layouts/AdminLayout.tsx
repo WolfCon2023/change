@@ -194,12 +194,12 @@ export function AdminLayout() {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center h-16 px-4 border-b border-gray-800">
-            <div className="bg-white rounded-lg px-2 py-1">
+          <div className="flex items-center h-20 px-3 border-b border-gray-800">
+            <div className="bg-white rounded-lg px-3 py-2">
               <img 
                 src="/logo.png" 
                 alt="C.H.A.N.G.E. Admin" 
-                className="h-8 w-auto"
+                className="h-10 w-auto"
               />
             </div>
           </div>
