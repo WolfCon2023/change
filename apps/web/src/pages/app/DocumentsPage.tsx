@@ -158,6 +158,10 @@ export default function DocumentsPage() {
       setShowUploadModal(false);
       setUploadFile(null);
       setUploadDetails({ name: '', description: '', type: 'document' });
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
+      const message = error.response?.data?.error?.message || error.message || 'Upload failed';
+      alert(`Upload failed: ${message}`);
     } finally {
       setUploadProgress(false);
     }
