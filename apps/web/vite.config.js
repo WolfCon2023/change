@@ -8,6 +8,9 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src'),
         },
     },
+    optimizeDeps: {
+        include: ['prop-types', 'react-simple-maps'],
+    },
     server: {
         port: 5173,
         proxy: {
@@ -20,5 +23,8 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         sourcemap: true,
+        commonjsOptions: {
+            include: [/prop-types/, /react-simple-maps/, /node_modules/],
+        },
     },
 });
