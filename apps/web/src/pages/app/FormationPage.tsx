@@ -488,6 +488,88 @@ function OwnersForm({
   );
 }
 
+// Formation Documents Info Panel
+function FormationDocsInfo({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b flex items-center justify-between bg-blue-50">
+          <h2 className="text-lg font-semibold text-blue-900">Understanding Formation Documents</h2>
+          <button onClick={onClose} className="p-1 hover:bg-blue-100 rounded">
+            <X className="h-5 w-5 text-blue-700" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-2">What are Formation Documents?</h3>
+            <p className="text-sm text-slate-600">
+              Formation documents are the official legal paperwork you file with your state to 
+              formally create your business entity. The specific document depends on your business type.
+            </p>
+          </div>
+          
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-medium text-blue-900 mb-2">Articles of Organization</h4>
+            <p className="text-sm text-blue-800 mb-2">
+              The founding document for a <strong>Limited Liability Company (LLC)</strong>. It typically includes:
+            </p>
+            <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+              <li>Business name</li>
+              <li>Registered agent information</li>
+              <li>Principal business address</li>
+              <li>Member or manager names</li>
+              <li>Purpose of the business</li>
+            </ul>
+          </div>
+          
+          <div className="bg-indigo-50 rounded-lg p-4">
+            <h4 className="font-medium text-indigo-900 mb-2">Articles of Incorporation</h4>
+            <p className="text-sm text-indigo-800 mb-2">
+              The founding document for a <strong>Corporation (C-Corp or S-Corp)</strong>. It typically includes:
+            </p>
+            <ul className="text-sm text-indigo-700 list-disc list-inside space-y-1">
+              <li>Corporate name</li>
+              <li>Number of authorized shares</li>
+              <li>Registered agent information</li>
+              <li>Incorporator names</li>
+              <li>Business purpose</li>
+            </ul>
+          </div>
+          
+          <div className="bg-slate-50 rounded-lg p-4">
+            <h4 className="font-medium text-slate-900 mb-2">How to Get These Documents</h4>
+            <ul className="text-sm text-slate-700 space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="font-medium text-slate-900">1.</span>
+                <span>Use your state's official templates (usually free) from their business filing portal</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium text-slate-900">2.</span>
+                <span>Use a legal service like LegalZoom, Rocket Lawyer, or Incfile</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium text-slate-900">3.</span>
+                <span>Have an attorney draft custom documents for your specific needs</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <p className="text-xs text-amber-800">
+              <strong>Note:</strong> Requirements vary by state. Some states have simple online forms, 
+              while others require more detailed documents. Check your state's business filing portal 
+              for specific requirements.
+            </p>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t bg-slate-50">
+          <Button onClick={onClose} className="w-full">Got it</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // State Business Filing Step
 function StateFilingStep({ 
   profile, 
@@ -503,6 +585,7 @@ function StateFilingStep({
   const [hasConfirmation, setHasConfirmation] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDocsInfo, setShowDocsInfo] = useState(false);
   
   // Get state portal info from registry
   const statePortal = profile?.formationState ? getStatePortal(profile.formationState) : null;
@@ -586,13 +669,37 @@ function StateFilingStep({
       {/* Next Steps */}
       <div className="border rounded-lg p-4">
         <h4 className="font-medium text-gray-900 mb-3">Next Steps</h4>
-        <ol className="space-y-2 text-sm list-decimal list-inside text-slate-700">
-          <li>Download or generate your formation documents (Articles of Organization, Articles of Incorporation, etc.)</li>
-          <li>Open the official state business filing portal</li>
-          <li>Pay the filing fee (varies by state)</li>
-          <li>Upload your filing confirmation in this step</li>
+        <ol className="space-y-2 text-sm text-slate-700">
+          <li className="flex items-start gap-2">
+            <span className="font-medium text-slate-500 min-w-[20px]">1.</span>
+            <span className="flex-1">
+              Prepare your formation documents
+              <button
+                onClick={() => setShowDocsInfo(true)}
+                className="ml-1 inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                <Info className="h-3.5 w-3.5" />
+                <span className="text-xs">What's this?</span>
+              </button>
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-medium text-slate-500 min-w-[20px]">2.</span>
+            <span>Open the official state business filing portal</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-medium text-slate-500 min-w-[20px]">3.</span>
+            <span>Pay the filing fee (varies by state)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-medium text-slate-500 min-w-[20px]">4.</span>
+            <span>Upload your filing confirmation in this step</span>
+          </li>
         </ol>
       </div>
+      
+      {/* Formation Documents Info Modal */}
+      {showDocsInfo && <FormationDocsInfo onClose={() => setShowDocsInfo(false)} />}
       
       {/* Portal link buttons */}
       {statePortal && (
