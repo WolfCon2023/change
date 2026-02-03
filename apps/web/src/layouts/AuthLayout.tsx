@@ -19,7 +19,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         {children}
       </div>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} C.H.A.N.G.E. Platform. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} CHANGE Business Transformation Platform. All rights reserved.</p>
       </footer>
     </div>
   );
