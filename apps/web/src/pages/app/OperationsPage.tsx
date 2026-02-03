@@ -27,11 +27,11 @@ import {
   Scale,
   Trash2,
   Plus,
-  BookOpen,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { OperatingAgreementGenerator } from '../../components/OperatingAgreementGenerator';
 import { 
   useProfile, 
   useUpdateBankingStatus,
@@ -422,42 +422,19 @@ const AGREEMENT_RESOURCES = [
   },
 ];
 
-// What to include in operating agreement
-const AGREEMENT_SECTIONS_LLC = [
-  { title: 'Ownership Structure', description: 'Percentage ownership for each member' },
-  { title: 'Capital Contributions', description: 'Initial and ongoing investment by members' },
-  { title: 'Profit & Loss Distribution', description: 'How profits and losses are allocated' },
-  { title: 'Management Structure', description: 'Member-managed vs. manager-managed' },
-  { title: 'Voting Rights', description: 'How decisions are made and voting thresholds' },
-  { title: 'Member Withdrawal/Buyout', description: 'Process for members leaving the company' },
-  { title: 'Transfer of Ownership', description: 'Rules for selling or transferring membership' },
-  { title: 'Dissolution Procedures', description: 'How to wind down the business' },
-];
-
-const AGREEMENT_SECTIONS_CORP = [
-  { title: 'Share Structure', description: 'Classes of stock and shareholder rights' },
-  { title: 'Board of Directors', description: 'Size, election, and responsibilities' },
-  { title: 'Officer Roles', description: 'Positions, duties, and authority' },
-  { title: 'Shareholder Meetings', description: 'Annual and special meeting procedures' },
-  { title: 'Voting Procedures', description: 'Quorum requirements and voting rules' },
-  { title: 'Dividend Policy', description: 'How profits are distributed to shareholders' },
-  { title: 'Stock Transfer Restrictions', description: 'Right of first refusal, drag-along rights' },
-  { title: 'Amendment Process', description: 'How to modify the bylaws' },
-];
-
-// Operating Agreement Step Component
+// Operating Agreement Step Component - Choose between Generate or Upload
 function OperatingAgreementStep({ 
   profile, 
   onComplete,
+  onOpenGenerator,
   isSaving,
 }: { 
   profile: any;
   onComplete: (data: Partial<OperatingAgreement>) => void;
+  onOpenGenerator: () => void;
   isSaving: boolean;
 }) {
-  const [agreementType, setAgreementType] = useState<'standard' | 'custom' | 'attorney_drafted'>(
-    profile?.operatingAgreement?.type || 'standard'
-  );
+  const [mode, setMode] = useState<'choose' | 'upload'>('choose');
   const [signatories, setSignatories] = useState<string[]>(
     profile?.operatingAgreement?.signatories || []
   );
@@ -466,23 +443,11 @@ function OperatingAgreementStep({
     profile?.operatingAgreement?.signedDate || ''
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Determine document type based on business type
   const isLLC = profile?.businessType?.toLowerCase().includes('llc');
   const documentName = isLLC ? 'Operating Agreement' : 'Bylaws';
-  const sections = isLLC ? AGREEMENT_SECTIONS_LLC : AGREEMENT_SECTIONS_CORP;
-
-  const handleCopyUrl = async (url: string, name: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(name);
-      setTimeout(() => setCopied(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -518,224 +483,175 @@ function OperatingAgreementStep({
     setSignatories(signatories.filter(s => s !== name));
   };
 
-  const isValid = agreementType && signatories.length > 0 && signedDate;
+  const isUploadValid = signatories.length > 0 && signedDate && selectedFile;
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100">
-        <h4 className="font-semibold text-indigo-900 text-lg flex items-center gap-2">
-          <Scale className="h-5 w-5" />
-          {documentName}
-        </h4>
-        <p className="text-indigo-800 mt-1 text-sm">
-          {isLLC 
-            ? 'An Operating Agreement establishes the rules for how your LLC will be run, including ownership percentages, voting rights, and profit distribution.'
-            : 'Bylaws are the internal rules governing your corporation, including board procedures, officer roles, and shareholder rights.'
-          }
-        </p>
-      </div>
-
-      {/* Why it matters */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
-        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-        <div>
-          <h4 className="font-medium text-amber-900">Why This Matters</h4>
-          <ul className="text-sm text-amber-800 mt-1 space-y-1">
-            <li>• <strong>Liability Protection:</strong> Without it, your LLC/Corp may not provide full liability protection</li>
-            <li>• <strong>Bank Requirement:</strong> Many banks require this to open a business account</li>
-            <li>• <strong>Dispute Resolution:</strong> Prevents conflicts by establishing clear rules upfront</li>
-            <li>• <strong>Legal Compliance:</strong> Some states require operating agreements/bylaws</li>
-          </ul>
+  // Choice screen
+  if (mode === 'choose') {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100">
+          <h4 className="font-semibold text-indigo-900 text-lg flex items-center gap-2">
+            <Scale className="h-5 w-5" />
+            {documentName}
+          </h4>
+          <p className="text-indigo-800 mt-1 text-sm">
+            {isLLC 
+              ? 'An Operating Agreement establishes the rules for how your LLC will be run, including ownership percentages, voting rights, and profit distribution.'
+              : 'Bylaws are the internal rules governing your corporation, including board procedures, officer roles, and shareholder rights.'
+            }
+          </p>
         </div>
-      </div>
 
-      {/* Agreement type selection */}
-      <div className="border rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-3">Document Type</h4>
-        <div className="space-y-3">
-          {[
-            { 
-              value: 'standard' as const, 
-              label: 'Standard Template', 
-              description: 'Use a free or low-cost template from an online service',
-              icon: FileText,
-            },
-            { 
-              value: 'custom' as const, 
-              label: 'Custom Agreement', 
-              description: 'Modified template tailored to your specific needs',
-              icon: BookOpen,
-            },
-            { 
-              value: 'attorney_drafted' as const, 
-              label: 'Attorney-Drafted', 
-              description: 'Custom document created by a licensed attorney',
-              icon: Scale,
-            },
-          ].map((option) => {
-            const Icon = option.icon;
-            return (
-              <label
-                key={option.value}
-                className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                  agreementType === option.value 
-                    ? 'border-indigo-500 bg-indigo-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="agreementType"
-                  value={option.value}
-                  checked={agreementType === option.value}
-                  onChange={() => setAgreementType(option.value)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${agreementType === option.value ? 'text-indigo-600' : 'text-gray-500'}`} />
-                    <span className={`font-medium ${agreementType === option.value ? 'text-indigo-900' : 'text-gray-900'}`}>
-                      {option.label}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-0.5">{option.description}</p>
-                </div>
-              </label>
-            );
-          })}
+        {/* Why it matters */}
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-amber-900">Why This Matters</h4>
+            <ul className="text-sm text-amber-800 mt-1 space-y-1">
+              <li>• <strong>Liability Protection:</strong> Without it, your LLC/Corp may not provide full liability protection</li>
+              <li>• <strong>Bank Requirement:</strong> Many banks require this to open a business account</li>
+              <li>• <strong>Dispute Resolution:</strong> Prevents conflicts by establishing clear rules upfront</li>
+              <li>• <strong>Legal Compliance:</strong> Some states require operating agreements/bylaws</li>
+            </ul>
+          </div>
         </div>
-      </div>
 
-      {/* Key sections checklist */}
-      <div className="border rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-3">Key Sections to Include</h4>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {sections.map((section) => (
-            <div key={section.title} className="flex items-start gap-2 p-2 bg-gray-50 rounded">
-              <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">{section.title}</p>
-                <p className="text-xs text-gray-600">{section.description}</p>
-              </div>
+        {/* Two main options */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Option 1: Generate */}
+          <div 
+            onClick={onOpenGenerator}
+            className="border-2 border-indigo-200 rounded-xl p-6 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group relative overflow-hidden"
+          >
+            <div className="absolute top-2 right-2">
+              <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                Recommended
+              </span>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="w-14 h-14 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <FileText className="h-7 w-7 text-indigo-600" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              Generate with Our Wizard
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Create a customized {documentName.toLowerCase()} using our step-by-step builder. 
+              Pre-fills your business info, includes digital signatures, and exports to PDF.
+            </p>
+            <ul className="text-sm text-gray-700 space-y-2">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Smart pre-fill from your profile
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Customizable clauses & terms
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Digital signature capture
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Print or save as PDF
+              </li>
+            </ul>
+            <Button className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+              Start Generator
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
 
-      {/* Resources */}
-      <div className="border rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-3">Template Resources</h4>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {AGREEMENT_RESOURCES.map((resource) => (
-            <div 
-              key={resource.name}
-              className="border rounded-lg p-3 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h5 className="font-medium text-gray-900 text-sm">{resource.name}</h5>
+          {/* Option 2: Upload */}
+          <div 
+            onClick={() => setMode('upload')}
+            className="border-2 border-gray-200 rounded-xl p-6 cursor-pointer hover:border-gray-300 hover:bg-gray-50/50 transition-all group"
+          >
+            <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Upload className="h-7 w-7 text-gray-600" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              Upload Existing Document
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Already have a {documentName.toLowerCase()}? Upload your signed document 
+              to keep everything in one place.
+            </p>
+            <ul className="text-sm text-gray-700 space-y-2">
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-gray-400" />
+                PDF, PNG, or JPG format
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-gray-400" />
+                Up to 10MB file size
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-gray-400" />
+                Secure document storage
+              </li>
+            </ul>
+            <Button variant="outline" className="w-full mt-4">
+              Upload Document
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+
+        {/* External resources */}
+        <div className="border rounded-lg p-4">
+          <h4 className="font-medium text-gray-900 mb-3">Or use an external service</h4>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {AGREEMENT_RESOURCES.map((resource) => (
+              <a 
+                key={resource.name}
+                href={resource.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900">{resource.name}</span>
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
                     resource.type === 'Free Template' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                   }`}>
                     {resource.type}
                   </span>
                 </div>
-                <div className="flex gap-1">
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 hover:bg-indigo-100 rounded"
-                    title="Visit website"
-                  >
-                    <ExternalLink className="h-4 w-4 text-indigo-600" />
-                  </a>
-                  <button
-                    onClick={() => handleCopyUrl(resource.url, resource.name)}
-                    className="p-1.5 hover:bg-indigo-100 rounded"
-                    title="Copy link"
-                  >
-                    {copied === resource.name ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-              <p className="text-xs text-gray-600 mt-1">{resource.description}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Signatories */}
-      <div className="border rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Signatories
-        </h4>
-        <p className="text-sm text-gray-600 mb-3">
-          Add all members/shareholders who will sign the {documentName.toLowerCase()}.
-        </p>
-        
-        {/* Existing signatories */}
-        {signatories.length > 0 && (
-          <div className="space-y-2 mb-3">
-            {signatories.map((name) => (
-              <div key={name} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <span className="text-indigo-700 font-medium text-sm">
-                      {name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">{name}</span>
-                </div>
-                <button
-                  onClick={() => handleRemoveSignatory(name)}
-                  className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+                <ExternalLink className="h-4 w-4 text-gray-400" />
+              </a>
             ))}
           </div>
-        )}
-        
-        {/* Add signatory */}
-        <div className="flex gap-2">
-          <Input
-            value={newSignatory}
-            onChange={(e) => setNewSignatory(e.target.value)}
-            placeholder="Enter signatory name"
-            onKeyPress={(e) => e.key === 'Enter' && handleAddSignatory()}
-          />
-          <Button 
-            variant="outline" 
-            onClick={handleAddSignatory}
-            disabled={!newSignatory.trim()}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
         </div>
       </div>
+    );
+  }
 
-      {/* Signed date */}
-      <div>
-        <Label htmlFor="signedDate">Date Signed</Label>
-        <Input
-          id="signedDate"
-          type="date"
-          value={signedDate}
-          onChange={(e) => setSignedDate(e.target.value)}
-          className="mt-1 max-w-xs"
-        />
+  // Upload mode
+  return (
+    <div className="space-y-6">
+      {/* Back button */}
+      <button 
+        onClick={() => setMode('choose')}
+        className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to options
+      </button>
+
+      {/* Header */}
+      <div className="bg-gray-50 p-4 rounded-lg border">
+        <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+          <Upload className="h-5 w-5" />
+          Upload Existing {documentName}
+        </h4>
+        <p className="text-gray-600 mt-1 text-sm">
+          Upload your signed {documentName.toLowerCase()} and add the signatory details.
+        </p>
       </div>
 
-      {/* Upload signed document */}
+      {/* Upload section */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
         <input
           type="file"
@@ -774,13 +690,11 @@ function OperatingAgreementStep({
           </div>
         ) : (
           <>
-            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">Upload signed {documentName.toLowerCase()}</p>
-            <p className="text-xs text-gray-500 mt-1">PDF, PNG, or JPG up to 10MB</p>
+            <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-700 font-medium">Upload your {documentName.toLowerCase()}</p>
+            <p className="text-sm text-gray-500 mt-1">PDF, PNG, or JPG up to 10MB</p>
             <Button 
-              variant="outline" 
-              className="mt-3" 
-              size="sm"
+              className="mt-4"
               onClick={() => fileInputRef.current?.click()}
             >
               Choose File
@@ -789,27 +703,79 @@ function OperatingAgreementStep({
         )}
       </div>
 
-      {/* Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-medium text-blue-900 flex items-center gap-2 mb-2">
-          <Info className="h-4 w-4" />
-          Best Practices
+      {/* Signatories */}
+      <div className="border rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Signatories
         </h4>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Keep the original signed document in a safe place</li>
-          <li>Provide copies to all members/shareholders</li>
-          <li>Review and update annually or when major changes occur</li>
-          <li>Consider having an attorney review before signing</li>
-        </ul>
+        <p className="text-sm text-gray-600 mb-3">
+          Add the names of everyone who signed the {documentName.toLowerCase()}.
+        </p>
+        
+        {signatories.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {signatories.map((name) => (
+              <div key={name} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <span className="text-indigo-700 font-medium text-sm">
+                      {name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{name}</span>
+                </div>
+                <button
+                  onClick={() => handleRemoveSignatory(name)}
+                  className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div className="flex gap-2">
+          <Input
+            value={newSignatory}
+            onChange={(e) => setNewSignatory(e.target.value)}
+            placeholder="Enter signatory name"
+            onKeyPress={(e) => e.key === 'Enter' && handleAddSignatory()}
+          />
+          <Button 
+            variant="outline" 
+            onClick={handleAddSignatory}
+            disabled={!newSignatory.trim()}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </div>
+      </div>
+
+      {/* Signed date */}
+      <div>
+        <Label htmlFor="signedDate">Date Signed *</Label>
+        <Input
+          id="signedDate"
+          type="date"
+          value={signedDate}
+          onChange={(e) => setSignedDate(e.target.value)}
+          className="mt-1 max-w-xs"
+        />
       </div>
 
       {/* Action buttons */}
       <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button variant="outline" onClick={() => setMode('choose')}>
+          Cancel
+        </Button>
         <Button 
-          onClick={() => onComplete({ type: agreementType, signatories, signedDate })} 
-          disabled={!isValid || isSaving}
+          onClick={() => onComplete({ type: 'custom', signatories, signedDate })} 
+          disabled={!isUploadValid || isSaving}
         >
-          {isSaving ? 'Saving...' : 'Mark as Complete'}
+          {isSaving ? 'Saving...' : 'Save & Complete'}
         </Button>
       </div>
     </div>
@@ -902,6 +868,7 @@ export default function OperationsPage() {
   const updateOperatingAgreementStatusMutation = useUpdateOperatingAgreementStatus();
   
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [showGenerator, setShowGenerator] = useState(false);
   
   // Check if formation is complete
   const formationComplete = profile?.einStatus === 'received' || 
@@ -1087,9 +1054,9 @@ export default function OperationsPage() {
       )}
       
       {/* Modal for Operating Agreement Step */}
-      {activeModal === 'operating-agreement' && (
+      {activeModal === 'operating-agreement' && !showGenerator && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">{documentName}</h2>
               <button 
@@ -1103,9 +1070,26 @@ export default function OperationsPage() {
               <OperatingAgreementStep
                 profile={profile}
                 onComplete={handleCompleteOperatingAgreement}
+                onOpenGenerator={() => setShowGenerator(true)}
                 isSaving={isSaving}
               />
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Operating Agreement Generator Modal */}
+      {showGenerator && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:bg-white print:p-0">
+          <div className="bg-white rounded-lg w-full max-w-5xl h-[95vh] overflow-hidden flex flex-col print:max-w-none print:h-auto print:overflow-visible">
+            <OperatingAgreementGenerator
+              profile={profile}
+              onComplete={(data) => {
+                handleCompleteOperatingAgreement(data);
+                setShowGenerator(false);
+              }}
+              onClose={() => setShowGenerator(false)}
+            />
           </div>
         </div>
       )}
