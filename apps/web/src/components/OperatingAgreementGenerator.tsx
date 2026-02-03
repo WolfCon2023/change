@@ -381,7 +381,15 @@ function DocumentPreview({ data }: { data: AgreementData }) {
   );
 }
 
-// Signature Pad Component
+// Cursive font styles for typed signatures
+const SIGNATURE_FONTS = [
+  { name: 'Elegant', fontFamily: "'Dancing Script', cursive", className: 'font-dancing' },
+  { name: 'Classic', fontFamily: "'Great Vibes', cursive", className: 'font-vibes' },
+  { name: 'Modern', fontFamily: "'Pacifico', cursive", className: 'font-pacifico' },
+  { name: 'Formal', fontFamily: "'Allura', cursive", className: 'font-allura' },
+];
+
+// Signature Pad Component with Type and Draw options
 function SignaturePad({ 
   onSave, 
   onCancel,
@@ -392,9 +400,14 @@ function SignaturePad({
   memberName: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const typedCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [mode, setMode] = useState<'type' | 'draw'>('type');
   const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
+  const [hasDrawnSignature, setHasDrawnSignature] = useState(false);
+  const [typedName, setTypedName] = useState(memberName);
+  const [selectedFont, setSelectedFont] = useState(0);
 
+  // Initialize drawing canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -408,15 +421,51 @@ function SignaturePad({
     }
   }, []);
 
+  // Render typed signature to canvas for export
+  const renderTypedSignature = (): string => {
+    const canvas = typedCanvasRef.current;
+    if (!canvas || !typedName.trim()) return '';
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Set background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Configure text
+    const font = SIGNATURE_FONTS[selectedFont];
+    ctx.fillStyle = '#000000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Dynamic font size based on name length
+    let fontSize = 48;
+    if (typedName.length > 15) fontSize = 36;
+    if (typedName.length > 25) fontSize = 28;
+    
+    ctx.font = `${fontSize}px ${font.fontFamily.replace(/'/g, '')}`;
+    
+    // Draw text
+    ctx.fillText(typedName, canvas.width / 2, canvas.height / 2);
+    
+    return canvas.toDataURL('image/png');
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
-    setHasSignature(true);
+    setHasDrawnSignature(true);
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       const rect = canvas.getBoundingClientRect();
-      const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-      const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = ('touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left) * scaleX;
+      const y = ('touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top) * scaleY;
       ctx?.beginPath();
       ctx?.moveTo(x, y);
     }
@@ -428,8 +477,10 @@ function SignaturePad({
     if (canvas) {
       const ctx = canvas.getContext('2d');
       const rect = canvas.getBoundingClientRect();
-      const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-      const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = ('touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left) * scaleX;
+      const y = ('touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top) * scaleY;
       ctx?.lineTo(x, y);
       ctx?.stroke();
     }
@@ -439,59 +490,172 @@ function SignaturePad({
     setIsDrawing(false);
   };
 
-  const clearSignature = () => {
+  const clearDrawing = () => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
-      setHasSignature(false);
+      setHasDrawnSignature(false);
     }
   };
 
   const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const data = canvas.toDataURL('image/png');
-      onSave(data);
+    if (mode === 'type') {
+      const data = renderTypedSignature();
+      if (data) onSave(data);
+    } else {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const data = canvas.toDataURL('image/png');
+        onSave(data);
+      }
     }
   };
+
+  const hasValidSignature = mode === 'type' ? typedName.trim().length > 0 : hasDrawnSignature;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Sign as {memberName}</h3>
-        <p className="text-sm text-gray-600 mb-4">Draw your signature in the box below</p>
+        <p className="text-sm text-gray-600 mb-4">Type your name or draw your signature</p>
         
-        <div className="border-2 border-gray-300 rounded-lg mb-4 bg-gray-50">
-          <canvas
-            ref={canvasRef}
-            width={450}
-            height={150}
-            className="w-full cursor-crosshair touch-none"
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
-          />
+        {/* Mode tabs */}
+        <div className="flex border-b mb-4">
+          <button
+            onClick={() => setMode('type')}
+            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+              mode === 'type' 
+                ? 'border-blue-500 text-blue-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Type Signature
+          </button>
+          <button
+            onClick={() => setMode('draw')}
+            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+              mode === 'draw' 
+                ? 'border-blue-500 text-blue-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Draw Signature
+          </button>
         </div>
+
+        {mode === 'type' ? (
+          <>
+            {/* Type mode */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Your Name
+              </label>
+              <input
+                type="text"
+                value={typedName}
+                onChange={(e) => setTypedName(e.target.value)}
+                placeholder="Type your full name"
+                className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            {/* Font selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Signature Style
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {SIGNATURE_FONTS.map((font, idx) => (
+                  <button
+                    key={font.name}
+                    onClick={() => setSelectedFont(idx)}
+                    className={`p-3 border rounded-lg text-center transition-all ${
+                      selectedFont === idx 
+                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-xs text-gray-500 block mb-1">{font.name}</span>
+                    <span 
+                      style={{ fontFamily: font.fontFamily }}
+                      className="text-xl text-gray-900"
+                    >
+                      {typedName || 'Your Name'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Preview */}
+            <div className="border-2 border-gray-300 rounded-lg mb-4 bg-gray-50 p-4 min-h-[100px] flex items-center justify-center">
+              {typedName ? (
+                <span 
+                  style={{ fontFamily: SIGNATURE_FONTS[selectedFont].fontFamily }}
+                  className="text-4xl text-gray-900"
+                >
+                  {typedName}
+                </span>
+              ) : (
+                <span className="text-gray-400 text-sm">Type your name above to preview</span>
+              )}
+            </div>
+            
+            {/* Hidden canvas for rendering typed signature */}
+            <canvas
+              ref={typedCanvasRef}
+              width={450}
+              height={150}
+              className="hidden"
+            />
+          </>
+        ) : (
+          <>
+            {/* Draw mode */}
+            <div className="border-2 border-gray-300 rounded-lg mb-4 bg-gray-50 relative">
+              <canvas
+                ref={canvasRef}
+                width={450}
+                height={150}
+                className="w-full cursor-crosshair touch-none"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+              />
+              {!hasDrawnSignature && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-gray-400 text-sm">Draw your signature here</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-start mb-4">
+              <Button variant="outline" size="sm" onClick={clearDrawing}>
+                Clear
+              </Button>
+            </div>
+          </>
+        )}
         
-        <div className="flex justify-between">
-          <Button variant="outline" onClick={clearSignature}>
-            Clear
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button onClick={saveSignature} disabled={!hasSignature}>
-              Apply Signature
-            </Button>
-          </div>
+          <Button onClick={saveSignature} disabled={!hasValidSignature}>
+            Apply Signature
+          </Button>
         </div>
       </div>
+      
+      {/* Load Google Fonts for cursive signatures */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Allura&display=swap');
+      `}</style>
     </div>
   );
 }
