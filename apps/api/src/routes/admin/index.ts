@@ -395,7 +395,7 @@ router.get(
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const recentReviews = accessReviews.filter(r => 
-        r.completedAt && new Date(r.completedAt) > ninetyDaysAgo
+        r.closedAt && new Date(r.closedAt) > ninetyDaysAgo
       );
 
       if (recentReviews.length === 0) {
@@ -534,7 +534,7 @@ router.get(
               : 0,
             apiKeysWithIssues: problematicApiKeys.length,
             lastAccessReview: recentReviews.length > 0 
-              ? recentReviews.sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0].completedAt
+              ? recentReviews.sort((a, b) => new Date(b.closedAt!).getTime() - new Date(a.closedAt!).getTime())[0].closedAt
               : null,
           },
           analyzedAt: new Date().toISOString(),
