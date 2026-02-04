@@ -218,7 +218,7 @@ export default function DashboardsPage() {
           </h3>
           <div className="grid gap-4 sm:grid-cols-3">
             <button 
-              onClick={() => navigate('/app/tasks?category=compliance')}
+              onClick={() => navigate('/app/operations?view=compliance')}
               className="bg-blue-50 rounded-lg p-4 text-center hover:bg-blue-100 transition-colors cursor-pointer group"
             >
               <div className="text-3xl font-bold text-blue-700">{complianceItems.length}</div>
@@ -228,7 +228,7 @@ export default function DashboardsPage() {
               </div>
             </button>
             <button 
-              onClick={() => navigate('/app/tasks?filter=pending&category=compliance')}
+              onClick={() => navigate('/app/operations?view=compliance&filter=pending')}
               className="bg-amber-50 rounded-lg p-4 text-center hover:bg-amber-100 transition-colors cursor-pointer group"
             >
               <div className="text-3xl font-bold text-amber-700">{pendingCompliance}</div>
@@ -238,7 +238,7 @@ export default function DashboardsPage() {
               </div>
             </button>
             <button 
-              onClick={() => navigate('/app/tasks?filter=overdue&category=compliance')}
+              onClick={() => navigate('/app/operations?view=compliance&filter=overdue')}
               className={`rounded-lg p-4 text-center transition-colors cursor-pointer group ${
                 overdueCompliance > 0 ? 'bg-red-50 hover:bg-red-100' : 'bg-green-50 hover:bg-green-100'
               }`}
@@ -256,7 +256,7 @@ export default function DashboardsPage() {
           </div>
           {overdueCompliance > 0 && (
             <button 
-              onClick={() => navigate('/app/tasks?filter=overdue&category=compliance')}
+              onClick={() => navigate('/app/operations?view=compliance&filter=overdue')}
               className="mt-4 w-full p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 hover:bg-red-100 transition-colors cursor-pointer"
             >
               <AlertCircle className="h-5 w-5 text-red-600" />

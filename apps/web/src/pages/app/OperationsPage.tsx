@@ -3,8 +3,8 @@
  * Post-formation business operations setup
  */
 
-import React, { useState, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
   ArrowLeft,
@@ -925,12 +925,15 @@ function ComplianceCalendarStep({
   profile,
   onComplete,
   isSaving,
+  initialFilter,
 }: {
   profile: any;
   onComplete: (items: ComplianceItem[]) => void;
   isSaving: boolean;
+  initialFilter?: string | null;
 }) {
-  const [view, setView] = useState<'timeline' | 'list' | 'calendar'>('timeline');
+  const [view, setView] = useState<'timeline' | 'list' | 'calendar'>('list'); // Default to list view for filtering
+  const [statusFilter, setStatusFilter] = useState<string | null>(initialFilter || null);
   const [items, setItems] = useState<ComplianceItem[]>(() => {
     // Use existing items or generate defaults
     if (profile?.complianceItems?.length > 0) {
@@ -1056,6 +1059,28 @@ function ComplianceCalendarStep({
     due.setHours(0, 0, 0, 0);
     return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
+  
+  // Filter items based on statusFilter
+  const filteredItems = useMemo(() => {
+    if (!statusFilter) return items;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return items.filter(item => {
+      if (statusFilter === 'pending') {
+        return item.status === 'pending';
+      }
+      if (statusFilter === 'overdue') {
+        const due = new Date(item.dueDate);
+        return item.status === 'pending' && due < today;
+      }
+      if (statusFilter === 'completed') {
+        return item.status === 'completed';
+      }
+      return true;
+    });
+  }, [items, statusFilter]);
 
   // Get status badge for an item
   const getStatusBadge = (item: ComplianceItem) => {
@@ -1188,35 +1213,73 @@ function ComplianceCalendarStep({
       </div>
 
       {/* View toggle and add button */}
-      <div className="flex items-center justify-between">
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setView('timeline')}
-            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
-              view === 'timeline' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <ListTodo className="h-4 w-4" />
-            Timeline
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
-              view === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <CalendarCheck className="h-4 w-4" />
-            List
-          </button>
-          <button
-            onClick={() => setView('calendar')}
-            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
-              view === 'calendar' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <CalendarDays className="h-4 w-4" />
-            Calendar
-          </button>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setView('timeline')}
+              className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
+                view === 'timeline' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ListTodo className="h-4 w-4" />
+              Timeline
+            </button>
+            <button
+              onClick={() => setView('list')}
+              className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
+                view === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <CalendarCheck className="h-4 w-4" />
+              List
+            </button>
+            <button
+              onClick={() => setView('calendar')}
+              className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 transition-colors ${
+                view === 'calendar' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <CalendarDays className="h-4 w-4" />
+              Calendar
+            </button>
+          </div>
+          
+          {/* Status filter */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setStatusFilter(null)}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                !statusFilter ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                statusFilter === 'pending' ? 'bg-white shadow text-amber-600' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Pending ({stats.total - stats.completed})
+            </button>
+            <button
+              onClick={() => setStatusFilter('overdue')}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                statusFilter === 'overdue' ? 'bg-white shadow text-red-600' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Overdue ({stats.overdue})
+            </button>
+            <button
+              onClick={() => setStatusFilter('completed')}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                statusFilter === 'completed' ? 'bg-white shadow text-green-600' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Done ({stats.completed})
+            </button>
+          </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
           <Plus className="h-4 w-4 mr-1" />
@@ -1340,7 +1403,13 @@ function ComplianceCalendarStep({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {items.map(item => {
+              {filteredItems.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    {statusFilter ? `No ${statusFilter} items found.` : 'No compliance items.'}
+                  </td>
+                </tr>
+              ) : filteredItems.map(item => {
                 const config = CATEGORY_CONFIG[item.category];
                 const isCompleted = item.status === 'completed';
                 
@@ -1641,6 +1710,7 @@ function StepIndicator({
 
 export default function OperationsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useProfile();
   const updateBankingStatusMutation = useUpdateBankingStatus();
   const updateOperatingAgreementStatusMutation = useUpdateOperatingAgreementStatus();
@@ -1648,6 +1718,32 @@ export default function OperationsPage() {
   
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showGenerator, setShowGenerator] = useState(false);
+  const [complianceFilter, setComplianceFilter] = useState<string | null>(null);
+  
+  // Handle URL parameters for deep linking
+  useEffect(() => {
+    const view = searchParams.get('view');
+    const filter = searchParams.get('filter');
+    
+    if (view === 'compliance') {
+      setActiveModal('compliance');
+      if (filter) {
+        setComplianceFilter(filter);
+      }
+    }
+  }, [searchParams]);
+  
+  // Clear URL params when closing modals
+  const handleCloseModal = () => {
+    setActiveModal(null);
+    setComplianceFilter(null);
+    // Clear URL params
+    if (searchParams.has('view')) {
+      searchParams.delete('view');
+      searchParams.delete('filter');
+      setSearchParams(searchParams);
+    }
+  };
   
   // Check if formation is complete
   const formationComplete = profile?.einStatus === 'received' || 
@@ -1827,7 +1923,7 @@ export default function OperationsPage() {
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Business Bank Account</h2>
               <button 
-                onClick={() => setActiveModal(null)}
+                onClick={handleCloseModal}
                 className="p-1 hover:bg-gray-100 rounded"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -1851,7 +1947,7 @@ export default function OperationsPage() {
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">{documentName}</h2>
               <button 
-                onClick={() => setActiveModal(null)}
+                onClick={handleCloseModal}
                 className="p-1 hover:bg-gray-100 rounded"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -1891,7 +1987,7 @@ export default function OperationsPage() {
             <div className="px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-900">Compliance Calendar</h2>
               <button 
-                onClick={() => setActiveModal(null)}
+                onClick={handleCloseModal}
                 className="p-1 hover:bg-gray-100 rounded"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -1900,6 +1996,7 @@ export default function OperationsPage() {
             <div className="flex-1 overflow-y-auto p-6">
               <ComplianceCalendarStep
                 profile={profile}
+                initialFilter={complianceFilter}
                 onComplete={handleCompleteComplianceCalendar}
                 isSaving={isSaving}
               />
