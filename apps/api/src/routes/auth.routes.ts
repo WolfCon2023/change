@@ -1,10 +1,19 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { loginRequestSchema, registerRequestSchema, refreshTokenRequestSchema } from '@change/shared';
 import { AuthService } from '../services/auth.service.js';
 import { validate, authenticate } from '../middleware/index.js';
+import { User } from '../db/models/index.js';
+import { UnauthorizedError, BadRequestError } from '../middleware/error-handler.js';
 import type { Request, Response, NextFunction } from 'express';
 
 const router = Router();
+
+// Change password validation schema
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
 
 /**
  * POST /auth/register
@@ -121,6 +130,58 @@ router.get(
       res.json({
         success: true,
         data: user.toPublicJSON(),
+        meta: {
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /auth/change-password
+ * Change password for authenticated user
+ */
+router.post(
+  '/change-password',
+  authenticate,
+  validate(changePasswordSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.user!.userId;
+      
+      // Get user with password
+      const user = await User.findById(userId).select('+passwordHash');
+      if (!user) {
+        throw new UnauthorizedError('User not found');
+      }
+      
+      // Verify current password
+      const isValid = await user.comparePassword(currentPassword);
+      if (!isValid) {
+        throw new BadRequestError('Current password is incorrect');
+      }
+      
+      // Check new password is different
+      const isSame = await user.comparePassword(newPassword);
+      if (isSame) {
+        throw new BadRequestError('New password must be different from current password');
+      }
+      
+      // Update password (pre-save hook will hash it)
+      user.passwordHash = newPassword;
+      user.passwordChangedAt = new Date();
+      user.mustChangePassword = false;
+      await user.save();
+      
+      res.json({
+        success: true,
+        data: {
+          message: 'Password changed successfully',
+        },
         meta: {
           timestamp: new Date().toISOString(),
         },
