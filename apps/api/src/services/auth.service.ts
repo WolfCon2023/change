@@ -256,6 +256,30 @@ export class AuthService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
+    // Check if user has a tenant - auto-repair if missing
+    if (!user.tenantId) {
+      console.warn(`[AuthService] User ${user.email} has no tenant - auto-creating one`);
+      
+      // Auto-create a tenant for the user
+      const slug = this.generateTenantSlug(user.email);
+      const tenant = new Tenant({
+        name: `${user.firstName}'s Business`,
+        slug,
+        email: user.email.toLowerCase(),
+        industry: 'other',
+        companySize: 'solo',
+        isActive: true,
+        subscription: {
+          plan: 'starter',
+          status: 'active',
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        },
+      });
+      await tenant.save();
+      user.tenantId = tenant._id;
+      console.log(`[AuthService] Created tenant ${tenant._id} for user ${user.email}`);
+    }
+
     // Update last login
     user.lastLoginAt = new Date();
     await user.save();

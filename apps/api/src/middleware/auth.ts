@@ -36,6 +36,17 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
 
     try {
       const decoded = jwt.verify(token, config.jwt.secret) as AuthTokenPayload;
+      
+      // Debug logging for tenant issues
+      if (!decoded.tenantId) {
+        console.warn('[auth] Token decoded but missing tenantId:', {
+          userId: decoded.userId,
+          email: decoded.email,
+          role: decoded.role,
+          hasTenantId: !!decoded.tenantId,
+        });
+      }
+      
       req.user = decoded;
       req.tenantId = decoded.tenantId;
       next();

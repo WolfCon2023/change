@@ -18,10 +18,27 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const tenantId = req.user?.tenantId;
     const userId = req.user?.userId;
     
+    // Debug logging
+    console.log('[home.routes] Request user:', {
+      hasUser: !!req.user,
+      userId: req.user?.userId,
+      tenantId: req.user?.tenantId,
+      email: req.user?.email,
+    });
+    
     if (!tenantId) {
+      console.error('[home.routes] NO_TENANT error - user object:', JSON.stringify(req.user));
       return res.status(400).json({
         success: false,
-        error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+        error: { 
+          code: 'NO_TENANT', 
+          message: 'User must belong to a tenant. Please log out and log back in.',
+          debug: {
+            hasUser: !!req.user,
+            hasUserId: !!userId,
+            hasTenantId: !!tenantId,
+          }
+        },
       });
     }
     

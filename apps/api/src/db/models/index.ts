@@ -61,9 +61,7 @@ export {
   type IAccessReviewItemDecision,
   type IAccessReviewCampaignApprovals,
   type IAccessReviewCampaignWorkflow,
-} from './access-review-campaign.model.js';
-
-// Business App Models
+} from './access-review-campaign.model.js';// Business App Models
 export {
   BusinessArchetype,
   type IBusinessArchetype,
