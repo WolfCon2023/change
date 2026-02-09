@@ -20,6 +20,7 @@ import {
   CheckCircle,
   Clock,
   Shield,
+  Settings,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/auth.store';
@@ -269,7 +270,11 @@ export default function AppLayout() {
         {/* User section - Fixed at bottom */}
         <div className="border-t bg-gray-50 p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
+            <Link 
+              to="/app/profile" 
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+            >
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-blue-600 font-medium text-sm">
                   {user?.firstName?.[0]?.toUpperCase() || 'U'}
@@ -281,10 +286,23 @@ export default function AppLayout() {
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
+            </Link>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  navigate('/app/profile');
+                  setSidebarOpen(false);
+                }}
+                title="Account Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleLogout} title="Log out">
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </aside>
