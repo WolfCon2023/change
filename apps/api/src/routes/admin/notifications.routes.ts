@@ -6,17 +6,17 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { authenticate, requirePlatformRole, validate } from '../../middleware/index.js';
+import { authenticate, requireRoles, validate } from '../../middleware/index.js';
 import { emailService } from '../../services/email.service.js';
 import { notificationService } from '../../services/notification.service.js';
 import { schedulerService } from '../../services/scheduler.service.js';
-import { PrimaryRole } from '@change/shared';
+import { UserRole } from '@change/shared';
 
 const router = Router();
 
-// All routes require authentication and IT_ADMIN role
+// All routes require authentication and system admin role
 router.use(authenticate);
-router.use(requirePlatformRole(PrimaryRole.IT_ADMIN));
+router.use(requireRoles(UserRole.SYSTEM_ADMIN));
 
 /**
  * POST /admin/notifications/test-email
