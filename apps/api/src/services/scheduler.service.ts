@@ -23,8 +23,10 @@ class SchedulerService {
     
     console.log(`[Scheduler] Starting notification scheduler (every ${intervalHours} hour(s))`);
     
-    // Run immediately on start
-    this.runNotificationCheck();
+    // Delay first check by 30 seconds to let server fully initialize
+    setTimeout(() => {
+      this.runNotificationCheck();
+    }, 30000);
     
     // Then run periodically
     this.notificationInterval = setInterval(() => {
