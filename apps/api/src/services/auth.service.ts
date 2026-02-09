@@ -134,12 +134,9 @@ export class AuthService {
       const tenant = new Tenant({
         name: `${firstName}'s Business`,
         slug,
-        email: email.toLowerCase(),
-        industry: 'other',
-        companySize: 'solo',
         isActive: true,
         subscription: {
-          plan: 'starter',
+          plan: 'free',
           status: 'active',
           currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year trial
         },
@@ -283,12 +280,9 @@ export class AuthService {
         const tenant = new Tenant({
           name: `${user.firstName}'s Business`,
           slug,
-          email: user.email.toLowerCase(),
-          industry: 'other',
-          companySize: 'solo',
           isActive: true,
           subscription: {
-            plan: 'starter',
+            plan: 'free',
             status: 'active',
             currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
           },

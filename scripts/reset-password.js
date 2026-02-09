@@ -8,7 +8,8 @@
  */
 
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+// Use bcryptjs (same as the app) for guaranteed compatibility
+const bcrypt = require('bcryptjs');
 
 // ============================================
 // CONFIGURATION - Update these values
@@ -17,13 +18,13 @@ const bcrypt = require('bcrypt');
 // Your MongoDB connection string (from Railway or MongoDB Atlas)
 // NOTE: Must include database name and authSource
 // Example: mongodb://user:pass@host:port/change_platform?authSource=admin
-const MONGODB_URI = process.env.MONGODB_URI || 'YOUR_MONGODB_CONNECTION_STRING_HERE';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:LrVGEvOpNkXGBJaEVrYnGGXnrRmlxapO@trolley.proxy.rlwy.net:32790/change_platform?authSource=admin';
 
 // The email of the user whose password you want to reset
-const USER_EMAIL = 'YOUR_EMAIL_HERE';
+const USER_EMAIL = 'admin@change-platform.com';
 
 // The new password you want to set
-const NEW_PASSWORD = 'YOUR_NEW_PASSWORD_HERE';
+const NEW_PASSWORD = 'ChangeTech2026!';
 
 // ============================================
 // Script - Don't modify below this line
@@ -34,23 +35,18 @@ async function resetPassword() {
   console.log('========================\n');
   
   // Validate configuration
-  if (MONGODB_URI === 'YOUR_MONGODB_CONNECTION_STRING_HERE' || !MONGODB_URI) {
+  if (!MONGODB_URI) {
     console.error('❌ Error: Please set MONGODB_URI in the script or as an environment variable');
     process.exit(1);
   }
   
-  if (USER_EMAIL === 'YOUR_EMAIL_HERE' || !USER_EMAIL) {
+  if (!USER_EMAIL) {
     console.error('❌ Error: Please set USER_EMAIL in the script');
     process.exit(1);
   }
   
-  if (NEW_PASSWORD === 'YOUR_NEW_PASSWORD_HERE' || !NEW_PASSWORD) {
-    console.error('❌ Error: Please set NEW_PASSWORD in the script');
-    process.exit(1);
-  }
-  
-  if (NEW_PASSWORD.length < 8) {
-    console.error('❌ Error: Password must be at least 8 characters');
+  if (!NEW_PASSWORD || NEW_PASSWORD.length < 8) {
+    console.error('❌ Error: Please set NEW_PASSWORD (at least 8 characters)');
     process.exit(1);
   }
   

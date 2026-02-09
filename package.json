@@ -25,6 +25,7 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "husky": "^9.0.0",
     "lint-staged": "^15.2.0",
     "mongoose": "^9.1.6",
