@@ -318,7 +318,7 @@ class EmailService {
    * Send a test email to verify SMTP configuration
    */
   async sendTestEmail(to: string): Promise<boolean> {
-    const subject = '✅ C.H.A.N.G.E. Platform - Email Test';
+    const subject = 'C.H.A.N.G.E. Platform - Email Test';
     const logoUrl = `${config.appUrl}/logo-v2.png`;
     
     const html = `
