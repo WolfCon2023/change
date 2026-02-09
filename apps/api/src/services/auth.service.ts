@@ -6,6 +6,7 @@ import { User, type IUser, Tenant } from '../db/models/index.js';
 import { UnauthorizedError, ConflictError, NotFoundError } from '../middleware/error-handler.js';
 import { AuditService } from './audit.service.js';
 import { logIamAction } from './iam-audit.service.js';
+import { emailService } from './email.service.js';
 
 export interface RegisterParams {
   email: string;
@@ -174,6 +175,18 @@ export class AuthService {
         tenantId: user.tenantId?.toString(),
       },
     });
+
+    // Send welcome email (non-blocking - don't fail registration if email fails)
+    try {
+      await emailService.sendWelcomeEmail({
+        recipientEmail: user.email,
+        recipientName: user.firstName,
+        loginUrl: `${config.appUrl}/login`,
+      });
+      console.log(`[AuthService.register] Welcome email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error(`[AuthService.register] Failed to send welcome email (non-blocking):`, emailError);
+    }
 
     return {
       user: user.toPublicJSON() as Omit<IUser, 'passwordHash'>,
