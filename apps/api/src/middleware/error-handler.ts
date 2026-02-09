@@ -67,6 +67,12 @@ export class InvalidTransitionError extends AppError {
   }
 }
 
+export class BadRequestError extends AppError {
+  constructor(message: string, details?: Record<string, unknown>) {
+    super(message, 400, ApiErrorCode.INVALID_INPUT, details);
+  }
+}
+
 interface ErrorResponse {
   success: false;
   error: {
