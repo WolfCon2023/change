@@ -16,8 +16,14 @@ import {
   Clock,
   AlertCircle,
   ArrowRight,
+  FolderOpen,
+  ClipboardList,
+  Upload,
+  Plus,
+  Activity,
 } from 'lucide-react';
 import { useProfile, useHomeData } from '../../lib/app-api';
+import { Button } from '../../components/ui/button';
 
 export default function DashboardsPage() {
   const navigate = useNavigate();
@@ -122,6 +128,194 @@ export default function DashboardsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Quick Stats Row */}
+      <div className="grid gap-4 sm:grid-cols-3 mb-6">
+        <button 
+          onClick={() => navigate('/app/documents')}
+          className="bg-white border rounded-lg p-4 hover:bg-gray-50 transition-colors text-left group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FolderOpen className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <div className="text-2xl font-bold text-gray-900">{homeData?.stats?.documents || 0}</div>
+              <div className="text-sm text-gray-600 flex items-center gap-1">
+                Documents
+                <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+          </div>
+        </button>
+        
+        <button 
+          onClick={() => navigate('/app/tasks')}
+          className="bg-white border rounded-lg p-4 hover:bg-gray-50 transition-colors text-left group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <ClipboardList className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <div className="text-2xl font-bold text-gray-900">
+                {homeData?.stats?.tasks?.completed || 0}/{homeData?.stats?.tasks?.total || 0}
+              </div>
+              <div className="text-sm text-gray-600 flex items-center gap-1">
+                Tasks Completed
+                <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+          </div>
+        </button>
+        
+        <button 
+          onClick={() => navigate('/app/tasks')}
+          className={`border rounded-lg p-4 transition-colors text-left group ${
+            (homeData?.stats?.tasks?.overdue || 0) > 0 
+              ? 'bg-red-50 hover:bg-red-100 border-red-200' 
+              : 'bg-white hover:bg-gray-50'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              (homeData?.stats?.tasks?.overdue || 0) > 0 ? 'bg-red-100' : 'bg-amber-100'
+            }`}>
+              <AlertCircle className={`h-5 w-5 ${
+                (homeData?.stats?.tasks?.overdue || 0) > 0 ? 'text-red-600' : 'text-amber-600'
+              }`} />
+            </div>
+            <div className="flex-1">
+              <div className={`text-2xl font-bold ${
+                (homeData?.stats?.tasks?.overdue || 0) > 0 ? 'text-red-700' : 'text-gray-900'
+              }`}>
+                {homeData?.stats?.tasks?.overdue || 0}
+              </div>
+              <div className={`text-sm flex items-center gap-1 ${
+                (homeData?.stats?.tasks?.overdue || 0) > 0 ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                Overdue Tasks
+                <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+          </div>
+        </button>
+      </div>
+      
+      {/* Quick Actions */}
+      <div className="bg-white border rounded-lg p-5 mb-6">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Plus className="h-5 w-5 text-gray-500" />
+          Quick Actions
+        </h3>
+        <div className="flex flex-wrap gap-3">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/app/documents')}
+            className="flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Upload Document
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/app/tasks')}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/app/operations?view=compliance')}
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            View Compliance
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/app/profile')}
+            className="flex items-center gap-2"
+          >
+            <Building2 className="h-4 w-4" />
+            Edit Profile
+          </Button>
+        </div>
+      </div>
+      
+      {/* Upcoming Deadlines */}
+      {homeData?.upcomingDeadlines && homeData.upcomingDeadlines.length > 0 && (
+        <div className="bg-white border rounded-lg p-5 mb-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Clock className="h-5 w-5 text-gray-500" />
+            Upcoming Deadlines
+          </h3>
+          <div className="space-y-3">
+            {homeData.upcomingDeadlines.map((deadline: any) => (
+              <div 
+                key={deadline.id}
+                className={`flex items-center justify-between p-3 rounded-lg ${
+                  deadline.daysUntilDue <= 7 ? 'bg-amber-50' : 'bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Calendar className={`h-4 w-4 ${
+                    deadline.daysUntilDue <= 7 ? 'text-amber-600' : 'text-gray-500'
+                  }`} />
+                  <div>
+                    <p className="font-medium text-gray-900">{deadline.name}</p>
+                    <p className="text-xs text-gray-500">{deadline.frequency}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm font-medium ${
+                    deadline.daysUntilDue <= 7 ? 'text-amber-700' : 'text-gray-700'
+                  }`}>
+                    {new Date(deadline.dueDate).toLocaleDateString()}
+                  </p>
+                  <p className={`text-xs ${
+                    deadline.daysUntilDue <= 7 ? 'text-amber-600' : 'text-gray-500'
+                  }`}>
+                    {deadline.daysUntilDue === 0 ? 'Due today' : 
+                     deadline.daysUntilDue === 1 ? 'Due tomorrow' : 
+                     `In ${deadline.daysUntilDue} days`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Recent Activity */}
+      {homeData?.recentActivity && homeData.recentActivity.length > 0 && (
+        <div className="bg-white border rounded-lg p-5 mb-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-gray-500" />
+            Recent Activity
+          </h3>
+          <div className="space-y-3">
+            {homeData.recentActivity.map((activity: any) => (
+              <div key={activity.id} className="flex items-center gap-3 p-2">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                  <p className="text-xs text-gray-500">
+                    Completed {new Date(activity.completedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Status Overview */}
       <div className="grid gap-6 lg:grid-cols-2 mb-6">

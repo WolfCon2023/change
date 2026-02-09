@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { BusinessProfile, BusinessArchetype, Task, WorkflowInstance } from '../../db/models/index.js';
+import { BusinessProfile, BusinessArchetype, Task, WorkflowInstance, Document } from '../../db/models/index.js';
 
 const router = Router();
 
@@ -107,6 +107,46 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .limit(5)
       .lean();
     
+    // Get task stats
+    const [totalTasks, completedTasks, overdueTasks] = await Promise.all([
+      Task.countDocuments({ tenantId }),
+      Task.countDocuments({ tenantId, status: 'completed' }),
+      Task.countDocuments({ 
+        tenantId, 
+        status: { $in: ['pending', 'in_progress'] },
+        dueDate: { $lt: new Date() }
+      }),
+    ]);
+    
+    // Get document count
+    const documentCount = await Document.countDocuments({ tenantId });
+    
+    // Get upcoming compliance deadlines
+    const complianceItems = profile.complianceItems || [];
+    const now = new Date();
+    const upcomingDeadlines = complianceItems
+      .filter((item: any) => item.status === 'pending' && new Date(item.dueDate) >= now)
+      .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 5)
+      .map((item: any) => ({
+        id: item._id?.toString() || item.name,
+        name: item.name,
+        dueDate: item.dueDate,
+        frequency: item.frequency,
+        daysUntilDue: Math.ceil((new Date(item.dueDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      }));
+    
+    // Get recently completed items (tasks completed in last 7 days)
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const recentlyCompleted = await Task.find({
+      tenantId,
+      status: 'completed',
+      updatedAt: { $gte: oneWeekAgo },
+    })
+      .sort({ updatedAt: -1 })
+      .limit(5)
+      .lean();
+    
     // Calculate progress
     const flags = profile.readinessFlags || {};
     const setupProgress = calculateSetupProgress(profile);
@@ -201,6 +241,27 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           formation: formationProgress,
           operations: operationsProgress,
         },
+        stats: {
+          documents: documentCount,
+          tasks: {
+            total: totalTasks,
+            completed: completedTasks,
+            pending: totalTasks - completedTasks,
+            overdue: overdueTasks,
+          },
+          compliance: {
+            total: complianceItems.length,
+            pending: complianceItems.filter((i: any) => i.status === 'pending').length,
+            completed: complianceItems.filter((i: any) => i.status === 'completed').length,
+          },
+        },
+        upcomingDeadlines,
+        recentActivity: recentlyCompleted.map((t: any) => ({
+          id: t._id.toString(),
+          type: 'task_completed',
+          title: t.title,
+          completedAt: t.updatedAt,
+        })),
         nextAction,
         blockers,
         tasks,

@@ -179,6 +179,33 @@ export interface HomeData {
     formation: number;
     operations: number;
   };
+  stats?: {
+    documents: number;
+    tasks: {
+      total: number;
+      completed: number;
+      pending: number;
+      overdue: number;
+    };
+    compliance: {
+      total: number;
+      pending: number;
+      completed: number;
+    };
+  };
+  upcomingDeadlines?: Array<{
+    id: string;
+    name: string;
+    dueDate: string;
+    frequency: string;
+    daysUntilDue: number;
+  }>;
+  recentActivity?: Array<{
+    id: string;
+    type: string;
+    title: string;
+    completedAt: string;
+  }>;
   nextAction: {
     id: string;
     type: string;
