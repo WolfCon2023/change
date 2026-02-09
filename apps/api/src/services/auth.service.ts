@@ -198,9 +198,18 @@ export class AuthService {
    */
   static async login(params: LoginParams, ipAddress?: string, userAgent?: string): Promise<AuthResult> {
     const { email, password } = params;
+    
+    console.log(`[AuthService.login] Attempting login for: ${email}`);
 
     // Find user with password
-    const user = await User.findByEmail(email);
+    let user;
+    try {
+      user = await User.findByEmail(email);
+      console.log(`[AuthService.login] User found: ${!!user}, tenantId: ${user?.tenantId}`);
+    } catch (dbError) {
+      console.error(`[AuthService.login] Database error finding user:`, dbError);
+      throw dbError;
+    }
     if (!user) {
       // Log failed login attempt (unknown user)
       await logIamAction({
@@ -258,67 +267,96 @@ export class AuthService {
 
     // Check if user has a tenant - auto-repair if missing
     if (!user.tenantId) {
-      console.warn(`[AuthService] User ${user.email} has no tenant - auto-creating one`);
+      console.warn(`[AuthService.login] User ${user.email} has no tenant - auto-creating one`);
       
-      // Auto-create a tenant for the user
-      const slug = this.generateTenantSlug(user.email);
-      const tenant = new Tenant({
-        name: `${user.firstName}'s Business`,
-        slug,
-        email: user.email.toLowerCase(),
-        industry: 'other',
-        companySize: 'solo',
-        isActive: true,
-        subscription: {
-          plan: 'starter',
-          status: 'active',
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-        },
-      });
-      await tenant.save();
-      user.tenantId = tenant._id;
-      console.log(`[AuthService] Created tenant ${tenant._id} for user ${user.email}`);
+      try {
+        // Auto-create a tenant for the user
+        const slug = this.generateTenantSlug(user.email);
+        const tenant = new Tenant({
+          name: `${user.firstName}'s Business`,
+          slug,
+          email: user.email.toLowerCase(),
+          industry: 'other',
+          companySize: 'solo',
+          isActive: true,
+          subscription: {
+            plan: 'starter',
+            status: 'active',
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+          },
+        });
+        await tenant.save();
+        user.tenantId = tenant._id;
+        console.log(`[AuthService.login] Created tenant ${tenant._id} for user ${user.email}`);
+      } catch (tenantError) {
+        console.error(`[AuthService.login] Failed to create tenant:`, tenantError);
+        throw tenantError;
+      }
     }
 
     // Update last login
-    user.lastLoginAt = new Date();
-    await user.save();
+    try {
+      user.lastLoginAt = new Date();
+      await user.save();
+      console.log(`[AuthService.login] Updated lastLoginAt for user ${user.email}`);
+    } catch (saveError) {
+      console.error(`[AuthService.login] Failed to save user:`, saveError);
+      throw saveError;
+    }
 
     // Generate tokens
-    const tokens = this.generateTokens(user);
+    console.log(`[AuthService.login] Generating tokens for user ${user.email}`);
+    let tokens;
+    try {
+      tokens = this.generateTokens(user);
+      console.log(`[AuthService.login] Tokens generated successfully`);
+    } catch (tokenError) {
+      console.error(`[AuthService.login] Failed to generate tokens:`, tokenError);
+      throw tokenError;
+    }
 
     // Log successful login to IAM Audit Log (visible in admin portal)
-    await logIamAction({
-      tenantId: user.tenantId?.toString(),
-      actorId: user._id.toString(),
-      actorEmail: user.email,
-      actorType: 'user',
-      action: IamAuditAction.AUTH_LOGIN_SUCCESS,
-      targetType: 'User',
-      targetId: user._id.toString(),
-      targetName: `${user.firstName} ${user.lastName}`,
-      summary: `User logged in: ${user.email}`,
-      ip: ipAddress,
-      userAgent: userAgent?.substring(0, 500),
-    });
+    // These are non-blocking - don't fail login if audit logging fails
+    try {
+      await logIamAction({
+        tenantId: user.tenantId?.toString(),
+        actorId: user._id.toString(),
+        actorEmail: user.email,
+        actorType: 'user',
+        action: IamAuditAction.AUTH_LOGIN_SUCCESS,
+        targetType: 'User',
+        targetId: user._id.toString(),
+        targetName: `${user.firstName} ${user.lastName}`,
+        summary: `User logged in: ${user.email}`,
+        ip: ipAddress,
+        userAgent: userAgent?.substring(0, 500),
+      });
+    } catch (auditError) {
+      console.error(`[AuthService.login] IAM audit log failed (non-blocking):`, auditError);
+    }
 
     // Also log to general AuditLog for backward compatibility
-    await AuditService.log(
-      {
-        tenantId: user.tenantId?.toString(),
-        userId: user._id.toString(),
-        userEmail: user.email,
-        userRole: user.role,
-        ipAddress,
-        userAgent,
-      },
-      {
-        action: 'user_login' as const,
-        resourceType: 'User',
-        resourceId: user._id.toString(),
-      }
-    );
+    try {
+      await AuditService.log(
+        {
+          tenantId: user.tenantId?.toString(),
+          userId: user._id.toString(),
+          userEmail: user.email,
+          userRole: user.role,
+          ipAddress,
+          userAgent,
+        },
+        {
+          action: 'user_login' as const,
+          resourceType: 'User',
+          resourceId: user._id.toString(),
+        }
+      );
+    } catch (auditError2) {
+      console.error(`[AuthService.login] General audit log failed (non-blocking):`, auditError2);
+    }
 
+    console.log(`[AuthService.login] Login successful for ${user.email}`);
     return {
       user: user.toPublicJSON() as Omit<IUser, 'passwordHash'>,
       tokens,
