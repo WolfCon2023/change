@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth.store';
 // Layouts
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { AdminLayout } from '@/layouts/AdminLayout';
+import { AdvisorLayout } from '@/layouts/AdvisorLayout';
 import AppLayout from '@/layouts/AppLayout';
 
 // Auth Pages
@@ -53,6 +54,10 @@ import {
   DocumentsPage,
   DashboardsPage,
 } from '@/pages/app';
+
+// Advisor Pages
+import { AdvisorDashboardPage } from '@/pages/advisor/AdvisorDashboardPage';
+import { ClientDetailPage } from '@/pages/advisor/ClientDetailPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -186,6 +191,20 @@ function App() {
           <Route path="access-review-campaigns/new" element={<AccessReviewCampaignWizardPage />} />
           <Route path="access-review-campaigns/:id" element={<AccessReviewCampaignDetailPage />} />
           <Route path="access-review-campaigns/:id/edit" element={<AccessReviewCampaignDetailPage />} />
+        </Route>
+
+        {/* Advisor Portal Routes */}
+        <Route
+          path="/advisor"
+          element={
+            <ProtectedRoute>
+              <AdvisorLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdvisorDashboardPage />} />
+          <Route path="clients" element={<AdvisorDashboardPage />} />
+          <Route path="clients/:tenantId" element={<ClientDetailPage />} />
         </Route>
 
         {/* Business App Routes */}

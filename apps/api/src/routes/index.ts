@@ -4,6 +4,7 @@ import authRoutes from './auth.routes.js';
 import tenantRoutes from './tenant.routes.js';
 import adminRoutes from './admin/index.js';
 import appRoutes from './app/index.js';
+import advisorRoutes from './advisor/index.js';
 import downloadsRoutes from './downloads.routes.js';
 
 const router = Router();
@@ -25,6 +26,9 @@ router.use('/admin', adminRoutes);
 
 // Business App routes
 router.use('/app', appRoutes);
+
+// Advisor routes
+router.use('/advisor', advisorRoutes);
 
 // API info
 router.get('/', (_req, res) => {

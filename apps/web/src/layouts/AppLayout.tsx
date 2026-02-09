@@ -21,11 +21,12 @@ import {
   Clock,
   Shield,
   Settings,
+  Users,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/auth.store';
 import { useHomeData } from '../lib/app-api';
-import { UserRole } from '@change/shared';
+import { UserRole, PrimaryRole } from '@change/shared';
 
 // Navigation items
 const navItems = [
@@ -36,6 +37,12 @@ const navItems = [
   { path: '/app/dashboards', label: 'Dashboards', icon: BarChart3 },
   { path: '/app/tasks', label: 'Tasks', icon: ClipboardList },
   { path: '/app/documents', label: 'Documents', icon: FileText },
+  { 
+    path: '/advisor', 
+    label: 'Advisor Portal', 
+    icon: Users,
+    primaryRoles: [PrimaryRole.ADVISOR],
+  },
   { 
     path: '/admin', 
     label: 'Admin Portal', 
@@ -213,13 +220,17 @@ export default function AppLayout() {
           <nav className="px-3 pb-4">
             <ul className="space-y-1">
               {navItems
-                .filter((item) => {
+                .filter((item: any) => {
                   // If no roles specified, show to everyone
-                  if (!item.roles) return true;
+                  if (!item.roles && !item.primaryRoles) return true;
+                  // Check primaryRoles first
+                  if (item.primaryRoles && user?.primaryRole) {
+                    return item.primaryRoles.includes(user.primaryRole);
+                  }
                   // Otherwise, check if user has required role
-                  return user?.role && item.roles.includes(user.role as typeof item.roles[number]);
+                  return user?.role && item.roles?.includes(user.role as typeof item.roles[number]);
                 })
-                .map((item) => {
+                .map((item: any) => {
                 const isActive = location.pathname === item.path || 
                   (item.path !== '/app/home' && location.pathname.startsWith(item.path));
                 const Icon = item.icon;
