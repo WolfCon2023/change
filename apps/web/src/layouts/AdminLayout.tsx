@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Book,
   ArrowLeft,
+  Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -120,6 +121,12 @@ const navItems: NavItem[] = [
     href: '/admin/knowledge-base',
     icon: Book,
     // Visible to all admin portal users - training/documentation
+  },
+  {
+    label: 'Notifications',
+    href: '/admin/notifications',
+    icon: Bell,
+    role: PrimaryRole.IT_ADMIN, // Only visible to IT admins
   },
 ];
 

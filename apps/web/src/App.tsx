@@ -40,6 +40,9 @@ import { SecurityGapAnalysisPage } from '@/pages/admin/SecurityGapAnalysisPage';
 // Knowledge Base Page
 import { KnowledgeBasePage } from '@/pages/admin/KnowledgeBasePage';
 
+// Notifications Page
+import { NotificationsPage } from '@/pages/admin/NotificationsPage';
+
 // App Pages (Business Application)
 import {
   AppHomePage,
@@ -176,6 +179,8 @@ function App() {
           <Route path="security-gaps" element={<SecurityGapAnalysisPage />} />
           {/* Knowledge Base */}
           <Route path="knowledge-base" element={<KnowledgeBasePage />} />
+          {/* Notifications */}
+          <Route path="notifications" element={<NotificationsPage />} />
           {/* Access Review Campaigns */}
           <Route path="access-review-campaigns" element={<AccessReviewCampaignsPage />} />
           <Route path="access-review-campaigns/new" element={<AccessReviewCampaignWizardPage />} />
