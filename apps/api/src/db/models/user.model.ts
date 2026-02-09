@@ -2,6 +2,15 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { UserRole, PrimaryRole, type UserRoleType, type PrimaryRoleType } from '@change/shared';
 
+// Notification preferences interface
+export interface INotificationPreferences {
+  emailNotifications: boolean;
+  complianceReminders: boolean;
+  taskReminders: boolean;
+  weeklyDigest: boolean;
+  marketingEmails: boolean;
+}
+
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
@@ -18,6 +27,9 @@ export interface IUser extends Document {
   profileImageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  // Notification preferences
+  notificationPreferences: INotificationPreferences;
 
   // IAM fields
   mfaEnabled: boolean;
@@ -109,6 +121,14 @@ const userSchema = new Schema<IUser>(
     },
     profileImageUrl: {
       type: String,
+    },
+    // Notification preferences
+    notificationPreferences: {
+      emailNotifications: { type: Boolean, default: true },
+      complianceReminders: { type: Boolean, default: true },
+      taskReminders: { type: Boolean, default: true },
+      weeklyDigest: { type: Boolean, default: false },
+      marketingEmails: { type: Boolean, default: false },
     },
     // IAM fields
     mfaEnabled: {

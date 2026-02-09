@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatRole, formatDateTime } from '@/lib/utils';
-import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, Bell, Mail, Calendar, FileText, Megaphone } from 'lucide-react';
 import axios from 'axios';
+
+interface NotificationPreferences {
+  emailNotifications: boolean;
+  complianceReminders: boolean;
+  taskReminders: boolean;
+  weeklyDigest: boolean;
+  marketingEmails: boolean;
+}
 
 export function ProfilePage() {
   const { user, accessToken } = useAuthStore();
@@ -18,6 +26,74 @@ export function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [changeResult, setChangeResult] = useState<{ success: boolean; message: string } | null>(null);
+  
+  // Notification preferences state
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
+    emailNotifications: true,
+    complianceReminders: true,
+    taskReminders: true,
+    weeklyDigest: false,
+    marketingEmails: false,
+  });
+  const [isLoadingPrefs, setIsLoadingPrefs] = useState(true);
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [prefsResult, setPrefsResult] = useState<{ success: boolean; message: string } | null>(null);
+  
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+  
+  // Load notification preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const response = await axios.get(
+          `${API_URL}/auth/notification-preferences`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        setNotifPrefs(response.data.data);
+      } catch (err) {
+        console.error('Failed to load notification preferences:', err);
+      } finally {
+        setIsLoadingPrefs(false);
+      }
+    };
+    
+    if (accessToken) {
+      loadPreferences();
+    }
+  }, [accessToken, API_URL]);
+  
+  const handleTogglePreference = async (key: keyof NotificationPreferences) => {
+    const newValue = !notifPrefs[key];
+    const updatedPrefs = { ...notifPrefs, [key]: newValue };
+    
+    // If turning off email notifications, turn off all other email-related prefs
+    if (key === 'emailNotifications' && !newValue) {
+      updatedPrefs.complianceReminders = false;
+      updatedPrefs.taskReminders = false;
+      updatedPrefs.weeklyDigest = false;
+      updatedPrefs.marketingEmails = false;
+    }
+    
+    setNotifPrefs(updatedPrefs);
+    setIsSavingPrefs(true);
+    setPrefsResult(null);
+    
+    try {
+      await axios.put(
+        `${API_URL}/auth/notification-preferences`,
+        updatedPrefs,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      setPrefsResult({ success: true, message: 'Preferences saved' });
+      setTimeout(() => setPrefsResult(null), 2000);
+    } catch (err) {
+      // Revert on error
+      setNotifPrefs(notifPrefs);
+      setPrefsResult({ success: false, message: 'Failed to save preferences' });
+    } finally {
+      setIsSavingPrefs(false);
+    }
+  };
   
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +112,6 @@ export function ProfilePage() {
     setChangeResult(null);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
       await axios.post(
         `${API_URL}/auth/change-password`,
         { currentPassword, newPassword },
@@ -246,6 +321,149 @@ export function ProfilePage() {
                 </Button>
               </div>
             </form>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Notification Preferences Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Notification Preferences
+              </CardTitle>
+              <CardDescription>Control how and when you receive notifications</CardDescription>
+            </div>
+            {prefsResult && (
+              <span className={`text-sm flex items-center gap-1 ${
+                prefsResult.success ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {prefsResult.success ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                {prefsResult.message}
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoadingPrefs ? (
+            <div className="text-center py-4 text-muted-foreground">Loading preferences...</div>
+          ) : (
+            <>
+              {/* Master Email Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50 border">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium">Email Notifications</p>
+                    <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleTogglePreference('emailNotifications')}
+                  disabled={isSavingPrefs}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    notifPrefs.emailNotifications ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    notifPrefs.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Individual Notification Types */}
+              <div className={`space-y-3 pl-4 ${!notifPrefs.emailNotifications ? 'opacity-50 pointer-events-none' : ''}`}>
+                {/* Compliance Reminders */}
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-5 w-5 text-amber-600" />
+                    <div>
+                      <p className="font-medium">Compliance Reminders</p>
+                      <p className="text-sm text-muted-foreground">Reminders for upcoming compliance deadlines</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePreference('complianceReminders')}
+                    disabled={isSavingPrefs || !notifPrefs.emailNotifications}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      notifPrefs.complianceReminders ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      notifPrefs.complianceReminders ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Task Reminders */}
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium">Task Reminders</p>
+                      <p className="text-sm text-muted-foreground">Reminders for pending tasks and to-dos</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePreference('taskReminders')}
+                    disabled={isSavingPrefs || !notifPrefs.emailNotifications}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      notifPrefs.taskReminders ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      notifPrefs.taskReminders ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Weekly Digest */}
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-purple-600" />
+                    <div>
+                      <p className="font-medium">Weekly Digest</p>
+                      <p className="text-sm text-muted-foreground">Weekly summary of your business activity</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePreference('weeklyDigest')}
+                    disabled={isSavingPrefs || !notifPrefs.emailNotifications}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      notifPrefs.weeklyDigest ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      notifPrefs.weeklyDigest ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Marketing Emails */}
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <Megaphone className="h-5 w-5 text-pink-600" />
+                    <div>
+                      <p className="font-medium">Marketing & Updates</p>
+                      <p className="text-sm text-muted-foreground">News, tips, and product updates</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePreference('marketingEmails')}
+                    disabled={isSavingPrefs || !notifPrefs.emailNotifications}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      notifPrefs.marketingEmails ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      notifPrefs.marketingEmails ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

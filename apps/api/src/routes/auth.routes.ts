@@ -219,4 +219,96 @@ router.post(
   }
 );
 
+// Notification preferences validation schema
+const notificationPreferencesSchema = z.object({
+  emailNotifications: z.boolean().optional(),
+  complianceReminders: z.boolean().optional(),
+  taskReminders: z.boolean().optional(),
+  weeklyDigest: z.boolean().optional(),
+  marketingEmails: z.boolean().optional(),
+});
+
+/**
+ * GET /auth/notification-preferences
+ * Get current user's notification preferences
+ */
+router.get(
+  '/notification-preferences',
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await User.findById(req.user?.userId);
+      
+      if (!user) {
+        throw new UnauthorizedError('User not found');
+      }
+      
+      // Return notification preferences with defaults
+      const preferences = user.notificationPreferences || {
+        emailNotifications: true,
+        complianceReminders: true,
+        taskReminders: true,
+        weeklyDigest: false,
+        marketingEmails: false,
+      };
+      
+      res.json({
+        success: true,
+        data: preferences,
+        meta: {
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * PUT /auth/notification-preferences
+ * Update current user's notification preferences
+ */
+router.put(
+  '/notification-preferences',
+  authenticate,
+  validate(notificationPreferencesSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await User.findById(req.user?.userId);
+      
+      if (!user) {
+        throw new UnauthorizedError('User not found');
+      }
+      
+      // Merge with existing preferences
+      const currentPrefs = user.notificationPreferences || {
+        emailNotifications: true,
+        complianceReminders: true,
+        taskReminders: true,
+        weeklyDigest: false,
+        marketingEmails: false,
+      };
+      
+      const updatedPrefs = {
+        ...currentPrefs,
+        ...req.body,
+      };
+      
+      user.notificationPreferences = updatedPrefs;
+      await user.save();
+      
+      res.json({
+        success: true,
+        data: updatedPrefs,
+        meta: {
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

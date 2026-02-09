@@ -54,11 +54,13 @@ class NotificationService {
           continue;
         }
 
-        // Check if user has email notifications enabled (default to true)
-        // In the future, this could be a user preference
-        const notificationsEnabled = true; // TODO: Check user preferences
-
-        if (!notificationsEnabled) {
+        // Check if user has email notifications enabled
+        const prefs = user.notificationPreferences || {
+          emailNotifications: true,
+          complianceReminders: true,
+        };
+        
+        if (!prefs.emailNotifications || !prefs.complianceReminders) {
           result.skipped++;
           continue;
         }
