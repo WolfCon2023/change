@@ -246,7 +246,15 @@ export class AuthService {
     }
 
     // Verify password
-    const isPasswordValid = await user.comparePassword(password);
+    console.log(`[AuthService.login] Comparing password for user ${user.email}`);
+    let isPasswordValid;
+    try {
+      isPasswordValid = await user.comparePassword(password);
+      console.log(`[AuthService.login] Password valid: ${isPasswordValid}`);
+    } catch (pwError) {
+      console.error(`[AuthService.login] Password comparison error:`, pwError);
+      throw pwError;
+    }
     if (!isPasswordValid) {
       // Log failed login attempt (wrong password)
       await logIamAction({
