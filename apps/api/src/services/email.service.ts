@@ -130,6 +130,7 @@ class EmailService {
    * Send compliance deadline reminder
    */
   async sendComplianceReminder(data: ComplianceReminderData): Promise<boolean> {
+    const logoUrl = `${config.appUrl}/logo-v2.png`;
     const urgencyColor = data.daysUntilDue <= 3 ? '#dc2626' : data.daysUntilDue <= 7 ? '#f59e0b' : '#3b82f6';
     const urgencyText = data.daysUntilDue <= 0 
       ? 'OVERDUE' 
@@ -159,11 +160,10 @@ class EmailService {
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header -->
+    <!-- Header with Logo -->
     <tr>
       <td style="background-color: #1e40af; padding: 24px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px;">C.H.A.N.G.E.</h1>
-        <p style="color: #bfdbfe; margin: 8px 0 0 0; font-size: 14px;">Business Transformation Platform</p>
+        <img src="${logoUrl}" alt="C.H.A.N.G.E. Platform" style="height: 50px; width: auto;" />
       </td>
     </tr>
     
@@ -245,6 +245,7 @@ class EmailService {
    * Send welcome email
    */
   async sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
+    const logoUrl = `${config.appUrl}/logo-v2.png`;
     const subject = '🎉 Welcome to C.H.A.N.G.E. Platform!';
 
     const html = `
@@ -256,11 +257,10 @@ class EmailService {
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-    <!-- Header -->
+    <!-- Header with Logo -->
     <tr>
       <td style="background-color: #1e40af; padding: 24px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Welcome to C.H.A.N.G.E.</h1>
-        <p style="color: #bfdbfe; margin: 8px 0 0 0; font-size: 14px;">Business Transformation Platform</p>
+        <img src="${logoUrl}" alt="C.H.A.N.G.E. Platform" style="height: 50px; width: auto;" />
       </td>
     </tr>
     
@@ -319,6 +319,7 @@ class EmailService {
    */
   async sendTestEmail(to: string): Promise<boolean> {
     const subject = '✅ C.H.A.N.G.E. Platform - Email Test';
+    const logoUrl = `${config.appUrl}/logo-v2.png`;
     
     const html = `
 <!DOCTYPE html>
@@ -326,15 +327,30 @@ class EmailService {
 <head>
   <meta charset="utf-8">
 </head>
-<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif;">
-  <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-    <h2 style="color: #1e40af; margin: 0 0 16px 0;">Email Test Successful! ✅</h2>
-    <p style="color: #374151; margin: 0 0 8px 0;">
-      This confirms that your C.H.A.N.G.E. Platform email notifications are working correctly.
-    </p>
-    <p style="color: #6b7280; font-size: 14px; margin: 16px 0 0 0;">
-      Sent at: ${new Date().toISOString()}
-    </p>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+  <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <!-- Header with Logo -->
+    <div style="background-color: #1e40af; padding: 24px; text-align: center;">
+      <img src="${logoUrl}" alt="C.H.A.N.G.E. Platform" style="height: 50px; width: auto;" />
+    </div>
+    
+    <!-- Content -->
+    <div style="padding: 32px 24px; text-align: center;">
+      <h2 style="color: #059669; margin: 0 0 16px 0; font-size: 24px;">Email Test Successful!</h2>
+      <p style="color: #374151; margin: 0 0 8px 0; font-size: 16px;">
+        This confirms that your C.H.A.N.G.E. Platform email notifications are working correctly.
+      </p>
+      <p style="color: #6b7280; font-size: 14px; margin: 24px 0 0 0;">
+        Sent at: ${new Date().toISOString()}
+      </p>
+    </div>
+    
+    <!-- Footer -->
+    <div style="background-color: #f9fafb; padding: 16px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <p style="color: #6b7280; font-size: 12px; margin: 0;">
+        © ${new Date().getFullYear()} CHANGE Business Transformation Platform. All rights reserved.
+      </p>
+    </div>
   </div>
 </body>
 </html>
