@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { BusinessProfile, BusinessArchetype, Task, WorkflowInstance, Document } from '../../db/models/index.js';
+import { BusinessProfile, BusinessArchetype, Task, WorkflowInstance, DocumentInstance } from '../../db/models/index.js';
 
 const router = Router();
 
@@ -119,7 +119,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     ]);
     
     // Get document count
-    const documentCount = await Document.countDocuments({ tenantId });
+    const documentCount = await DocumentInstance.countDocuments({ tenantId });
     
     // Get upcoming compliance deadlines
     const complianceItems = profile.complianceItems || [];
