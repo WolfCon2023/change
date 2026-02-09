@@ -30,6 +30,7 @@ import accessReviewsRoutes from './access-reviews.routes.js';
 import advisorAssignmentsRoutes from './advisor-assignments.routes.js';
 import tenantSettingsRoutes from './tenant-settings.routes.js';
 import accessReviewCampaignsRoutes from './access-review-campaigns.routes.js';
+import notificationsRoutes from './notifications.routes.js';
 
 const router = Router();
 
@@ -560,5 +561,6 @@ router.use(accessReviewsRoutes);
 router.use(advisorAssignmentsRoutes);
 router.use(tenantSettingsRoutes);
 router.use(accessReviewCampaignsRoutes);
+router.use('/notifications', notificationsRoutes);
 
 export default router;

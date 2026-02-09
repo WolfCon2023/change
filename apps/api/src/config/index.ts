@@ -56,6 +56,19 @@ export const config = {
   // Feature Flags
   enabledFeatures: (process.env['ENABLED_FEATURES'] ?? '').split(',').filter(Boolean),
 
+  // SMTP / Email
+  smtp: {
+    host: process.env['SMTP_HOST'] ?? '',
+    port: parseInt(process.env['SMTP_PORT'] ?? '587', 10),
+    secure: process.env['SMTP_SECURE'] === 'true',
+    user: process.env['SMTP_USER'] ?? '',
+    pass: process.env['SMTP_PASS'] ?? '',
+    from: process.env['SMTP_FROM'] ?? process.env['SMTP_USER'] ?? 'noreply@change-platform.com',
+  },
+
+  // App URLs (for email links)
+  appUrl: process.env['APP_URL'] ?? 'http://localhost:5173',
+
   // Computed
   isDev: process.env['NODE_ENV'] !== 'production',
   isProd: process.env['NODE_ENV'] === 'production',

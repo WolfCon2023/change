@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { config } from './config/index.js';
 import { connectDatabase, disconnectDatabase } from './db/connection.js';
+import { schedulerService } from './services/scheduler.service.js';
 
 async function main(): Promise<void> {
   console.log('🚀 Starting CHANGE Platform API...');
@@ -19,11 +20,23 @@ async function main(): Promise<void> {
       console.log(`✅ Server running at http://localhost:${config.port}`);
       console.log(`   API Base: http://localhost:${config.port}/api/v1`);
       console.log(`   Health: http://localhost:${config.port}/api/v1/health`);
+      
+      // Start notification scheduler (checks every hour)
+      if (config.smtp.host && config.smtp.user) {
+        schedulerService.start(1); // Run every 1 hour
+        console.log('📧 Email notification scheduler started');
+      } else {
+        console.log('📧 Email notifications disabled (SMTP not configured)');
+      }
     });
 
     // Graceful shutdown
     const shutdown = async (signal: string): Promise<void> => {
       console.log(`\n📡 Received ${signal}. Shutting down gracefully...`);
+      
+      // Stop the scheduler
+      schedulerService.stop();
+      console.log('   Notification scheduler stopped');
 
       server.close(async () => {
         console.log('   HTTP server closed');

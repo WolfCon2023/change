@@ -75,6 +75,7 @@ export interface IOperatingAgreement {
 
 // Compliance calendar item
 export interface IComplianceItem {
+  _id?: mongoose.Types.ObjectId;
   id: string;
   title: string;
   description?: string;
@@ -84,6 +85,7 @@ export interface IComplianceItem {
   status: 'pending' | 'completed' | 'overdue';
   completedAt?: Date;
   reminderDays?: number;
+  lastReminderSent?: Date;
 }
 
 // Simple task item
@@ -285,8 +287,9 @@ const complianceItemSchema = new Schema<IComplianceItem>(
     status: { type: String, enum: ['pending', 'completed', 'overdue'], default: 'pending' },
     completedAt: { type: Date },
     reminderDays: { type: Number, default: 30 },
+    lastReminderSent: { type: Date },
   },
-  { _id: false }
+  { _id: true } // Enable _id for tracking individual items in notifications
 );
 
 const simpleTaskSchema = new Schema<ISimpleTask>(
