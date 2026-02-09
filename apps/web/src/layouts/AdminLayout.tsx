@@ -21,6 +21,7 @@ import {
   ClipboardList,
   ShieldAlert,
   Book,
+  ArrowLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -202,6 +203,22 @@ export function AdminLayout() {
                 className="h-24 w-auto"
               />
             </div>
+          </div>
+
+          {/* Back to App link */}
+          <div className="px-3 pt-4 pb-2">
+            <NavLink
+              to="/app/home"
+              className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-blue-400 hover:bg-gray-800 hover:text-blue-300 transition-colors"
+            >
+              <ArrowLeft className="mr-3 h-5 w-5" />
+              Back to App
+            </NavLink>
+          </div>
+
+          {/* Divider */}
+          <div className="px-3">
+            <div className="border-t border-gray-700" />
           </div>
 
           {/* Navigation */}
