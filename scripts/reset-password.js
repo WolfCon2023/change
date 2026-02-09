@@ -18,13 +18,13 @@ const bcrypt = require('bcryptjs');
 // Your MongoDB connection string (from Railway or MongoDB Atlas)
 // NOTE: Must include database name and authSource
 // Example: mongodb://user:pass@host:port/change_platform?authSource=admin
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:LrVGEvOpNkXGBJaEVrYnGGXnrRmlxapO@trolley.proxy.rlwy.net:32790/change_platform?authSource=admin';
+const MONGODB_URI = process.env.MONGODB_URI || 'YOUR_MONGODB_URI_HERE';
 
 // The email of the user whose password you want to reset
-const USER_EMAIL = 'admin@change-platform.com';
+const USER_EMAIL = 'YOUR_EMAIL_HERE';
 
 // The new password you want to set
-const NEW_PASSWORD = 'ChangeTech2026!';
+const NEW_PASSWORD = 'YOUR_PASSWORD_HERE';
 
 // ============================================
 // Script - Don't modify below this line
