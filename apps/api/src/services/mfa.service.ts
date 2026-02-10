@@ -2,18 +2,22 @@
  * MFA Service
  * Handles Two-Factor Authentication using TOTP (Time-based One-Time Password)
  * Compatible with Google Authenticator, Authy, and other TOTP apps
+ * 
+ * Uses otplib v13 async-first API
  */
 
-import { authenticator } from 'otplib';
+import { generateSecret, generate, verify, generateURI } from 'otplib';
 import * as QRCode from 'qrcode';
 import { User, IUser } from '../db/models/user.model.js';
 
-// Configure TOTP settings
-authenticator.options = {
+// TOTP configuration
+const TOTP_CONFIG = {
   digits: 6,
-  step: 30, // 30-second time step
-  window: 1, // Allow 1 step before/after for clock drift
+  period: 30, // 30-second time step
+  algorithm: 'SHA1' as const,
 };
+
+const APP_NAME = 'CHANGE Platform';
 
 export interface MfaSetupResult {
   secret: string;
@@ -28,20 +32,25 @@ export interface MfaVerifyResult {
 }
 
 class MfaService {
-  private readonly APP_NAME = 'CHANGE Platform';
-
   /**
    * Generate a new MFA secret for a user
    */
-  generateSecret(): string {
-    return authenticator.generateSecret(20); // 20 bytes = 160 bits
+  createSecret(): string {
+    return generateSecret();
   }
 
   /**
    * Generate QR code data URL for authenticator app
    */
   async generateQRCode(email: string, secret: string): Promise<string> {
-    const otpauthUrl = authenticator.keyuri(email, this.APP_NAME, secret);
+    const otpauthUrl = generateURI({
+      issuer: APP_NAME,
+      label: email,
+      secret,
+      algorithm: TOTP_CONFIG.algorithm,
+      digits: TOTP_CONFIG.digits,
+      period: TOTP_CONFIG.period,
+    });
     return QRCode.toDataURL(otpauthUrl);
   }
 
@@ -70,12 +79,31 @@ class MfaService {
   /**
    * Verify a TOTP code
    */
-  verifyToken(secret: string, token: string): boolean {
+  async verifyToken(secret: string, token: string): Promise<boolean> {
     try {
-      return authenticator.verify({ token, secret });
+      return await verify({
+        secret,
+        token,
+        digits: TOTP_CONFIG.digits,
+        period: TOTP_CONFIG.period,
+        algorithm: TOTP_CONFIG.algorithm,
+        window: 1, // Allow 1 step before/after for clock drift
+      });
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Generate a TOTP token (for testing)
+   */
+  async generateToken(secret: string): Promise<string> {
+    return await generate({
+      secret,
+      digits: TOTP_CONFIG.digits,
+      period: TOTP_CONFIG.period,
+      algorithm: TOTP_CONFIG.algorithm,
+    });
   }
 
   /**
@@ -89,7 +117,7 @@ class MfaService {
     }
 
     // Generate new secret
-    const secret = this.generateSecret();
+    const secret = this.createSecret();
 
     // Generate QR code
     const qrCodeUrl = await this.generateQRCode(user.email, secret);
@@ -127,7 +155,7 @@ class MfaService {
     }
 
     // Verify the token
-    const isValid = this.verifyToken(user.mfaSecret, token);
+    const isValid = await this.verifyToken(user.mfaSecret, token);
     if (!isValid) {
       return { success: false, message: 'Invalid verification code' };
     }
@@ -152,7 +180,7 @@ class MfaService {
       return { success: false, message: 'MFA is not enabled for this user' };
     }
 
-    const isValid = this.verifyToken(user.mfaSecret, token);
+    const isValid = await this.verifyToken(user.mfaSecret, token);
     if (!isValid) {
       return { success: false, message: 'Invalid verification code' };
     }
