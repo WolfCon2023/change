@@ -187,10 +187,10 @@ ARTICLE 3 - MEMBER AND CAPITAL
 3.2 Membership Interest. The Member owns 100% of the membership interest in the Company.
 
 3.3 Initial Capital Contribution. The Member has contributed or agrees to contribute the following as initial capital:
-    Cash: ${{initialCapitalCash}}
+    Cash: \${{initialCapitalCash}}
     Property: {{initialCapitalProperty}}
     Services: {{initialCapitalServices}}
-    Total Value: ${{totalInitialCapital}}
+    Total Value: \${{totalInitialCapital}}
 
 3.4 Additional Capital Contributions. The Member may make additional capital contributions at any time. No additional capital contributions are required unless agreed in writing.
 
@@ -887,27 +887,27 @@ Member: {{memberName}}
 Date of Contribution: {{contributionDate}}
 
 Cash Contributions:
-- Amount: ${{cashAmount}}
+- Amount: \${{cashAmount}}
 - Payment Method: {{paymentMethod}}
 - Bank/Account: {{bankInfo}}
 
 Property Contributions:
 - Description: {{propertyDescription}}
-- Fair Market Value: ${{propertyFMV}}
+- Fair Market Value: \${{propertyFMV}}
 - Valuation Method: {{valuationMethod}}
 - Valuation Date: {{valuationDate}}
 
 Services Contributions (if permitted by Operating Agreement):
 - Description: {{servicesDescription}}
-- Agreed Value: ${{servicesValue}}
+- Agreed Value: \${{servicesValue}}
 
-TOTAL CONTRIBUTION: ${{totalContribution}}
+TOTAL CONTRIBUTION: \${{totalContribution}}
 
 OWNERSHIP INTEREST
 
 Based on the contribution above, {{memberName}} holds:
 - Ownership Percentage: {{ownershipPercentage}}%
-- Capital Account Balance: ${{capitalAccountBalance}}
+- Capital Account Balance: \${{capitalAccountBalance}}
 - Voting Rights: {{votingRights}}
 
 ACKNOWLEDGMENT
@@ -997,7 +997,7 @@ This policy establishes guidelines for compensating the owner(s) of {{businessNa
 
 Owner: {{memberName}}
 Ownership: {{ownershipPercentage}}%
-Guaranteed Payment/Salary: ${{annualCompensation}} annually
+Guaranteed Payment/Salary: \${{annualCompensation}} annually
 Payment Frequency: {{paymentFrequency}}
 Distribution Eligibility: Yes, pro rata with ownership
 
@@ -1509,7 +1509,7 @@ Number: {{stateLicenseNumber}}
 Issue Date: {{stateLicenseIssueDate}}
 Expiration: {{stateLicenseExpiration}}
 Status: [ ] Active  [ ] Pending  [ ] Expired
-Renewal Fee: ${{stateLicenseFee}}
+Renewal Fee: \${{stateLicenseFee}}
 
 ═══════════════════════════════════════════════════════════════════════════════
 LOCAL LICENSES
@@ -1520,7 +1520,7 @@ Number: {{localLicenseNumber}}
 Issue Date: {{localLicenseIssueDate}}
 Expiration: {{localLicenseExpiration}}
 Status: [ ] Active  [ ] Pending  [ ] Expired
-Renewal Fee: ${{localLicenseFee}}
+Renewal Fee: \${{localLicenseFee}}
 
 ═══════════════════════════════════════════════════════════════════════════════
 PROFESSIONAL LICENSES/CERTIFICATIONS
@@ -1550,13 +1550,13 @@ INSURANCE CERTIFICATES
 Type: General Liability Insurance
 Carrier: {{glCarrier}}
 Policy Number: {{glPolicyNumber}}
-Coverage: ${{glCoverage}}
+Coverage: \${{glCoverage}}
 Expiration: {{glExpiration}}
 
 Type: Professional Liability / E&O
 Carrier: {{plCarrier}}
 Policy Number: {{plPolicyNumber}}
-Coverage: ${{plCoverage}}
+Coverage: \${{plCoverage}}
 Expiration: {{plExpiration}}
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -1634,7 +1634,7 @@ This checklist evaluates the adequacy of internal controls to prevent fraud, err
 ───────────────────────────────────────────────────────────────────────────────
 [ ] Bank accounts are reconciled monthly
 [ ] Bank statements are reviewed by someone other than the bookkeeper
-[ ] Dual signatures required for checks over ${{dualSignatureThreshold}}
+[ ] Dual signatures required for checks over \${{dualSignatureThreshold}}
 [ ] Petty cash is maintained with proper documentation
 [ ] Cash receipts are deposited timely
 [ ] Voided checks are retained and accounted for
@@ -1646,7 +1646,7 @@ Rating: [ ] Strong  [ ] Adequate  [ ] Needs Improvement  [ ] Weak
 ═══════════════════════════════════════════════════════════════════════════════
 2. ACCOUNTS PAYABLE CONTROLS
 ───────────────────────────────────────────────────────────────────────────────
-[ ] Purchase orders are required for expenses over ${{poThreshold}}
+[ ] Purchase orders are required for expenses over \${{poThreshold}}
 [ ] Three-way match (PO, receipt, invoice) is performed
 [ ] Invoices are reviewed and approved before payment
 [ ] Vendor master file changes require approval
@@ -1962,7 +1962,7 @@ Subject Matter Expert   | {{sme}}           | {{smeTime}}
 ═══════════════════════════════════════════════════════════════════════════════
 ESTIMATED BENEFITS
 ───────────────────────────────────────────────────────────────────────────────
-Financial Benefits: ${{financialBenefits}}
+Financial Benefits: \${{financialBenefits}}
 Type: [ ] Hard Savings  [ ] Cost Avoidance  [ ] Revenue Increase
 Calculation Method: {{calculationMethod}}
 
