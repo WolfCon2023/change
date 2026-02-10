@@ -54,6 +54,10 @@ import {
   DocumentsPage,
   DashboardsPage,
 } from '@/pages/app';
+import { BillingPage } from '@/pages/app/BillingPage';
+
+// Pricing Page (public)
+import { PricingPage } from '@/pages/PricingPage';
 
 // Advisor Pages
 import { AdvisorDashboardPage } from '@/pages/advisor/AdvisorDashboardPage';
@@ -142,6 +146,9 @@ function App() {
           }
         />
 
+        {/* Pricing Page (accessible to all) */}
+        <Route path="/pricing" element={<PricingPage />} />
+
         {/* Redirect old dashboard to new app home */}
         <Route
           path="/dashboard"
@@ -224,6 +231,7 @@ function App() {
           <Route path="tasks" element={<TasksPage />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="dashboards" element={<DashboardsPage />} />
+          <Route path="billing" element={<BillingPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 

@@ -59,3 +59,10 @@ export {
   canAccessTenant as canAccessTenantByRole,
   getAccessibleTenants,
 } from './iam-auth.js';
+
+// Subscription / Feature Gating
+export {
+  requirePlan,
+  checkFeatureAccess,
+  loadSubscription,
+} from './subscription.js';

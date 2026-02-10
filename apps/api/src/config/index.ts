@@ -69,6 +69,22 @@ export const config = {
   // App URLs (for email links)
   appUrl: process.env['APP_URL'] ?? 'http://localhost:5173',
 
+  // Stripe
+  stripe: {
+    secretKey: process.env['STRIPE_SECRET_KEY'] ?? '',
+    publishableKey: process.env['STRIPE_PUBLISHABLE_KEY'] ?? '',
+    webhookSecret: process.env['STRIPE_WEBHOOK_SECRET'] ?? '',
+    prices: {
+      starterMonthly: process.env['STRIPE_STARTER_MONTHLY_PRICE_ID'] ?? '',
+      starterAnnual: process.env['STRIPE_STARTER_ANNUAL_PRICE_ID'] ?? '',
+      professionalMonthly: process.env['STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID'] ?? '',
+      professionalAnnual: process.env['STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID'] ?? '',
+      enterpriseMonthly: process.env['STRIPE_ENTERPRISE_MONTHLY_PRICE_ID'] ?? '',
+      enterpriseAnnual: process.env['STRIPE_ENTERPRISE_ANNUAL_PRICE_ID'] ?? '',
+    },
+    trialDays: parseInt(process.env['STRIPE_TRIAL_DAYS'] ?? '7', 10),
+  },
+
   // Computed
   isDev: process.env['NODE_ENV'] !== 'production',
   isProd: process.env['NODE_ENV'] === 'production',

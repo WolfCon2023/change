@@ -22,6 +22,7 @@ import {
   Shield,
   Settings,
   Users,
+  CreditCard,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/auth.store';
@@ -37,6 +38,7 @@ const navItems = [
   { path: '/app/dashboards', label: 'Dashboards', icon: BarChart3 },
   { path: '/app/tasks', label: 'Tasks', icon: ClipboardList },
   { path: '/app/documents', label: 'Documents', icon: FileText },
+  { path: '/app/billing', label: 'Billing', icon: CreditCard },
   { 
     path: '/advisor', 
     label: 'Advisor Portal', 

@@ -11,9 +11,15 @@ export interface ITenantSettings {
 }
 
 export interface ITenantSubscription {
-  plan: 'free' | 'basic' | 'professional' | 'enterprise';
-  status: 'active' | 'past_due' | 'canceled';
-  currentPeriodEnd: Date;
+  plan: 'free' | 'starter' | 'professional' | 'enterprise';
+  status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  stripePriceId?: string;
+  currentPeriodStart?: Date;
+  currentPeriodEnd?: Date;
+  cancelAtPeriodEnd?: boolean;
+  trialEnd?: Date;
 }
 
 export interface ITenant extends Document {
@@ -57,15 +63,36 @@ const tenantSubscriptionSchema = new Schema<ITenantSubscription>(
   {
     plan: {
       type: String,
-      enum: ['free', 'basic', 'professional', 'enterprise'],
+      enum: ['free', 'starter', 'professional', 'enterprise'],
       default: 'free',
     },
     status: {
       type: String,
-      enum: ['active', 'past_due', 'canceled'],
+      enum: ['trialing', 'active', 'past_due', 'canceled', 'incomplete'],
       default: 'active',
     },
+    stripeCustomerId: {
+      type: String,
+      sparse: true,
+    },
+    stripeSubscriptionId: {
+      type: String,
+      sparse: true,
+    },
+    stripePriceId: {
+      type: String,
+    },
+    currentPeriodStart: {
+      type: Date,
+    },
     currentPeriodEnd: {
+      type: Date,
+    },
+    cancelAtPeriodEnd: {
+      type: Boolean,
+      default: false,
+    },
+    trialEnd: {
       type: Date,
     },
   },

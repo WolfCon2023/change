@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from './config/index.js';
 import routes from './routes/index.js';
+import stripeWebhookRoutes from './routes/webhooks/stripe.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/index.js';
 
 export function createApp(): Express {
@@ -54,6 +55,9 @@ export function createApp(): Express {
     req.headers['x-request-id'] = req.headers['x-request-id'] ?? uuidv4();
     next();
   });
+
+  // Stripe webhook needs raw body - must be before express.json()
+  app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookRoutes);
 
   // Body parsing
   app.use(express.json({ limit: '10mb' }));
