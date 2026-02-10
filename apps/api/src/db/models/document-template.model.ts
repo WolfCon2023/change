@@ -1,9 +1,11 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import {
   DocumentType,
+  DocumentCategory,
   BusinessType,
   USState,
   type DocumentTypeValue,
+  type DocumentCategoryType,
   type BusinessTypeValue,
   type USStateType,
 } from '@change/shared';
@@ -17,11 +19,14 @@ export interface IMergeField {
   defaultValue?: string;
 }
 
+export type DocumentPriorityType = 'required' | 'recommended' | 'optional';
+
 export interface IDocumentTemplate extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
   description?: string;
   type: DocumentTypeValue;
+  category: DocumentCategoryType;
   version: number;
   isLatestVersion: boolean;
   previousVersionId?: mongoose.Types.ObjectId;
@@ -29,6 +34,10 @@ export interface IDocumentTemplate extends Document {
   mergeFields: IMergeField[];
   applicableBusinessTypes: BusinessTypeValue[];
   applicableStates?: USStateType[];
+  applicableArchetypes?: string[];
+  priority: DocumentPriorityType;
+  advisorReviewRequired: boolean;
+  workflowStepKey?: string;
   isActive: boolean;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -70,12 +79,18 @@ const documentTemplateSchema = new Schema<IDocumentTemplate>(
     },
     description: {
       type: String,
-      maxlength: 1000,
+      maxlength: 2000,
     },
     type: {
       type: String,
       required: true,
       enum: Object.values(DocumentType),
+      index: true,
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: Object.values(DocumentCategory),
       index: true,
     },
     version: {
@@ -114,6 +129,23 @@ const documentTemplateSchema = new Schema<IDocumentTemplate>(
       type: [String],
       enum: Object.values(USState),
     },
+    applicableArchetypes: {
+      type: [String],
+      default: [],
+    },
+    priority: {
+      type: String,
+      enum: ['required', 'recommended', 'optional'],
+      default: 'optional',
+    },
+    advisorReviewRequired: {
+      type: Boolean,
+      default: false,
+    },
+    workflowStepKey: {
+      type: String,
+      maxlength: 100,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -143,6 +175,8 @@ const documentTemplateSchema = new Schema<IDocumentTemplate>(
 // Indexes
 documentTemplateSchema.index({ type: 1, isLatestVersion: 1, isActive: 1 });
 documentTemplateSchema.index({ type: 1, version: 1 });
+documentTemplateSchema.index({ category: 1, isLatestVersion: 1, isActive: 1 });
+documentTemplateSchema.index({ priority: 1 });
 
 // Static methods
 documentTemplateSchema.statics.findLatestByType = function (
@@ -174,6 +208,7 @@ documentTemplateSchema.statics.createNewVersion = async function (
     name: updates.name ?? existingTemplate.name,
     description: updates.description ?? existingTemplate.description,
     type: existingTemplate.type,
+    category: updates.category ?? existingTemplate.category,
     version: existingTemplate.version + 1,
     isLatestVersion: true,
     previousVersionId: existingTemplate._id,
@@ -182,6 +217,10 @@ documentTemplateSchema.statics.createNewVersion = async function (
     applicableBusinessTypes:
       updates.applicableBusinessTypes ?? existingTemplate.applicableBusinessTypes,
     applicableStates: updates.applicableStates ?? existingTemplate.applicableStates,
+    applicableArchetypes: updates.applicableArchetypes ?? existingTemplate.applicableArchetypes,
+    priority: updates.priority ?? existingTemplate.priority,
+    advisorReviewRequired: updates.advisorReviewRequired ?? existingTemplate.advisorReviewRequired,
+    workflowStepKey: updates.workflowStepKey ?? existingTemplate.workflowStepKey,
     isActive: true,
     createdBy: userId,
   });

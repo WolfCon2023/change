@@ -206,27 +206,239 @@ export const TaskCategory = {
 export type TaskCategoryType = (typeof TaskCategory)[keyof typeof TaskCategory];
 
 // =============================================================================
+// DOCUMENT CATEGORIES (Business Transformation Platform Taxonomy)
+// =============================================================================
+
+export const DocumentCategory = {
+  FORMATION: 'formation',
+  GOVERNANCE: 'governance',
+  FINANCIAL: 'financial',
+  OPERATIONS: 'operations',
+  COMPLIANCE: 'compliance',
+  IMPROVEMENT: 'improvement',
+} as const;
+
+export type DocumentCategoryType = (typeof DocumentCategory)[keyof typeof DocumentCategory];
+
+export const DocumentCategoryLabels: Record<DocumentCategoryType, string> = {
+  [DocumentCategory.FORMATION]: 'Formation',
+  [DocumentCategory.GOVERNANCE]: 'Governance',
+  [DocumentCategory.FINANCIAL]: 'Financial',
+  [DocumentCategory.OPERATIONS]: 'Operations',
+  [DocumentCategory.COMPLIANCE]: 'Compliance',
+  [DocumentCategory.IMPROVEMENT]: 'Improvement',
+};
+
+export const DocumentCategoryDescriptions: Record<DocumentCategoryType, string> = {
+  [DocumentCategory.FORMATION]: 'Entity formation and organization documents',
+  [DocumentCategory.GOVERNANCE]: 'Corporate governance, resolutions, and policies',
+  [DocumentCategory.FINANCIAL]: 'Financial records, ownership, and distributions',
+  [DocumentCategory.OPERATIONS]: 'Business processes, SOPs, and operational documents',
+  [DocumentCategory.COMPLIANCE]: 'Compliance calendars, licenses, and internal controls',
+  [DocumentCategory.IMPROVEMENT]: 'Lean Six Sigma, SIPOC, DMAIC, and continuous improvement',
+};
+
+// =============================================================================
 // DOCUMENT TYPES (PRD-FR-004: Document Generation)
 // =============================================================================
 
 export const DocumentType = {
-  // Formation documents
+  // FORMATION DOCUMENTS
   ARTICLES_OF_ORGANIZATION: 'articles_of_organization',
   ARTICLES_OF_INCORPORATION: 'articles_of_incorporation',
   OPERATING_AGREEMENT: 'operating_agreement',
   BYLAWS: 'bylaws',
-  // Regulatory documents
+  REGISTERED_AGENT_CONSENT: 'registered_agent_consent',
+  INITIAL_MEMBER_RESOLUTION: 'initial_member_resolution',
+  INITIAL_BOARD_RESOLUTION: 'initial_board_resolution',
+  BUSINESS_ADDRESS_AFFIDAVIT: 'business_address_affidavit',
+  STATE_FILING_CONFIRMATION: 'state_filing_confirmation',
+  
+  // GOVERNANCE DOCUMENTS
+  BANKING_RESOLUTION: 'banking_resolution',
+  OFFICER_APPOINTMENT_RESOLUTION: 'officer_appointment_resolution',
+  MANAGER_APPOINTMENT_RESOLUTION: 'manager_appointment_resolution',
+  CONFLICT_OF_INTEREST_POLICY: 'conflict_of_interest_policy',
+  CODE_OF_CONDUCT: 'code_of_conduct',
+  AMENDMENT_LOG: 'amendment_log',
+  
+  // FINANCIAL DOCUMENTS
   EIN_CONFIRMATION: 'ein_confirmation',
+  EIN_CONFIRMATION_RECORD: 'ein_confirmation_record',
   SOS_FILING_CONFIRMATION: 'sos_filing_confirmation',
-  // Business documents
+  CAPITAL_CONTRIBUTION_RECORD: 'capital_contribution_record',
+  OWNERSHIP_LEDGER: 'ownership_ledger',
+  DISTRIBUTION_POLICY: 'distribution_policy',
+  OWNER_COMPENSATION_POLICY: 'owner_compensation_policy',
+  
+  // OPERATIONS DOCUMENTS
+  BUSINESS_PROCESS_INVENTORY: 'business_process_inventory',
+  SOP_TEMPLATE: 'sop_template',
+  ROLE_RESPONSIBILITY_MATRIX: 'role_responsibility_matrix',
+  VENDOR_MANAGEMENT_CHECKLIST: 'vendor_management_checklist',
+  CUSTOMER_INTAKE_PROCESS: 'customer_intake_process',
+  
+  // COMPLIANCE DOCUMENTS
+  ANNUAL_COMPLIANCE_CALENDAR: 'annual_compliance_calendar',
+  LICENSE_PERMIT_TRACKER: 'license_permit_tracker',
+  INTERNAL_CONTROLS_CHECKLIST: 'internal_controls_checklist',
+  DATA_PRIVACY_POLICY: 'data_privacy_policy',
+  INFORMATION_SECURITY_POLICY: 'information_security_policy',
+  
+  // IMPROVEMENT DOCUMENTS (Lean Six Sigma)
+  SIPOC_DIAGRAM: 'sipoc_diagram',
+  DMAIC_PROJECT_CHARTER: 'dmaic_project_charter',
+  KPI_DEFINITIONS: 'kpi_definitions',
+  ROOT_CAUSE_ANALYSIS: 'root_cause_analysis',
+  CONTROL_PLAN: 'control_plan',
+  
+  // Legacy / Other
   BUSINESS_PLAN: 'business_plan',
   MEMBER_CERTIFICATE: 'member_certificate',
   RESOLUTION: 'resolution',
-  // Other
   CUSTOM: 'custom',
 } as const;
 
 export type DocumentTypeValue = (typeof DocumentType)[keyof typeof DocumentType];
+
+// Map document types to categories
+export const DocumentTypeToCategory: Record<DocumentTypeValue, DocumentCategoryType> = {
+  // Formation
+  [DocumentType.ARTICLES_OF_ORGANIZATION]: DocumentCategory.FORMATION,
+  [DocumentType.ARTICLES_OF_INCORPORATION]: DocumentCategory.FORMATION,
+  [DocumentType.OPERATING_AGREEMENT]: DocumentCategory.FORMATION,
+  [DocumentType.BYLAWS]: DocumentCategory.FORMATION,
+  [DocumentType.REGISTERED_AGENT_CONSENT]: DocumentCategory.FORMATION,
+  [DocumentType.INITIAL_MEMBER_RESOLUTION]: DocumentCategory.FORMATION,
+  [DocumentType.INITIAL_BOARD_RESOLUTION]: DocumentCategory.FORMATION,
+  [DocumentType.BUSINESS_ADDRESS_AFFIDAVIT]: DocumentCategory.FORMATION,
+  [DocumentType.STATE_FILING_CONFIRMATION]: DocumentCategory.FORMATION,
+  
+  // Governance
+  [DocumentType.BANKING_RESOLUTION]: DocumentCategory.GOVERNANCE,
+  [DocumentType.OFFICER_APPOINTMENT_RESOLUTION]: DocumentCategory.GOVERNANCE,
+  [DocumentType.MANAGER_APPOINTMENT_RESOLUTION]: DocumentCategory.GOVERNANCE,
+  [DocumentType.CONFLICT_OF_INTEREST_POLICY]: DocumentCategory.GOVERNANCE,
+  [DocumentType.CODE_OF_CONDUCT]: DocumentCategory.GOVERNANCE,
+  [DocumentType.AMENDMENT_LOG]: DocumentCategory.GOVERNANCE,
+  
+  // Financial
+  [DocumentType.EIN_CONFIRMATION]: DocumentCategory.FINANCIAL,
+  [DocumentType.EIN_CONFIRMATION_RECORD]: DocumentCategory.FINANCIAL,
+  [DocumentType.SOS_FILING_CONFIRMATION]: DocumentCategory.FINANCIAL,
+  [DocumentType.CAPITAL_CONTRIBUTION_RECORD]: DocumentCategory.FINANCIAL,
+  [DocumentType.OWNERSHIP_LEDGER]: DocumentCategory.FINANCIAL,
+  [DocumentType.DISTRIBUTION_POLICY]: DocumentCategory.FINANCIAL,
+  [DocumentType.OWNER_COMPENSATION_POLICY]: DocumentCategory.FINANCIAL,
+  
+  // Operations
+  [DocumentType.BUSINESS_PROCESS_INVENTORY]: DocumentCategory.OPERATIONS,
+  [DocumentType.SOP_TEMPLATE]: DocumentCategory.OPERATIONS,
+  [DocumentType.ROLE_RESPONSIBILITY_MATRIX]: DocumentCategory.OPERATIONS,
+  [DocumentType.VENDOR_MANAGEMENT_CHECKLIST]: DocumentCategory.OPERATIONS,
+  [DocumentType.CUSTOMER_INTAKE_PROCESS]: DocumentCategory.OPERATIONS,
+  
+  // Compliance
+  [DocumentType.ANNUAL_COMPLIANCE_CALENDAR]: DocumentCategory.COMPLIANCE,
+  [DocumentType.LICENSE_PERMIT_TRACKER]: DocumentCategory.COMPLIANCE,
+  [DocumentType.INTERNAL_CONTROLS_CHECKLIST]: DocumentCategory.COMPLIANCE,
+  [DocumentType.DATA_PRIVACY_POLICY]: DocumentCategory.COMPLIANCE,
+  [DocumentType.INFORMATION_SECURITY_POLICY]: DocumentCategory.COMPLIANCE,
+  
+  // Improvement
+  [DocumentType.SIPOC_DIAGRAM]: DocumentCategory.IMPROVEMENT,
+  [DocumentType.DMAIC_PROJECT_CHARTER]: DocumentCategory.IMPROVEMENT,
+  [DocumentType.KPI_DEFINITIONS]: DocumentCategory.IMPROVEMENT,
+  [DocumentType.ROOT_CAUSE_ANALYSIS]: DocumentCategory.IMPROVEMENT,
+  [DocumentType.CONTROL_PLAN]: DocumentCategory.IMPROVEMENT,
+  
+  // Legacy / Other
+  [DocumentType.BUSINESS_PLAN]: DocumentCategory.OPERATIONS,
+  [DocumentType.MEMBER_CERTIFICATE]: DocumentCategory.FORMATION,
+  [DocumentType.RESOLUTION]: DocumentCategory.GOVERNANCE,
+  [DocumentType.CUSTOM]: DocumentCategory.OPERATIONS,
+};
+
+// Document priority by archetype
+export const DocumentPriorityByArchetype: Record<string, {
+  required: DocumentTypeValue[];
+  recommended: DocumentTypeValue[];
+}> = {
+  universal: {
+    required: [
+      DocumentType.ARTICLES_OF_ORGANIZATION,
+      DocumentType.OPERATING_AGREEMENT,
+      DocumentType.INITIAL_MEMBER_RESOLUTION,
+      DocumentType.EIN_CONFIRMATION_RECORD,
+      DocumentType.BUSINESS_PROCESS_INVENTORY,
+      DocumentType.ANNUAL_COMPLIANCE_CALENDAR,
+    ],
+    recommended: [
+      DocumentType.BANKING_RESOLUTION,
+      DocumentType.CAPITAL_CONTRIBUTION_RECORD,
+    ],
+  },
+  professional_services: {
+    required: [
+      DocumentType.SOP_TEMPLATE,
+      DocumentType.CUSTOMER_INTAKE_PROCESS,
+    ],
+    recommended: [
+      DocumentType.OWNER_COMPENSATION_POLICY,
+      DocumentType.CONFLICT_OF_INTEREST_POLICY,
+    ],
+  },
+  home_services: {
+    required: [
+      DocumentType.SOP_TEMPLATE,
+      DocumentType.LICENSE_PERMIT_TRACKER,
+    ],
+    recommended: [
+      DocumentType.INTERNAL_CONTROLS_CHECKLIST,
+      DocumentType.VENDOR_MANAGEMENT_CHECKLIST,
+    ],
+  },
+  ecommerce: {
+    required: [
+      DocumentType.DATA_PRIVACY_POLICY,
+      DocumentType.VENDOR_MANAGEMENT_CHECKLIST,
+    ],
+    recommended: [
+      DocumentType.INTERNAL_CONTROLS_CHECKLIST,
+      DocumentType.SOP_TEMPLATE,
+    ],
+  },
+  food_business: {
+    required: [
+      DocumentType.LICENSE_PERMIT_TRACKER,
+      DocumentType.SOP_TEMPLATE,
+    ],
+    recommended: [
+      DocumentType.VENDOR_MANAGEMENT_CHECKLIST,
+      DocumentType.INTERNAL_CONTROLS_CHECKLIST,
+    ],
+  },
+  nonprofit: {
+    required: [
+      DocumentType.CONFLICT_OF_INTEREST_POLICY,
+      DocumentType.BYLAWS,
+    ],
+    recommended: [
+      DocumentType.CODE_OF_CONDUCT,
+      DocumentType.INTERNAL_CONTROLS_CHECKLIST,
+    ],
+  },
+  healthcare_adjacent: {
+    required: [
+      DocumentType.DATA_PRIVACY_POLICY,
+      DocumentType.INFORMATION_SECURITY_POLICY,
+    ],
+    recommended: [
+      DocumentType.SOP_TEMPLATE,
+      DocumentType.INTERNAL_CONTROLS_CHECKLIST,
+    ],
+  },
+};
 
 export const DocumentStatus = {
   DRAFT: 'draft',

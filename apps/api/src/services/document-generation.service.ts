@@ -230,8 +230,16 @@ class DocumentGenerationService {
    */
   async getAvailableTemplates(
     businessType?: string,
-    state?: string
-  ): Promise<Array<{ type: string; name: string; description?: string }>> {
+    state?: string,
+    archetype?: string
+  ): Promise<Array<{ 
+    type: string; 
+    name: string; 
+    description?: string;
+    category: string;
+    priority: string;
+    advisorReviewRequired: boolean;
+  }>> {
     const filter: any = {
       isActive: true,
       isLatestVersion: true,
@@ -242,22 +250,61 @@ class DocumentGenerationService {
     }
 
     const templates = await DocumentTemplate.find(filter)
-      .select('type name description')
+      .select('type name description category priority advisorReviewRequired applicableStates applicableArchetypes')
+      .sort({ category: 1, priority: -1, name: 1 })
       .lean();
 
-    // Filter by state if provided
+    // Filter by state and archetype if provided
     return templates
       .filter((t: any) => {
-        if (!state || !t.applicableStates || t.applicableStates.length === 0) {
-          return true;
+        // Filter by state
+        if (state && t.applicableStates && t.applicableStates.length > 0) {
+          if (!t.applicableStates.includes(state)) {
+            return false;
+          }
         }
-        return t.applicableStates.includes(state);
+        // Archetype filtering is optional - include if no archetype restriction or matches
+        if (archetype && t.applicableArchetypes && t.applicableArchetypes.length > 0) {
+          // Still include, but could be used for prioritization
+        }
+        return true;
       })
       .map((t: any) => ({
         type: t.type,
         name: t.name,
         description: t.description,
+        category: t.category || 'formation',
+        priority: t.priority || 'optional',
+        advisorReviewRequired: t.advisorReviewRequired || false,
       }));
+  }
+
+  /**
+   * Get templates organized by category
+   */
+  async getTemplatesByCategory(
+    businessType?: string,
+    state?: string
+  ): Promise<Record<string, Array<{
+    type: string;
+    name: string;
+    description?: string;
+    priority: string;
+    advisorReviewRequired: boolean;
+  }>>> {
+    const templates = await this.getAvailableTemplates(businessType, state);
+    
+    const byCategory: Record<string, typeof templates> = {};
+    
+    for (const template of templates) {
+      const cat = template.category;
+      if (!byCategory[cat]) {
+        byCategory[cat] = [];
+      }
+      byCategory[cat].push(template);
+    }
+    
+    return byCategory;
   }
 
   /**

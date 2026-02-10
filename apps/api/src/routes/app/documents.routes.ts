@@ -104,6 +104,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/templates', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.user?.tenantId;
+    const { grouped } = req.query;
     
     if (!tenantId) {
       return res.status(400).json({
@@ -115,16 +116,34 @@ router.get('/templates', async (req: Request, res: Response, next: NextFunction)
     // Get business profile to determine applicable templates
     const profile = await BusinessProfile.findOne({ tenantId }).lean();
     
-    const templates = await documentGenerationService.getAvailableTemplates(
-      profile?.businessType,
-      profile?.formationState
-    );
-    
-    res.json({
-      success: true,
-      data: templates,
-      meta: { timestamp: new Date().toISOString() },
-    });
+    if (grouped === 'true') {
+      // Return templates organized by category
+      const templatesByCategory = await documentGenerationService.getTemplatesByCategory(
+        profile?.businessType,
+        profile?.formationState
+      );
+      
+      res.json({
+        success: true,
+        data: {
+          categories: templatesByCategory,
+          categoryOrder: ['formation', 'governance', 'financial', 'operations', 'compliance', 'improvement'],
+        },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } else {
+      // Return flat list of templates
+      const templates = await documentGenerationService.getAvailableTemplates(
+        profile?.businessType,
+        profile?.formationState
+      );
+      
+      res.json({
+        success: true,
+        data: templates,
+        meta: { timestamp: new Date().toISOString() },
+      });
+    }
   } catch (error) {
     next(error);
   }

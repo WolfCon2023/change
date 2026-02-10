@@ -543,99 +543,23 @@ async function seedData(): Promise<void> {
   // 13. Create Document Templates
   // ==========================================================================
   console.log('   Creating document templates...');
-  const templates = await DocumentTemplate.create([
-    {
-      name: 'Articles of Organization - LLC',
-      description: 'Standard articles of organization template for Limited Liability Companies',
-      type: DocumentType.ARTICLES_OF_ORGANIZATION,
+  
+  // Import comprehensive templates
+  const { ALL_DOCUMENT_TEMPLATES } = await import('../data/document-templates.js');
+  
+  // Create all templates with the system admin as creator
+  const templates = await DocumentTemplate.create(
+    ALL_DOCUMENT_TEMPLATES.map(template => ({
+      ...template,
       version: 1,
       isLatestVersion: true,
-      content: `ARTICLES OF ORGANIZATION
-OF
-{{businessName}}
-
-A Limited Liability Company
-
-The undersigned, being a natural person of at least eighteen (18) years of age, hereby establishes a Limited Liability Company pursuant to the laws of the State of {{formationState}}.
-
-ARTICLE I - NAME
-The name of the Limited Liability Company is {{businessName}}.
-
-ARTICLE II - REGISTERED AGENT
-The name and address of the registered agent of the Limited Liability Company is:
-{{registeredAgentName}}
-{{registeredAgentAddress}}
-
-ARTICLE III - PURPOSE
-The purpose of the Limited Liability Company is to engage in any lawful business activity.
-
-ARTICLE IV - MANAGEMENT
-The Limited Liability Company shall be managed by its Members.
-
-IN WITNESS WHEREOF, the undersigned has executed these Articles of Organization on this {{date}}.
-
-_______________________
-{{signatoryName}}
-Organizer`,
-      mergeFields: [
-        { key: 'businessName', label: 'Business Name', source: 'business_profile', sourcePath: 'businessName', required: true },
-        { key: 'formationState', label: 'Formation State', source: 'business_profile', sourcePath: 'formationState', required: true },
-        { key: 'registeredAgentName', label: 'Registered Agent Name', source: 'business_profile', sourcePath: 'registeredAgent.name', required: true },
-        { key: 'registeredAgentAddress', label: 'Registered Agent Address', source: 'business_profile', sourcePath: 'registeredAgent.address', required: true },
-        { key: 'date', label: 'Date', source: 'custom', required: true },
-        { key: 'signatoryName', label: 'Signatory Name', source: 'person', sourcePath: 'fullName', required: true },
-      ],
-      applicableBusinessTypes: [BusinessType.LLC],
       isActive: true,
       createdBy: systemAdmin._id,
-    },
-    {
-      name: 'Operating Agreement - Single Member LLC',
-      description: 'Operating agreement template for single-member LLCs',
-      type: DocumentType.OPERATING_AGREEMENT,
-      version: 1,
-      isLatestVersion: true,
-      content: `OPERATING AGREEMENT
-OF
-{{businessName}}
-
-A {{formationState}} Limited Liability Company
-
-This Operating Agreement is entered into as of {{effectiveDate}} by the sole member named below.
-
-RECITALS
-The undersigned Member desires to form a limited liability company under the laws of the State of {{formationState}}.
-
-ARTICLE 1 - ORGANIZATION
-1.1 Formation. The Company was formed upon the filing of the Articles of Organization with the Secretary of State.
-1.2 Name. The name of the Company is {{businessName}}.
-1.3 Principal Office. The principal office is located at {{businessAddress}}.
-
-ARTICLE 2 - MEMBER
-2.1 Member. {{memberName}} is the sole Member of the Company.
-2.2 Ownership. The Member owns 100% of the Company.
-
-ARTICLE 3 - MANAGEMENT
-The Company shall be managed by its Member.
-
-IN WITNESS WHEREOF, the Member has executed this Operating Agreement.
-
-_______________________
-{{memberName}}
-Sole Member`,
-      mergeFields: [
-        { key: 'businessName', label: 'Business Name', source: 'business_profile', sourcePath: 'businessName', required: true },
-        { key: 'formationState', label: 'Formation State', source: 'business_profile', sourcePath: 'formationState', required: true },
-        { key: 'effectiveDate', label: 'Effective Date', source: 'custom', required: true },
-        { key: 'businessAddress', label: 'Business Address', source: 'business_profile', sourcePath: 'businessAddress', required: true },
-        { key: 'memberName', label: 'Member Name', source: 'person', sourcePath: 'fullName', required: true },
-      ],
-      applicableBusinessTypes: [BusinessType.LLC],
-      isActive: true,
-      createdBy: systemAdmin._id,
-    },
-  ]);
-  console.log(`   ✓ Document templates: ${templates.length} created`);
+    }))
+  );
+  console.log(`   ✓ Document templates: ${templates.length} created (${[
+    'Formation', 'Governance', 'Financial', 'Operations', 'Compliance', 'Improvement'
+  ].join(', ')} categories)`);
 
   // ==========================================================================
   // 14. Create Sample Audit Logs
