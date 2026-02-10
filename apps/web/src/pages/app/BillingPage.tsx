@@ -28,6 +28,7 @@ interface Subscription {
   currentPeriodEnd?: string;
   cancelAtPeriodEnd?: boolean;
   trialEnd?: string;
+  hasStripeCustomer?: boolean;
 }
 
 interface PlanLimits {
@@ -43,6 +44,7 @@ interface BillingData {
   subscription: Subscription;
   limits: PlanLimits;
   features: string[];
+  stripeConfigured?: boolean;
 }
 
 const STATUS_CONFIG = {
@@ -258,7 +260,7 @@ export function BillingPage() {
 
           {/* Actions */}
           <div className="mt-6 pt-6 border-t flex flex-wrap gap-3">
-            {subscription?.plan !== 'free' && (
+            {subscription?.plan !== 'free' && subscription?.hasStripeCustomer && billingData?.stripeConfigured && (
               <Button onClick={handleManageSubscription} disabled={portalLoading}>
                 {portalLoading ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -270,9 +272,9 @@ export function BillingPage() {
               </Button>
             )}
             <Button variant="outline" onClick={() => navigate('/pricing')}>
-              {subscription?.plan === 'free' ? 'Upgrade Plan' : 'Change Plan'}
+              {subscription?.plan === 'free' ? 'Upgrade Plan' : subscription?.hasStripeCustomer ? 'Change Plan' : 'Subscribe via Stripe'}
             </Button>
-            {subscription?.plan !== 'free' && !subscription?.cancelAtPeriodEnd && (
+            {subscription?.plan !== 'free' && subscription?.hasStripeCustomer && !subscription?.cancelAtPeriodEnd && (
               <Button
                 variant="ghost"
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -286,6 +288,17 @@ export function BillingPage() {
               </Button>
             )}
           </div>
+          
+          {/* Info for legacy subscriptions */}
+          {subscription?.plan !== 'free' && !subscription?.hasStripeCustomer && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Your subscription was created before our Stripe integration. To manage billing, 
+                update payment methods, or view invoices, please contact support or subscribe 
+                through our new payment system.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

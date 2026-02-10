@@ -54,9 +54,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           currentPeriodEnd: subscription.currentPeriodEnd,
           cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
           trialEnd: subscription.trialEnd,
+          hasStripeCustomer: !!subscription.stripeCustomerId,
         },
         limits: planConfig.limits,
         features: planConfig.features,
+        stripeConfigured: stripeService.isConfigured(),
       },
       meta: { timestamp: new Date().toISOString() },
     });
@@ -173,6 +175,18 @@ router.post('/portal', async (req: Request, res: Response, next: NextFunction) =
       return res.status(503).json({
         success: false,
         error: { code: 'SERVICE_UNAVAILABLE', message: 'Payment processing is not configured' },
+      });
+    }
+
+    // Check if tenant has a Stripe customer
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant?.subscription?.stripeCustomerId) {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          code: 'NO_STRIPE_CUSTOMER', 
+          message: 'No Stripe customer found. Please subscribe through the pricing page first.' 
+        },
       });
     }
 
