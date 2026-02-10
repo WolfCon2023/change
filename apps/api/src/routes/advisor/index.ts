@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { PrimaryRole } from '@change/shared';
-import { authenticate, ForbiddenError } from '../../middleware/index.js';
+import { authenticate, loadIamPermissions, ForbiddenError } from '../../middleware/index.js';
 import { 
   AdvisorAssignment, 
   BusinessProfile, 
@@ -32,6 +32,7 @@ const requireAdvisor = (req: Request, res: Response, next: NextFunction) => {
 router.get(
   '/dashboard',
   authenticate,
+  loadIamPermissions,
   requireAdvisor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -108,6 +109,7 @@ router.get(
 router.get(
   '/clients',
   authenticate,
+  loadIamPermissions,
   requireAdvisor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -237,6 +239,7 @@ router.get(
 router.get(
   '/clients/:tenantId',
   authenticate,
+  loadIamPermissions,
   requireAdvisor,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
