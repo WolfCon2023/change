@@ -191,7 +191,20 @@ class StripeService {
     // Get the price ID based on plan and interval
     const priceId = this.getPriceId(plan, interval);
     if (!priceId) {
-      throw new Error(`Price not configured for ${plan} ${interval}`);
+      // Log which price IDs are configured for debugging
+      console.error('Stripe price configuration:', {
+        plan,
+        interval,
+        configuredPrices: {
+          starterMonthly: config.stripe.prices.starterMonthly ? 'set' : 'missing',
+          starterAnnual: config.stripe.prices.starterAnnual ? 'set' : 'missing',
+          professionalMonthly: config.stripe.prices.professionalMonthly ? 'set' : 'missing',
+          professionalAnnual: config.stripe.prices.professionalAnnual ? 'set' : 'missing',
+          enterpriseMonthly: config.stripe.prices.enterpriseMonthly ? 'set' : 'missing',
+          enterpriseAnnual: config.stripe.prices.enterpriseAnnual ? 'set' : 'missing',
+        },
+      });
+      throw new Error(`Price not configured for ${plan} ${interval}. Please set STRIPE_${plan.toUpperCase()}_${interval.toUpperCase()}_PRICE_ID environment variable.`);
     }
 
     // Get or create customer

@@ -133,23 +133,34 @@ router.post(
       }
 
       // Create checkout session
-      const { sessionId, url } = await stripeService.createCheckoutSession(
-        tenantId,
-        user.email,
-        plan,
-        interval,
-        `${config.appUrl}/app/billing?success=true`,
-        `${config.appUrl}/app/billing?canceled=true`
-      );
+      try {
+        const { sessionId, url } = await stripeService.createCheckoutSession(
+          tenantId,
+          user.email,
+          plan,
+          interval,
+          `${config.appUrl}/app/billing?success=true`,
+          `${config.appUrl}/app/billing?canceled=true`
+        );
 
-      res.json({
-        success: true,
-        data: {
-          sessionId,
-          url,
-        },
-        meta: { timestamp: new Date().toISOString() },
-      });
+        res.json({
+          success: true,
+          data: {
+            sessionId,
+            url,
+          },
+          meta: { timestamp: new Date().toISOString() },
+        });
+      } catch (stripeError: any) {
+        console.error('Stripe checkout error:', stripeError.message);
+        return res.status(500).json({
+          success: false,
+          error: {
+            code: 'STRIPE_ERROR',
+            message: stripeError.message || 'Failed to create checkout session',
+          },
+        });
+      }
     } catch (error) {
       next(error);
     }
