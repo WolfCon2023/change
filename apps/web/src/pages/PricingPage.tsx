@@ -95,7 +95,7 @@ export function PricingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <img src="/logo.png" alt="CHANGE" className="h-10 w-10" />
+              <img src="/logo-v2.png" alt="CHANGE" className="h-10 w-10" />
               <span className="text-xl font-bold text-gray-900">CHANGE</span>
             </div>
             {isAuthenticated ? (
