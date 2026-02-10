@@ -550,6 +550,88 @@ router.get(
   }
 );
 
+/**
+ * POST /admin/seed-document-templates
+ * Seed new document templates (IT_ADMIN only)
+ */
+router.post(
+  '/seed-document-templates',
+  authenticate,
+  loadIamPermissions,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Only IT_ADMIN can seed templates
+      if (req.primaryRole !== PrimaryRole.IT_ADMIN) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Only IT Admins can seed document templates' },
+        });
+      }
+
+      // Dynamic import to avoid loading at startup
+      const { ALL_DOCUMENT_TEMPLATES } = await import('../../data/document-templates.js');
+      const { DocumentTemplate } = await import('../../db/models/index.js');
+
+      // Get existing template types
+      const existingTypes = await DocumentTemplate.distinct('type');
+      
+      // Filter out templates that already exist
+      const newTemplates = ALL_DOCUMENT_TEMPLATES.filter(
+        (t: any) => !existingTypes.includes(t.type)
+      );
+
+      if (newTemplates.length === 0) {
+        return res.json({
+          success: true,
+          data: {
+            message: 'All templates already exist',
+            existingCount: existingTypes.length,
+            newCount: 0,
+          },
+          meta: { timestamp: new Date().toISOString() },
+        });
+      }
+
+      // Update existing templates to have category if missing
+      const updatedExisting = await DocumentTemplate.updateMany(
+        { category: { $exists: false } },
+        { $set: { category: 'formation', priority: 'optional', advisorReviewRequired: false } }
+      );
+
+      // Create new templates
+      const templatesWithCreator = newTemplates.map((t: any) => ({
+        ...t,
+        version: 1,
+        isLatestVersion: true,
+        isActive: true,
+        createdBy: req.user!.userId,
+      }));
+
+      const created = await DocumentTemplate.insertMany(templatesWithCreator);
+
+      // Group by category for summary
+      const byCategory: Record<string, number> = {};
+      for (const t of created) {
+        byCategory[t.category] = (byCategory[t.category] || 0) + 1;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          message: `Successfully seeded ${created.length} new templates`,
+          existingCount: existingTypes.length,
+          newCount: created.length,
+          updatedExisting: updatedExisting.modifiedCount,
+          byCategory,
+        },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Mount sub-routes
 router.use(usersRoutes);
 router.use(rolesRoutes);
