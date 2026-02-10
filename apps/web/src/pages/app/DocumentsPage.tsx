@@ -24,12 +24,14 @@ import {
   Image,
   FileType,
   Edit,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { useDocuments, useCreateDocument, useDeleteDocument, useUpdateDocument, useUploadFile, type Document } from '../../lib/app-api';
 import { useAuthStore } from '../../stores/auth.store';
+import { DocumentGenerator } from '../../components/DocumentGenerator';
 
 // Document type configurations
 const DOCUMENT_TYPES = {
@@ -97,6 +99,7 @@ export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState<Document | null>(null);
   const [showEditModal, setShowEditModal] = useState<Document | null>(null);
   const [newDocument, setNewDocument] = useState({
@@ -287,6 +290,10 @@ export default function DocumentsPage() {
           <p className="text-gray-600 mt-1">Business documents and artifacts</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowGenerateModal(true)} className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
+            <Sparkles className="h-4 w-4 mr-2" />
+            Generate
+          </Button>
           <Button variant="outline" onClick={() => setShowUploadModal(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Upload File
@@ -815,6 +822,16 @@ export default function DocumentsPage() {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Document Generator Modal */}
+      {showGenerateModal && (
+        <DocumentGenerator 
+          onClose={() => setShowGenerateModal(false)}
+          onDocumentGenerated={() => {
+            // Optionally refresh the documents list
+          }}
+        />
       )}
     </div>
   );

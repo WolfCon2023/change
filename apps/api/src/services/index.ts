@@ -15,3 +15,4 @@ export {
 export { emailService } from './email.service.js';
 export { notificationService } from './notification.service.js';
 export { schedulerService } from './scheduler.service.js';
+export { documentGenerationService } from './document-generation.service.js';
