@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
+import mfaRoutes from './mfa.routes.js';
 import tenantRoutes from './tenant.routes.js';
 import adminRoutes from './admin/index.js';
 import appRoutes from './app/index.js';
@@ -17,6 +18,9 @@ router.use('/downloads', downloadsRoutes);
 
 // Authentication routes
 router.use('/auth', authRoutes);
+
+// MFA routes
+router.use('/mfa', mfaRoutes);
 
 // Tenant management (admin)
 router.use('/tenants', tenantRoutes);

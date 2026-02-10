@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import { loginRequestSchema, registerRequestSchema, refreshTokenRequestSchema } from '@change/shared';
 import { AuthService } from '../services/auth.service.js';
+import { mfaService } from '../services/mfa.service.js';
 import { validate, authenticate } from '../middleware/index.js';
 import { User } from '../db/models/index.js';
 import { UnauthorizedError, BadRequestError } from '../middleware/error-handler.js';
+import { config } from '../config/index.js';
 import type { Request, Response, NextFunction } from 'express';
 
 const router = Router();
@@ -13,6 +16,12 @@ const router = Router();
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+// MFA login validation schema
+const mfaLoginSchema = z.object({
+  mfaToken: z.string().min(1, 'MFA token is required'),
+  code: z.string().length(6, 'Code must be 6 digits').regex(/^\d+$/, 'Code must contain only digits'),
 });
 
 /**
@@ -46,7 +55,7 @@ router.post(
 
 /**
  * POST /auth/login
- * Login user
+ * Login user - supports MFA flow
  */
 router.post(
   '/login',
@@ -59,6 +68,33 @@ router.post(
         req.headers['user-agent']
       );
 
+      // Check if user has MFA enabled
+      const user = await User.findById(result.user.id);
+      if (user?.mfaEnabled) {
+        // Generate a short-lived MFA token
+        const mfaToken = jwt.sign(
+          { 
+            userId: result.user.id,
+            purpose: 'mfa_verification',
+          },
+          config.jwt.secret,
+          { expiresIn: '5m' } // 5 minutes to enter MFA code
+        );
+
+        return res.json({
+          success: true,
+          data: {
+            requiresMfa: true,
+            mfaToken,
+            message: 'Please enter your two-factor authentication code',
+          },
+          meta: {
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      // No MFA required, return full tokens
       res.json({
         success: true,
         data: {
@@ -66,6 +102,82 @@ router.post(
           accessToken: result.tokens.accessToken,
           refreshToken: result.tokens.refreshToken,
           expiresIn: result.tokens.expiresIn,
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /auth/login/mfa
+ * Complete login with MFA code
+ */
+router.post(
+  '/login/mfa',
+  validate(mfaLoginSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { mfaToken, code } = req.body;
+
+      // Verify MFA token
+      let decoded: { userId: string; purpose: string };
+      try {
+        decoded = jwt.verify(mfaToken, config.jwt.secret) as { userId: string; purpose: string };
+      } catch (err) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'MFA_TOKEN_EXPIRED', message: 'MFA session expired. Please login again.' },
+          meta: { timestamp: new Date().toISOString() },
+        });
+      }
+
+      if (decoded.purpose !== 'mfa_verification') {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'INVALID_TOKEN', message: 'Invalid MFA token' },
+          meta: { timestamp: new Date().toISOString() },
+        });
+      }
+
+      // Verify MFA code
+      const mfaResult = await mfaService.verifyMfaLogin(decoded.userId, code);
+      if (!mfaResult.success) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'INVALID_MFA_CODE', message: mfaResult.message },
+          meta: { timestamp: new Date().toISOString() },
+        });
+      }
+
+      // MFA verified, generate full tokens
+      const user = await User.findById(decoded.userId);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'USER_NOT_FOUND', message: 'User not found' },
+          meta: { timestamp: new Date().toISOString() },
+        });
+      }
+
+      // Update last login
+      user.lastLoginAt = new Date();
+      await user.save();
+
+      // Generate tokens
+      const tokens = AuthService.generateTokens(user);
+
+      res.json({
+        success: true,
+        data: {
+          user: user.toPublicJSON(),
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresIn: tokens.expiresIn,
         },
         meta: {
           timestamp: new Date().toISOString(),

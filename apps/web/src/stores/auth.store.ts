@@ -3,6 +3,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { UserPublic, UserRoleType } from '@change/shared';
 import { api } from '@/lib/api';
 
+// Login result can be either full auth or MFA challenge
+interface LoginResult {
+  requiresMfa?: boolean;
+  mfaToken?: string;
+  user?: UserPublic;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
 interface AuthState {
   user: UserPublic | null;
   accessToken: string | null;
@@ -12,7 +21,8 @@ interface AuthState {
   error: string | null;
 
   // Actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  loginWithMfa: (mfaToken: string, code: string) => Promise<void>;
   register: (data: {
     email: string;
     password: string;
@@ -23,6 +33,7 @@ interface AuthState {
   }) => Promise<void>;
   logout: () => void;
   refreshAuth: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -37,11 +48,48 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, password: string): Promise<LoginResult> => {
         set({ isLoading: true, error: null });
 
         try {
           const response = await api.post('/auth/login', { email, password });
+          const data = response.data.data;
+
+          // Check if MFA is required
+          if (data.requiresMfa) {
+            set({ isLoading: false });
+            return { requiresMfa: true, mfaToken: data.mfaToken };
+          }
+
+          const { user, accessToken, refreshToken } = data;
+
+          // Update API instance with new token
+          api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+          set({
+            user,
+            accessToken,
+            refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+
+          return { user, accessToken, refreshToken };
+        } catch (error: unknown) {
+          const message =
+            (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ||
+            'Login failed';
+          set({ isLoading: false, error: message });
+          throw new Error(message);
+        }
+      },
+
+      loginWithMfa: async (mfaToken: string, code: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const response = await api.post('/auth/login/mfa', { mfaToken, code });
           const { user, accessToken, refreshToken } = response.data.data;
 
           // Update API instance with new token
@@ -58,7 +106,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: unknown) {
           const message =
             (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ||
-            'Login failed';
+            'Invalid verification code';
           set({ isLoading: false, error: message });
           throw new Error(message);
         }
@@ -125,6 +173,17 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Refresh failed, logout
           get().logout();
+        }
+      },
+
+      refreshUser: async () => {
+        try {
+          const response = await api.get('/auth/me');
+          const user = response.data.data;
+          set({ user });
+        } catch {
+          // Ignore errors - user might not be authenticated
+          console.error('Failed to refresh user');
         }
       },
 

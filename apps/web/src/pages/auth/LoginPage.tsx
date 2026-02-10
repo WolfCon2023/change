@@ -10,14 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { Shield, ArrowLeft } from 'lucide-react';
 
 type LoginFormData = z.infer<typeof loginRequestSchema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuthStore();
+  const { login, loginWithMfa, isLoading } = useAuthStore();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  
+  // MFA state
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState<string | null>(null);
 
   const {
     register,
@@ -29,7 +36,15 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email!, data.password!);
+      const result = await login(data.email!, data.password!);
+      
+      // Check if MFA is required
+      if (result.requiresMfa && result.mfaToken) {
+        setMfaRequired(true);
+        setMfaToken(result.mfaToken);
+        return;
+      }
+      
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
@@ -43,6 +58,91 @@ export function LoginPage() {
       });
     }
   };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMfaError(null);
+
+    if (mfaCode.length !== 6) {
+      setMfaError('Please enter a 6-digit code');
+      return;
+    }
+
+    try {
+      await loginWithMfa(mfaToken!, mfaCode);
+      toast({
+        title: 'Welcome back!',
+        description: 'You have successfully logged in.',
+      });
+      navigate('/dashboard');
+    } catch (error) {
+      setMfaError(error instanceof Error ? error.message : 'Invalid verification code');
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setMfaRequired(false);
+    setMfaToken(null);
+    setMfaCode('');
+    setMfaError(null);
+  };
+
+  // MFA verification step
+  if (mfaRequired) {
+    return (
+      <Card className="w-full">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl flex items-center">
+            <Shield className="h-6 w-6 mr-2 text-blue-600" />
+            Two-Factor Authentication
+          </CardTitle>
+          <CardDescription>
+            Enter the 6-digit code from your authenticator app
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleMfaSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mfaCode">Verification Code</Label>
+              <Input
+                id="mfaCode"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="000000"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                className="text-center text-2xl tracking-widest font-mono"
+                autoFocus
+              />
+            </div>
+            {mfaError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                {mfaError}
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Open your authenticator app (Google Authenticator, Authy, etc.) and enter the code shown.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full" isLoading={isLoading} disabled={mfaCode.length !== 6}>
+              Verify
+            </Button>
+            <button
+              type="button"
+              onClick={handleBackToLogin}
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center justify-center"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to login
+            </button>
+          </CardFooter>
+        </form>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">

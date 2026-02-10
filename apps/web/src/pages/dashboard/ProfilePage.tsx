@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MfaSetup } from '@/components/MfaSetup';
 import { formatRole, formatDateTime } from '@/lib/utils';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, Bell, Mail, Calendar, FileText, Megaphone } from 'lucide-react';
 import axios from 'axios';
+import { api } from '@/lib/api';
 
 interface NotificationPreferences {
   emailNotifications: boolean;
@@ -17,7 +19,7 @@ interface NotificationPreferences {
 }
 
 export function ProfilePage() {
-  const { user, accessToken } = useAuthStore();
+  const { user, accessToken, refreshUser } = useAuthStore();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -26,6 +28,10 @@ export function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [changeResult, setChangeResult] = useState<{ success: boolean; message: string } | null>(null);
+  
+  // MFA status state
+  const [mfaStatus, setMfaStatus] = useState({ enabled: false, enforced: false });
+  const [isLoadingMfa, setIsLoadingMfa] = useState(true);
   
   // Notification preferences state
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
@@ -40,6 +46,24 @@ export function ProfilePage() {
   const [prefsResult, setPrefsResult] = useState<{ success: boolean; message: string } | null>(null);
   
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+  
+  // Load MFA status on mount
+  useEffect(() => {
+    const loadMfaStatus = async () => {
+      try {
+        const response = await api.get('/mfa/status');
+        setMfaStatus(response.data.data);
+      } catch (err) {
+        console.error('Failed to load MFA status:', err);
+      } finally {
+        setIsLoadingMfa(false);
+      }
+    };
+    
+    if (accessToken) {
+      loadMfaStatus();
+    }
+  }, [accessToken]);
   
   // Load notification preferences on mount
   useEffect(() => {
@@ -61,6 +85,20 @@ export function ProfilePage() {
       loadPreferences();
     }
   }, [accessToken, API_URL]);
+  
+  // Reload MFA status after changes
+  const handleMfaStatusChange = async () => {
+    try {
+      const response = await api.get('/mfa/status');
+      setMfaStatus(response.data.data);
+      // Refresh user data in auth store
+      if (refreshUser) {
+        refreshUser();
+      }
+    } catch (err) {
+      console.error('Failed to reload MFA status:', err);
+    }
+  };
   
   const handleTogglePreference = async (key: keyof NotificationPreferences) => {
     const newValue = !notifPrefs[key];
@@ -324,6 +362,15 @@ export function ProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Two-Factor Authentication */}
+      {!isLoadingMfa && (
+        <MfaSetup
+          mfaEnabled={mfaStatus.enabled}
+          mfaEnforced={mfaStatus.enforced}
+          onStatusChange={handleMfaStatusChange}
+        />
+      )}
 
       {/* Notification Preferences Card */}
       <Card>
