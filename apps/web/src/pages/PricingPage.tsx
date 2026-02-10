@@ -92,22 +92,22 @@ export function PricingPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <img src="/logo-v2.png" alt="CHANGE" className="h-10 w-10" />
-              <span className="text-xl font-bold text-gray-900">CHANGE</span>
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <img src="/logo-v2.png" alt="CHANGE" className="h-8 w-8 sm:h-10 sm:w-10" />
+              <span className="text-lg sm:text-xl font-bold text-gray-900">CHANGE</span>
             </div>
             {isAuthenticated ? (
-              <Button variant="outline" onClick={() => navigate('/app')}>
-                Back to Dashboard
+              <Button variant="outline" size="sm" onClick={() => navigate('/app')}>
+                <span className="hidden sm:inline">Back to </span>Dashboard
               </Button>
             ) : (
-              <div className="space-x-3">
-                <Button variant="outline" onClick={() => navigate('/login')}>
+              <div className="flex space-x-2 sm:space-x-3">
+                <Button variant="outline" size="sm" onClick={() => navigate('/login')}>
                   Sign In
                 </Button>
-                <Button onClick={() => navigate('/register')}>
+                <Button size="sm" onClick={() => navigate('/register')} className="hidden sm:inline-flex">
                   Get Started
                 </Button>
               </div>
@@ -117,16 +117,16 @@ export function PricingPage() {
       </div>
 
       {/* Hero */}
-      <div className="py-16 px-4 text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+      <div className="py-10 sm:py-16 px-4 text-center">
+        <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
           Simple, transparent pricing
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+        <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto mb-6 sm:mb-8">
           Choose the plan that's right for your business. All plans include a 7-day free trial.
         </p>
 
         {/* Interval Toggle */}
-        <div className="inline-flex items-center bg-gray-100 rounded-full p-1 mb-12">
+        <div className="inline-flex items-center bg-gray-100 rounded-full p-1 mb-8 sm:mb-12">
           <button
             className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
               interval === 'monthly'
@@ -151,12 +151,12 @@ export function PricingPage() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8 px-4">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
           {PLANS.map((plan) => (
             <div
               key={plan.id}
               className={`relative bg-white rounded-2xl shadow-lg overflow-hidden ${
-                plan.popular ? 'ring-2 ring-blue-600' : ''
+                plan.popular ? 'ring-2 ring-blue-600 order-first sm:order-none' : ''
               }`}
             >
               {plan.popular && (
@@ -164,16 +164,16 @@ export function PricingPage() {
                   Most Popular
                 </div>
               )}
-              <div className={`p-8 ${plan.popular ? 'pt-12' : ''}`}>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                <p className="text-gray-600 mb-6">{plan.description}</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">
+              <div className={`p-6 sm:p-8 ${plan.popular ? 'pt-10 sm:pt-12' : ''}`}>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{plan.description}</p>
+                <div className="mb-4 sm:mb-6">
+                  <span className="text-3xl sm:text-4xl font-bold text-gray-900">
                     ${interval === 'monthly' ? plan.monthlyPrice : Math.round(plan.annualPrice / 12)}
                   </span>
                   <span className="text-gray-600">/month</span>
                   {interval === 'annual' && (
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
                       ${plan.annualPrice} billed annually
                     </p>
                   )}
@@ -201,16 +201,16 @@ export function PricingPage() {
 
       {/* Feature Comparison */}
       <div className="max-w-5xl mx-auto px-4 pb-20">
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-8">
           Compare Features
         </h2>
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <table className="w-full">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden overflow-x-auto">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b">
-                <th className="py-4 px-6 text-left font-medium text-gray-900">Feature</th>
+                <th className="py-3 sm:py-4 px-4 sm:px-6 text-left font-medium text-gray-900 text-sm sm:text-base">Feature</th>
                 {PLANS.map((plan) => (
-                  <th key={plan.id} className="py-4 px-6 text-center font-medium text-gray-900">
+                  <th key={plan.id} className="py-3 sm:py-4 px-3 sm:px-6 text-center font-medium text-gray-900 text-sm sm:text-base">
                     {plan.name}
                   </th>
                 ))}
@@ -219,17 +219,17 @@ export function PricingPage() {
             <tbody>
               {FEATURES.map((feature, index) => (
                 <tr key={feature.name} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                  <td className="py-4 px-6 text-gray-700">{feature.name}</td>
+                  <td className="py-3 sm:py-4 px-4 sm:px-6 text-gray-700 text-sm sm:text-base">{feature.name}</td>
                   {(['starter', 'professional', 'enterprise'] as const).map((planId) => (
-                    <td key={planId} className="py-4 px-6 text-center">
+                    <td key={planId} className="py-3 sm:py-4 px-3 sm:px-6 text-center">
                       {typeof feature[planId] === 'boolean' ? (
                         feature[planId] ? (
-                          <Check className="h-5 w-5 text-green-600 mx-auto" />
+                          <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mx-auto" />
                         ) : (
-                          <X className="h-5 w-5 text-gray-300 mx-auto" />
+                          <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 mx-auto" />
                         )
                       ) : (
-                        <span className="text-gray-900 font-medium">{feature[planId]}</span>
+                        <span className="text-gray-900 font-medium text-sm sm:text-base">{feature[planId]}</span>
                       )}
                     </td>
                   ))}

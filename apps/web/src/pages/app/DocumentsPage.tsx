@@ -284,23 +284,23 @@ export default function DocumentsPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-          <p className="text-gray-600 mt-1">Business documents and artifacts</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Documents</h1>
+          <p className="text-sm text-gray-600 mt-1">Business documents and artifacts</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowGenerateModal(true)} className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setShowGenerateModal(true)} className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 flex-1 sm:flex-none">
             <Sparkles className="h-4 w-4 mr-2" />
             Generate
           </Button>
-          <Button variant="outline" onClick={() => setShowUploadModal(true)}>
+          <Button variant="outline" onClick={() => setShowUploadModal(true)} className="flex-1 sm:flex-none">
             <Upload className="h-4 w-4 mr-2" />
-            Upload File
+            Upload
           </Button>
-          <Button onClick={() => setShowAddModal(true)}>
+          <Button onClick={() => setShowAddModal(true)} className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4 mr-2" />
-            Add Note
+            Note
           </Button>
         </div>
       </div>

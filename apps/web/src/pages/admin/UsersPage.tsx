@@ -333,14 +333,14 @@ export function UsersPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-500">Manage user accounts and access</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Users</h1>
+          <p className="text-sm text-gray-500">Manage user accounts and access</p>
         </div>
         <PermissionGate permission={IamPermission.IAM_USER_WRITE}>
-          <Button onClick={openCreateModal}>
+          <Button onClick={openCreateModal} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add User
           </Button>
@@ -348,8 +348,8 @@ export function UsersPage() {
       </div>
 
       {/* Search */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex items-center">
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search users..."

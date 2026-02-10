@@ -158,14 +158,14 @@ export function DataTable<T>({
       </div>
 
       {pagination && pagination.total > 0 && (
-        <div className="px-4 py-3 border-t flex items-center justify-between">
-          <div className="text-sm text-gray-500">
+        <div className="px-4 py-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs sm:text-sm text-gray-500 order-2 sm:order-1">
             Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
             {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-            {pagination.total} results
+            {pagination.total}
           </div>
           {pagination.totalPages > 1 && (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 order-1 sm:order-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -174,8 +174,8 @@ export function DataTable<T>({
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm text-gray-600">
-                Page {pagination.page} of {pagination.totalPages}
+              <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                {pagination.page} / {pagination.totalPages}
               </span>
               <Button
                 variant="outline"

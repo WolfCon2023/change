@@ -185,43 +185,43 @@ export default function TasksPage() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
-          <p className="text-gray-600 mt-1">Manage your business tasks</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tasks</h1>
+          <p className="text-sm text-gray-600 mt-1">Manage your business tasks</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
+        <Button onClick={() => setShowAddModal(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
       </div>
       
       {/* Stats cards */}
-      <div className="grid gap-3 grid-cols-4 mb-6">
+      <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-4 mb-6">
         <div className="bg-white border rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-xs text-gray-600">Total</div>
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-amber-700">{stats.pending + stats.inProgress}</div>
+          <div className="text-xl sm:text-2xl font-bold text-amber-700">{stats.pending + stats.inProgress}</div>
           <div className="text-xs text-amber-600">In Progress</div>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-700">{stats.completed}</div>
+          <div className="text-xl sm:text-2xl font-bold text-green-700">{stats.completed}</div>
           <div className="text-xs text-green-600">Completed</div>
         </div>
         <div className={`rounded-lg p-3 text-center ${stats.overdue > 0 ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border'}`}>
-          <div className={`text-2xl font-bold ${stats.overdue > 0 ? 'text-red-700' : 'text-gray-400'}`}>{stats.overdue}</div>
+          <div className={`text-xl sm:text-2xl font-bold ${stats.overdue > 0 ? 'text-red-700' : 'text-gray-400'}`}>{stats.overdue}</div>
           <div className={`text-xs ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-500'}`}>Overdue</div>
         </div>
       </div>
       
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex bg-gray-100 rounded-lg p-1">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div className="flex bg-gray-100 rounded-lg p-1 overflow-x-auto">
           <button
             onClick={() => handleFilterChange('all')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
               filter === 'all' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -229,7 +229,7 @@ export default function TasksPage() {
           </button>
           <button
             onClick={() => handleFilterChange('pending')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
               filter === 'pending' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -237,7 +237,7 @@ export default function TasksPage() {
           </button>
           <button
             onClick={() => handleFilterChange('completed')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
               filter === 'completed' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -245,7 +245,7 @@ export default function TasksPage() {
           </button>
           <button
             onClick={() => handleFilterChange('overdue')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
               filter === 'overdue' ? 'bg-white shadow text-red-600' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -253,27 +253,30 @@ export default function TasksPage() {
           </button>
         </div>
         
-        <select
-          value={categoryFilter || ''}
-          onChange={(e) => handleCategoryChange(e.target.value || null)}
-          className="border rounded-md px-3 py-1.5 text-sm"
-        >
-          <option value="">All Categories</option>
-          {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-            <option key={key} value={key}>{config.label}</option>
-          ))}
-        </select>
-        
-        {(categoryFilter || filter !== 'all') && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => { handleFilterChange('all'); handleCategoryChange(null); }}
+        <div className="flex items-center gap-2">
+          <select
+            value={categoryFilter || ''}
+            onChange={(e) => handleCategoryChange(e.target.value || null)}
+            className="border rounded-md px-3 py-1.5 text-sm flex-1 sm:flex-none"
           >
-            Clear Filters
-            <X className="h-3 w-3 ml-1" />
-          </Button>
-        )}
+            <option value="">All Categories</option>
+            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
+              <option key={key} value={key}>{config.label}</option>
+            ))}
+          </select>
+          
+          {(categoryFilter || filter !== 'all') && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => { handleFilterChange('all'); handleCategoryChange(null); }}
+              className="whitespace-nowrap"
+            >
+              Clear
+              <X className="h-3 w-3 ml-1" />
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Tasks list */}
