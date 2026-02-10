@@ -3,16 +3,54 @@
  * IAM overview with key metrics
  */
 
-import { Users, Shield, Key, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { Users, Shield, Key, AlertTriangle, CheckCircle, Clock, Database, FileText, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 export function AdminDashboardPage() {
+  const [seedingTemplates, setSeedingTemplates] = useState(false);
+  const [seedResult, setSeedResult] = useState<{ success: boolean; message: string } | null>(null);
   const { context } = useAdminStore();
   const tenantId = context?.currentTenantId || '';
   const { data: dashboard, isLoading } = useAdminDashboard(tenantId);
+
+  const handleSeedTemplates = async () => {
+    setSeedingTemplates(true);
+    setSeedResult(null);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.post(
+        `${API_URL}/admin/seed-document-templates`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.success) {
+        const data = response.data.data;
+        setSeedResult({
+          success: true,
+          message: data.newCount > 0
+            ? `Successfully added ${data.newCount} new templates! Total: ${data.existingCount + data.newCount}`
+            : `All ${data.existingCount} templates already exist.`,
+        });
+      } else {
+        setSeedResult({ success: false, message: response.data.error?.message || 'Unknown error' });
+      }
+    } catch (error: any) {
+      setSeedResult({
+        success: false,
+        message: error.response?.data?.error?.message || error.message || 'Failed to seed templates',
+      });
+    } finally {
+      setSeedingTemplates(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -181,6 +219,56 @@ export function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* System Maintenance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center">
+            <Database className="h-5 w-5 text-blue-500 mr-2" />
+            System Maintenance
+          </CardTitle>
+          <CardDescription>Database and system administration tasks</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center">
+                <FileText className="h-5 w-5 text-gray-500 mr-3" />
+                <div>
+                  <p className="font-medium text-gray-900">Document Templates</p>
+                  <p className="text-sm text-gray-500">Seed new document templates to the database</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleSeedTemplates}
+                disabled={seedingTemplates}
+                size="sm"
+              >
+                {seedingTemplates ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Seeding...
+                  </>
+                ) : (
+                  'Seed Templates'
+                )}
+              </Button>
+            </div>
+            {seedResult && (
+              <div className={`p-3 rounded-lg ${seedResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                <p className="text-sm flex items-center">
+                  {seedResult.success ? (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                  )}
+                  {seedResult.message}
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent Activity */}
       <Card>
