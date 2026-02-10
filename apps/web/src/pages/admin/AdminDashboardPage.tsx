@@ -10,9 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAdminDashboard } from '@/lib/admin-api';
 import { useAdminStore } from '@/stores/admin.store';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+import { api } from '@/lib/api';
 
 export function AdminDashboardPage() {
   const [seedingTemplates, setSeedingTemplates] = useState(false);
@@ -25,12 +23,7 @@ export function AdminDashboardPage() {
     setSeedingTemplates(true);
     setSeedResult(null);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.post(
-        `${API_URL}/admin/seed-document-templates`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post('/admin/seed-document-templates', {});
       if (response.data.success) {
         const data = response.data.data;
         setSeedResult({
