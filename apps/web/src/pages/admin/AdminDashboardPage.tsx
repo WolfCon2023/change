@@ -16,8 +16,9 @@ export function AdminDashboardPage() {
   const [seedingTemplates, setSeedingTemplates] = useState(false);
   const [seedResult, setSeedResult] = useState<{ success: boolean; message: string } | null>(null);
   const { context } = useAdminStore();
+  // Use currentTenantId - will be set by AdminLayout after /admin/me returns
   const tenantId = context?.currentTenantId || '';
-  const { data: dashboard, isLoading } = useAdminDashboard(tenantId);
+  const { data: dashboard, isLoading, error, isError } = useAdminDashboard(tenantId);
 
   const handleSeedTemplates = async () => {
     setSeedingTemplates(true);
@@ -49,6 +50,26 @@ export function AdminDashboardPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (isError || error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 mb-2">Error loading dashboard</p>
+        <p className="text-gray-500 text-sm">{(error as Error)?.message || 'Unknown error'}</p>
+      </div>
+    );
+  }
+
+  // Handle case where no tenant context is available yet
+  if (!tenantId) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500 mb-2">Loading tenant context...</p>
+        <p className="text-gray-400 text-sm">If this persists, please refresh the page.</p>
       </div>
     );
   }

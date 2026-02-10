@@ -133,10 +133,10 @@ const navItems: NavItem[] = [
 export function AdminLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const { setContext, hasPermission } = useAdminStore();
+  const { context, setContext, hasPermission } = useAdminStore();
   const { data: adminContext, isLoading } = useAdminContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  
   useEffect(() => {
     if (adminContext) {
       setContext({
@@ -153,7 +153,8 @@ export function AdminLayout() {
     navigate('/login');
   };
 
-  if (isLoading) {
+  // Show loading while admin context is being fetched or while store is being populated
+  if (isLoading || (!context && adminContext)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
