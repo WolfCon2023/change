@@ -19,10 +19,15 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  
+  // MFA state (stored here to persist across component remounts)
+  mfaPending: boolean;
+  mfaToken: string | null;
 
   // Actions
   login: (email: string, password: string) => Promise<LoginResult>;
-  loginWithMfa: (mfaToken: string, code: string) => Promise<void>;
+  loginWithMfa: (code: string) => Promise<void>;
+  clearMfaState: () => void;
   register: (data: {
     email: string;
     password: string;
@@ -47,9 +52,11 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      mfaPending: false,
+      mfaToken: null,
 
       login: async (email: string, password: string): Promise<LoginResult> => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, mfaPending: false, mfaToken: null });
 
         try {
           console.log('[AuthStore] Calling /auth/login API...');
@@ -59,8 +66,12 @@ export const useAuthStore = create<AuthState>()(
 
           // Check if MFA is required
           if (data.requiresMfa) {
-            console.log('[AuthStore] MFA required, returning mfaToken');
-            set({ isLoading: false });
+            console.log('[AuthStore] MFA required, storing mfaToken in state');
+            set({ 
+              isLoading: false, 
+              mfaPending: true, 
+              mfaToken: data.mfaToken 
+            });
             return { requiresMfa: true, mfaToken: data.mfaToken };
           }
 
@@ -85,12 +96,17 @@ export const useAuthStore = create<AuthState>()(
           const message =
             (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ||
             'Login failed';
-          set({ isLoading: false, error: message });
+          set({ isLoading: false, error: message, mfaPending: false, mfaToken: null });
           throw new Error(message);
         }
       },
 
-      loginWithMfa: async (mfaToken: string, code: string) => {
+      loginWithMfa: async (code: string) => {
+        const { mfaToken } = get();
+        if (!mfaToken) {
+          throw new Error('No MFA token available');
+        }
+        
         set({ isLoading: true, error: null });
 
         try {
@@ -107,6 +123,8 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
             error: null,
+            mfaPending: false,
+            mfaToken: null,
           });
         } catch (error: unknown) {
           const message =
@@ -115,6 +133,10 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false, error: message });
           throw new Error(message);
         }
+      },
+      
+      clearMfaState: () => {
+        set({ mfaPending: false, mfaToken: null, error: null });
       },
 
       register: async (data) => {

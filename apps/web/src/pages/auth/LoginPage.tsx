@@ -16,13 +16,9 @@ type LoginFormData = z.infer<typeof loginRequestSchema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, loginWithMfa, isLoading } = useAuthStore();
+  const { login, loginWithMfa, isLoading, mfaPending, clearMfaState } = useAuthStore();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  
-  // MFA state
-  const [mfaRequired, setMfaRequired] = useState(false);
-  const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState<string | null>(null);
 
@@ -41,13 +37,10 @@ export function LoginPage() {
       const result = await login(data.email!, data.password!);
       console.log('[Login] Result:', JSON.stringify(result));
       
-      // Check if MFA is required
-      if (result && result.requiresMfa && result.mfaToken) {
-        console.log('[Login] MFA required, setting state...');
-        console.log('[Login] mfaToken value:', result.mfaToken);
-        setMfaRequired(true);
-        setMfaToken(result.mfaToken);
-        console.log('[Login] State set, returning from onSubmit');
+      // If MFA is required, the store will set mfaPending = true
+      // The component will re-render and show the MFA form
+      if (result && result.requiresMfa) {
+        console.log('[Login] MFA required, store should have mfaPending=true now');
         return;
       }
       
@@ -79,7 +72,7 @@ export function LoginPage() {
     }
 
     try {
-      await loginWithMfa(mfaToken!, mfaCode);
+      await loginWithMfa(mfaCode);
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
@@ -91,17 +84,16 @@ export function LoginPage() {
   };
 
   const handleBackToLogin = () => {
-    setMfaRequired(false);
-    setMfaToken(null);
+    clearMfaState();
     setMfaCode('');
     setMfaError(null);
   };
 
-  // Debug: Log current state on every render
-  console.log('[Login] Render - mfaRequired:', mfaRequired, 'mfaToken:', mfaToken ? 'SET' : 'NULL');
+  // Debug logging
+  console.log('[Login] Render - mfaPending:', mfaPending);
 
-  // MFA verification step
-  if (mfaRequired) {
+  // MFA verification step - use store state instead of local state
+  if (mfaPending) {
     console.log('[Login] Rendering MFA form');
     return (
       <Card className="w-full">
