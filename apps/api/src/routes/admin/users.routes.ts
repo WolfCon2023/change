@@ -264,17 +264,12 @@ router.get(
       const { tenantId, userId } = req.params;
 
       // Build query based on role
-      // IT_ADMIN can view platform users (no tenantId) or tenant users
+      // IT_ADMIN can view ANY user in the system
+      // Others can only view users in their tenant
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        // IT_ADMIN can view any user
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
@@ -413,17 +408,12 @@ router.put(
       }
 
       // Build query based on role
-      // IT_ADMIN can update platform users (no tenantId) or tenant users
+      // IT_ADMIN can update ANY user in the system
+      // Others can only update users in their tenant
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        // IT_ADMIN can update any user
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
@@ -532,16 +522,10 @@ router.post(
       const { tenantId, userId } = req.params;
 
       // Build query based on role
+      // IT_ADMIN can reset password for ANY user
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
@@ -600,16 +584,10 @@ router.post(
       const { iamRoleIds } = req.body;
 
       // Build query based on role
+      // IT_ADMIN can set roles for ANY user
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
@@ -678,16 +656,10 @@ router.post(
       const { groupIds } = req.body;
 
       // Build query based on role
+      // IT_ADMIN can set groups for ANY user
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
@@ -765,16 +737,10 @@ router.post(
       const { reason } = req.body;
 
       // Build query based on role
+      // IT_ADMIN can lock ANY user
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
@@ -824,16 +790,10 @@ router.post(
       const { tenantId, userId } = req.params;
 
       // Build query based on role
+      // IT_ADMIN can unlock ANY user
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
@@ -880,16 +840,10 @@ router.delete(
       const { tenantId, userId } = req.params;
 
       // Build query based on role
+      // IT_ADMIN can delete ANY user
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        query = {
-          _id: userId,
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        query = { _id: userId };
       } else {
         query = { _id: userId, tenantId: tenantId };
       }
