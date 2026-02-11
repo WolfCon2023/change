@@ -18,6 +18,7 @@ import documentsRoutes from './documents.routes.js';
 import tasksRoutes from './tasks.routes.js';
 import uploadsRoutes from './uploads.routes.js';
 import billingRoutes from './billing.routes.js';
+import analyticsRoutes from './analytics.routes.js';
 
 const router = Router();
 
@@ -34,6 +35,7 @@ router.use('/documents', documentsRoutes);
 router.use('/tasks', tasksRoutes);
 router.use('/uploads', uploadsRoutes);
 router.use('/billing', billingRoutes);
+router.use('/analytics', analyticsRoutes);
 
 // Health check for app routes
 router.get('/health', (_req: Request, res: Response) => {

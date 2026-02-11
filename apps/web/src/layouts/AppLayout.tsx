@@ -23,6 +23,7 @@ import {
   Settings,
   Users,
   CreditCard,
+  PieChart,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/auth.store';
@@ -36,6 +37,7 @@ const navItems = [
   { path: '/app/formation', label: 'Formation', icon: FileText },
   { path: '/app/operations', label: 'Operations', icon: BarChart3 },
   { path: '/app/dashboards', label: 'Dashboards', icon: BarChart3 },
+  { path: '/app/analytics', label: 'Analytics', icon: PieChart },
   { path: '/app/tasks', label: 'Tasks', icon: ClipboardList },
   { path: '/app/documents', label: 'Documents', icon: FileText },
   { path: '/app/billing', label: 'Billing', icon: CreditCard },

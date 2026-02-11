@@ -55,6 +55,7 @@ import {
   DashboardsPage,
 } from '@/pages/app';
 import { BillingPage } from '@/pages/app/BillingPage';
+import { AnalyticsPage } from '@/pages/app/AnalyticsPage';
 
 // Pricing Page (public)
 import { PricingPage } from '@/pages/PricingPage';
@@ -231,6 +232,7 @@ function App() {
           <Route path="tasks" element={<TasksPage />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="dashboards" element={<DashboardsPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
