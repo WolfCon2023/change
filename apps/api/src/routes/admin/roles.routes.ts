@@ -88,6 +88,7 @@ router.get(
 /**
  * GET /admin/tenants/:tenantId/roles
  * List roles for a tenant (includes global roles)
+ * IT_ADMIN sees ALL roles across ALL tenants
  */
 router.get(
   '/tenants/:tenantId/roles',
@@ -97,19 +98,23 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { tenantId } = req.params;
+      const isItAdmin = req.primaryRole === PrimaryRole.IT_ADMIN;
       const page = parseInt(req.query.page as string) || PaginationDefaults.PAGE;
       const limit = Math.min(
         parseInt(req.query.limit as string) || PaginationDefaults.LIMIT,
         PaginationDefaults.MAX_LIMIT
       );
 
-      const filter = {
-        $or: [
-          { tenantId },
-          { tenantId: { $exists: false } },
-          { tenantId: null },
-        ],
-      };
+      // IT_ADMIN sees ALL roles, others see tenant + global roles
+      const filter = isItAdmin
+        ? {}
+        : {
+            $or: [
+              { tenantId },
+              { tenantId: { $exists: false } },
+              { tenantId: null },
+            ],
+          };
 
       const skip = (page - 1) * limit;
 

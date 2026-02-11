@@ -152,19 +152,13 @@ router.get(
       const sortOrder = req.query.sortOrder as string | undefined;
 
       // Build base filter
-      // IT_ADMIN can see all users (platform users without tenantId + tenant users)
+      // IT_ADMIN can see ALL users across ALL tenants
       // Others only see their tenant's users
       let baseFilter: Record<string, unknown>;
       
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        // Show users from this tenant OR platform users (no tenantId)
-        baseFilter = {
-          $or: [
-            { tenantId: tenantId },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        // IT_ADMIN sees ALL users in the system (all tenants + platform users)
+        baseFilter = {};
       } else {
         baseFilter = { tenantId: tenantId };
       }

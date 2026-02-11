@@ -64,18 +64,13 @@ router.get(
       const search = req.query.search as string;
 
       // Build base filter
-      // IT_ADMIN can see tenant groups AND platform groups
+      // IT_ADMIN sees ALL groups across ALL tenants
+      // Others only see their tenant's groups
       let baseFilter: Record<string, unknown>;
       
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
-        baseFilter = {
-          $or: [
-            { tenantId: tenantId },
-            { isPlatformGroup: true },
-            { tenantId: { $exists: false } },
-            { tenantId: null },
-          ],
-        };
+        // IT_ADMIN sees ALL groups
+        baseFilter = {};
       } else {
         baseFilter = { tenantId: tenantId };
       }

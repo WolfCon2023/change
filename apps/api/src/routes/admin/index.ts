@@ -108,13 +108,14 @@ router.get(
       const primaryRole = req.primaryRole;
       const isItAdmin = primaryRole === PrimaryRole.IT_ADMIN;
 
-      // For IT_ADMIN, include platform-level entities (those without tenantId)
+      // For IT_ADMIN, see ALL entities across ALL tenants
+      // For others, only see their tenant's entities
       const userQuery = isItAdmin
-        ? { $or: [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }] }
+        ? {} // IT_ADMIN sees ALL users
         : { tenantId };
 
       const groupQuery = isItAdmin
-        ? { $or: [{ tenantId, isActive: true }, { isPlatformGroup: true, isActive: true }] }
+        ? { isActive: true } // IT_ADMIN sees ALL groups
         : { tenantId, isActive: true };
 
       // Get user stats
@@ -132,10 +133,11 @@ router.get(
         User.countDocuments({ ...userQuery, isActive: true }),
         User.countDocuments({ ...userQuery, lockedAt: { $exists: true } }),
         User.countDocuments({ ...userQuery, mfaEnabled: true }),
-        IamRole.countDocuments({
-          $or: [{ tenantId }, { tenantId: { $exists: false } }],
-          isActive: true,
-        }),
+        IamRole.countDocuments(
+          isItAdmin
+            ? { isActive: true } // IT_ADMIN sees ALL roles
+            : { $or: [{ tenantId }, { tenantId: { $exists: false } }], isActive: true }
+        ),
         Group.countDocuments(groupQuery),
         AccessRequest.countDocuments({ tenantId, status: 'pending' }),
         AccessReview.countDocuments({ tenantId, status: { $in: ['open', 'in_progress'] } }),
@@ -156,7 +158,7 @@ router.get(
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
       const apiKeyQuery = isItAdmin
-        ? { $or: [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }] }
+        ? {} // IT_ADMIN sees ALL API keys
         : { tenantId };
       
       const expiringApiKeys = await ApiKey.find({
@@ -171,7 +173,7 @@ router.get(
       // Get recent IAM changes
       const { IamAuditLog } = await import('../../db/models/index.js');
       const auditQuery = isItAdmin
-        ? { $or: [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }] }
+        ? {} // IT_ADMIN sees ALL audit logs
         : { tenantId };
       const recentIamChanges = await IamAuditLog.find(auditQuery)
         .sort({ createdAt: -1 })
