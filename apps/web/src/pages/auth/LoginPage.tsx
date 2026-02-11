@@ -35,26 +35,36 @@ export function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log('[Login] onSubmit called');
     try {
+      console.log('[Login] Attempting login...');
       const result = await login(data.email!, data.password!);
+      console.log('[Login] Result:', JSON.stringify(result));
       
       // Check if MFA is required
-      if (result.requiresMfa && result.mfaToken) {
+      if (result && result.requiresMfa && result.mfaToken) {
+        console.log('[Login] MFA required, setting state...');
+        console.log('[Login] mfaToken value:', result.mfaToken);
         setMfaRequired(true);
         setMfaToken(result.mfaToken);
+        console.log('[Login] State set, returning from onSubmit');
         return;
       }
       
+      console.log('[Login] No MFA required, navigating to dashboard');
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
       navigate('/dashboard');
     } catch (error) {
+      console.error('[Login] Error caught:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Invalid credentials';
+      console.error('[Login] Error message:', errorMessage);
       toast({
         variant: 'destructive',
         title: 'Login failed',
-        description: error instanceof Error ? error.message : 'Invalid credentials',
+        description: errorMessage,
       });
     }
   };
@@ -87,8 +97,12 @@ export function LoginPage() {
     setMfaError(null);
   };
 
+  // Debug: Log current state on every render
+  console.log('[Login] Render - mfaRequired:', mfaRequired, 'mfaToken:', mfaToken ? 'SET' : 'NULL');
+
   // MFA verification step
   if (mfaRequired) {
+    console.log('[Login] Rendering MFA form');
     return (
       <Card className="w-full">
         <CardHeader className="space-y-1">

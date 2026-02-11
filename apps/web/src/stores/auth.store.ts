@@ -52,16 +52,20 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          console.log('[AuthStore] Calling /auth/login API...');
           const response = await api.post('/auth/login', { email, password });
           const data = response.data.data;
+          console.log('[AuthStore] Login response data:', data);
 
           // Check if MFA is required
           if (data.requiresMfa) {
+            console.log('[AuthStore] MFA required, returning mfaToken');
             set({ isLoading: false });
             return { requiresMfa: true, mfaToken: data.mfaToken };
           }
 
           const { user, accessToken, refreshToken } = data;
+          console.log('[AuthStore] No MFA, setting authenticated state');
 
           // Update API instance with new token
           api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
@@ -77,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
 
           return { user, accessToken, refreshToken };
         } catch (error: unknown) {
+          console.error('[AuthStore] Login error:', error);
           const message =
             (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ||
             'Login failed';
