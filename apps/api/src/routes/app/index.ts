@@ -39,7 +39,23 @@ router.use('/analytics', analyticsRoutes);
 
 // Health check for app routes
 router.get('/health', (_req: Request, res: Response) => {
-  res.json({ success: true, message: 'App routes healthy' });
+  res.json({ 
+    success: true, 
+    message: 'App routes healthy',
+    version: '2025-02-12-v5',
+    routes: [
+      '/archetypes',
+      '/setup',
+      '/profile',
+      '/home',
+      '/reference',
+      '/documents',
+      '/tasks',
+      '/uploads',
+      '/billing',
+      '/analytics',
+    ],
+  });
 });
 
 export default router;

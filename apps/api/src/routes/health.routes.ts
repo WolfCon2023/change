@@ -8,6 +8,9 @@ const router = Router();
  * GET /health
  * Health check endpoint
  */
+// Build version for deployment verification
+const BUILD_VERSION = '2025-02-12-v5';
+
 router.get('/', (_req: Request, res: Response) => {
   const dbStatus = getConnectionStatus();
 
@@ -15,11 +18,16 @@ router.get('/', (_req: Request, res: Response) => {
     success: true,
     data: {
       status: 'healthy',
+      version: BUILD_VERSION,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: {
         connected: dbStatus.isConnected,
         readyState: dbStatus.readyState,
+      },
+      routes: {
+        analytics: true,
+        mfa: true,
       },
     },
   });
