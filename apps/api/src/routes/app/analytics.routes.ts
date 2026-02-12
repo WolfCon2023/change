@@ -5,10 +5,14 @@
 
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { authenticate, requireTenant } from '../../middleware/index.js';
 import { Task, Artifact, BusinessProfile, AuditLog } from '../../db/models/index.js';
 
 const router = Router();
+
+// Helper to convert tenantId string to ObjectId for aggregation queries
+const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
 
 /**
  * GET /app/analytics/overview
@@ -123,21 +127,24 @@ router.get(
       startDate.setDate(startDate.getDate() - days);
       startDate.setHours(0, 0, 0, 0);
 
+      // Convert tenantId to ObjectId for aggregation queries
+      const tenantObjectId = toObjectId(tenantId!);
+
       // Get task status breakdown
       const statusBreakdown = await Task.aggregate([
-        { $match: { tenantId: tenantId } },
+        { $match: { tenantId: tenantObjectId } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]);
 
       // Get task priority breakdown
       const priorityBreakdown = await Task.aggregate([
-        { $match: { tenantId: tenantId } },
+        { $match: { tenantId: tenantObjectId } },
         { $group: { _id: '$priority', count: { $sum: 1 } } },
       ]);
 
       // Get task category breakdown
       const categoryBreakdown = await Task.aggregate([
-        { $match: { tenantId: tenantId } },
+        { $match: { tenantId: tenantObjectId } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
       ]);
 
@@ -145,7 +152,7 @@ router.get(
       const completionTrend = await Task.aggregate([
         {
           $match: {
-            tenantId: tenantId,
+            tenantId: tenantObjectId,
             completedAt: { $gte: startDate },
           },
         },
@@ -164,7 +171,7 @@ router.get(
       const creationTrend = await Task.aggregate([
         {
           $match: {
-            tenantId: tenantId,
+            tenantId: tenantObjectId,
             createdAt: { $gte: startDate },
           },
         },
@@ -233,22 +240,23 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const tenantId = req.tenantId;
+      const tenantObjectId = toObjectId(tenantId!);
 
       // Get documents by category
       const categoryBreakdown = await Artifact.aggregate([
-        { $match: { tenantId: tenantId } },
+        { $match: { tenantId: tenantObjectId } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
       ]);
 
       // Get documents by type
       const typeBreakdown = await Artifact.aggregate([
-        { $match: { tenantId: tenantId } },
+        { $match: { tenantId: tenantObjectId } },
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]);
 
       // Get documents by upload type
       const uploadTypeBreakdown = await Artifact.aggregate([
-        { $match: { tenantId: tenantId } },
+        { $match: { tenantId: tenantObjectId } },
         { $group: { _id: '$uploadType', count: { $sum: 1 } } },
       ]);
 
@@ -259,7 +267,7 @@ router.get(
       const creationTrend = await Artifact.aggregate([
         {
           $match: {
-            tenantId: tenantId,
+            tenantId: tenantObjectId,
             createdAt: { $gte: thirtyDaysAgo },
           },
         },
@@ -423,6 +431,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const tenantId = req.tenantId;
+      const tenantObjectId = toObjectId(tenantId!);
       const days = parseInt(req.query.days as string) || 30;
 
       const startDate = new Date();
@@ -433,7 +442,7 @@ router.get(
       const activityByDay = await AuditLog.aggregate([
         {
           $match: {
-            tenantId: tenantId,
+            tenantId: tenantObjectId,
             createdAt: { $gte: startDate },
           },
         },
@@ -452,7 +461,7 @@ router.get(
       const activityByAction = await AuditLog.aggregate([
         {
           $match: {
-            tenantId: tenantId,
+            tenantId: tenantObjectId,
             createdAt: { $gte: startDate },
           },
         },
@@ -470,7 +479,7 @@ router.get(
       const activityByResource = await AuditLog.aggregate([
         {
           $match: {
-            tenantId: tenantId,
+            tenantId: tenantObjectId,
             createdAt: { $gte: startDate },
           },
         },
