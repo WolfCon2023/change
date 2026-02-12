@@ -7,7 +7,8 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { authenticate, requireTenant } from '../../middleware/index.js';
-import { Task, Artifact, BusinessProfile, AuditLog } from '../../db/models/index.js';
+import { Artifact, BusinessProfile, AuditLog } from '../../db/models/index.js';
+// Note: Task analytics now uses BusinessProfile.tasks (embedded) to match Tasks page
 
 const router = Router();
 
@@ -26,24 +27,22 @@ router.get(
     try {
       const tenantId = req.tenantId;
 
-      // Get task statistics
-      const [
-        totalTasks,
-        completedTasks,
-        pendingTasks,
-        inProgressTasks,
-        overdueTasks,
-      ] = await Promise.all([
-        Task.countDocuments({ tenantId }),
-        Task.countDocuments({ tenantId, status: 'completed' }),
-        Task.countDocuments({ tenantId, status: 'pending' }),
-        Task.countDocuments({ tenantId, status: 'in_progress' }),
-        Task.countDocuments({ 
-          tenantId, 
-          status: { $in: ['pending', 'in_progress'] },
-          dueDate: { $lt: new Date() }
-        }),
-      ]);
+      // Get business profile which contains embedded tasks
+      const businessProfile = await BusinessProfile.findOne({ tenantId }).lean();
+      
+      // Get tasks from BusinessProfile (same source as Tasks page)
+      const tasks = (businessProfile as any)?.tasks || [];
+      const now = new Date();
+      
+      // Calculate task statistics from embedded tasks
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
+      const pendingTasks = tasks.filter((t: any) => t.status === 'pending').length;
+      const inProgressTasks = tasks.filter((t: any) => t.status === 'in_progress').length;
+      const overdueTasks = tasks.filter((t: any) => {
+        if (t.status === 'completed' || !t.dueDate) return false;
+        return new Date(t.dueDate) < now;
+      }).length;
 
       // Get document statistics
       const [totalDocuments, generatedDocuments, uploadedDocuments] = await Promise.all([
@@ -51,9 +50,6 @@ router.get(
         Artifact.countDocuments({ tenantId, uploadType: 'generated' }),
         Artifact.countDocuments({ tenantId, uploadType: { $in: ['user', 'advisor'] } }),
       ]);
-
-      // Get business profile for compliance info
-      const businessProfile = await BusinessProfile.findOne({ tenantId }).lean();
       
       // Calculate compliance score
       const complianceItems = businessProfile?.complianceItems || [];
@@ -127,69 +123,52 @@ router.get(
       startDate.setDate(startDate.getDate() - days);
       startDate.setHours(0, 0, 0, 0);
 
-      // Convert tenantId to ObjectId for aggregation queries
-      const tenantObjectId = toObjectId(tenantId!);
+      // Get tasks from BusinessProfile (same source as Tasks page)
+      const businessProfile = await BusinessProfile.findOne({ tenantId }).lean();
+      const tasks = (businessProfile as any)?.tasks || [];
 
-      // Get task status breakdown
-      const statusBreakdown = await Task.aggregate([
-        { $match: { tenantId: tenantObjectId } },
-        { $group: { _id: '$status', count: { $sum: 1 } } },
-      ]);
+      // Calculate status breakdown from embedded tasks
+      const statusCounts: Record<string, number> = {};
+      const priorityCounts: Record<string, number> = {};
+      const categoryCounts: Record<string, number> = {};
+      const completionByDate: Record<string, number> = {};
+      const creationByDate: Record<string, number> = {};
 
-      // Get task priority breakdown
-      const priorityBreakdown = await Task.aggregate([
-        { $match: { tenantId: tenantObjectId } },
-        { $group: { _id: '$priority', count: { $sum: 1 } } },
-      ]);
+      for (const task of tasks) {
+        // Status breakdown
+        const status = task.status || 'unknown';
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
 
-      // Get task category breakdown
-      const categoryBreakdown = await Task.aggregate([
-        { $match: { tenantId: tenantObjectId } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-      ]);
+        // Priority breakdown
+        const priority = task.priority || 'medium';
+        priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
 
-      // Get tasks completed over time (by day)
-      const completionTrend = await Task.aggregate([
-        {
-          $match: {
-            tenantId: tenantObjectId,
-            completedAt: { $gte: startDate },
-          },
-        },
-        {
-          $group: {
-            _id: {
-              $dateToString: { format: '%Y-%m-%d', date: '$completedAt' },
-            },
-            count: { $sum: 1 },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]);
+        // Category breakdown
+        const category = task.category || 'uncategorized';
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
 
-      // Get tasks created over time (by day)
-      const creationTrend = await Task.aggregate([
-        {
-          $match: {
-            tenantId: tenantObjectId,
-            createdAt: { $gte: startDate },
-          },
-        },
-        {
-          $group: {
-            _id: {
-              $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
-            },
-            count: { $sum: 1 },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]);
+        // Completion trend (tasks completed in date range)
+        if (task.completedAt) {
+          const completedDate = new Date(task.completedAt);
+          if (completedDate >= startDate) {
+            const dateStr = completedDate.toISOString().split('T')[0];
+            completionByDate[dateStr] = (completionByDate[dateStr] || 0) + 1;
+          }
+        }
+
+        // Creation trend (tasks created in date range)
+        if (task.createdAt) {
+          const createdDate = new Date(task.createdAt);
+          if (createdDate >= startDate) {
+            const dateStr = createdDate.toISOString().split('T')[0];
+            creationByDate[dateStr] = (creationByDate[dateStr] || 0) + 1;
+          }
+        }
+      }
 
       // Fill in missing dates for trends
-      const fillDates = (data: { _id: string; count: number }[], days: number) => {
+      const fillDates = (dataMap: Record<string, number>, days: number) => {
         const result: { date: string; count: number }[] = [];
-        const dataMap = new Map(data.map(d => [d._id, d.count]));
         
         for (let i = days - 1; i >= 0; i--) {
           const date = new Date();
@@ -197,7 +176,7 @@ router.get(
           const dateStr = date.toISOString().split('T')[0];
           result.push({
             date: dateStr,
-            count: dataMap.get(dateStr) || 0,
+            count: dataMap[dateStr] || 0,
           });
         }
         return result;
@@ -206,20 +185,20 @@ router.get(
       res.json({
         success: true,
         data: {
-          statusBreakdown: statusBreakdown.map(s => ({
-            status: s._id || 'unknown',
-            count: s.count,
+          statusBreakdown: Object.entries(statusCounts).map(([status, count]) => ({
+            status,
+            count,
           })),
-          priorityBreakdown: priorityBreakdown.map(p => ({
-            priority: p._id || 'unknown',
-            count: p.count,
+          priorityBreakdown: Object.entries(priorityCounts).map(([priority, count]) => ({
+            priority,
+            count,
           })),
-          categoryBreakdown: categoryBreakdown.map(c => ({
-            category: c._id || 'uncategorized',
-            count: c.count,
+          categoryBreakdown: Object.entries(categoryCounts).map(([category, count]) => ({
+            category,
+            count,
           })),
-          completionTrend: fillDates(completionTrend, days),
-          creationTrend: fillDates(creationTrend, days),
+          completionTrend: fillDates(completionByDate, days),
+          creationTrend: fillDates(creationByDate, days),
         },
         meta: { timestamp: new Date().toISOString() },
       });
