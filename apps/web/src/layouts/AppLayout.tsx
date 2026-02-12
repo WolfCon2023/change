@@ -271,9 +271,19 @@ export default function AppLayout() {
                   Blockers ({homeData.blockers.length})
                 </h4>
                 <ul className="space-y-1">
-                  {homeData.blockers.slice(0, 3).map((blocker, i) => (
-                    <li key={i} className="text-xs text-red-700">
-                      {blocker.title}
+                  {homeData.blockers.slice(0, 3).map((blocker: any, i) => (
+                    <li key={i}>
+                      {blocker.route ? (
+                        <Link
+                          to={blocker.route}
+                          onClick={() => setSidebarOpen(false)}
+                          className="text-xs text-red-700 hover:text-red-900 hover:underline cursor-pointer block"
+                        >
+                          {blocker.title}
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-red-700">{blocker.title}</span>
+                      )}
                     </li>
                   ))}
                 </ul>
