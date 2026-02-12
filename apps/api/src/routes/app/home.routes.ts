@@ -154,10 +154,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const operationsProgress = calculateOperationsProgress(profile);
     const overallProgress = Math.round((setupProgress + formationProgress + operationsProgress) / 3);
     
-    // Determine blockers
+    // Determine blockers - check ACTUAL DATA, not just flags (flags may be out of sync)
     const blockers: Array<{ id: string; type: string; title: string; description: string; route?: string }> = [];
     
-    if (!flags.archetypeSelected) {
+    // Check archetype - use actual data OR flag
+    const hasArchetype = !!profile.archetypeKey || flags.archetypeSelected;
+    if (!hasArchetype) {
       blockers.push({
         id: 'archetype',
         type: 'setup',
@@ -167,7 +169,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       });
     }
     
-    if (!flags.entitySelected) {
+    // Check entity type - use actual data OR flag
+    const hasEntityType = !!profile.businessType || flags.entitySelected;
+    if (!hasEntityType) {
       blockers.push({
         id: 'entity',
         type: 'setup',
@@ -177,7 +181,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       });
     }
     
-    if (!flags.stateSelected) {
+    // Check state - use actual data OR flag
+    const hasState = !!profile.formationState || flags.stateSelected;
+    if (!hasState) {
       blockers.push({
         id: 'state',
         type: 'setup',
@@ -187,7 +193,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       });
     }
     
-    if (!flags.addressVerified && setupProgress >= 50) {
+    // Check address - use actual data OR flag
+    const hasAddress = !!profile.businessAddress?.street1 || flags.addressVerified;
+    if (!hasAddress && setupProgress >= 50) {
       blockers.push({
         id: 'address',
         type: 'formation',
@@ -197,7 +205,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       });
     }
     
-    if (!flags.registeredAgentSet && setupProgress >= 50) {
+    // Check registered agent - use actual data OR flag
+    const hasAgent = !!profile.registeredAgent?.name || flags.registeredAgentSet;
+    if (!hasAgent && setupProgress >= 50) {
       blockers.push({
         id: 'agent',
         type: 'formation',

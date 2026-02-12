@@ -9,7 +9,7 @@ const router = Router();
  * Health check endpoint
  */
 // Build version for deployment verification
-const BUILD_VERSION = '2025-02-12-v9';
+const BUILD_VERSION = '2025-02-12-v10';
 
 router.get('/', (_req: Request, res: Response) => {
   const dbStatus = getConnectionStatus();
