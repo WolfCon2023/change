@@ -45,10 +45,13 @@ router.get(
       }).length;
 
       // Get document statistics
+      // Note: Artifact model uses 'storageType' (file/url/text/json) not 'uploadType'
+      // - 'text' and 'json' are typically generated documents
+      // - 'file' and 'url' are typically uploaded documents
       const [totalDocuments, generatedDocuments, uploadedDocuments] = await Promise.all([
         Artifact.countDocuments({ tenantId }),
-        Artifact.countDocuments({ tenantId, uploadType: 'generated' }),
-        Artifact.countDocuments({ tenantId, uploadType: { $in: ['user', 'advisor'] } }),
+        Artifact.countDocuments({ tenantId, storageType: { $in: ['text', 'json'] } }),
+        Artifact.countDocuments({ tenantId, storageType: { $in: ['file', 'url'] } }),
       ]);
       
       // Calculate compliance score
@@ -233,10 +236,10 @@ router.get(
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]);
 
-      // Get documents by upload type
-      const uploadTypeBreakdown = await Artifact.aggregate([
+      // Get documents by storage type (file/url/text/json)
+      const storageTypeBreakdown = await Artifact.aggregate([
         { $match: { tenantId: tenantObjectId } },
-        { $group: { _id: '$uploadType', count: { $sum: 1 } } },
+        { $group: { _id: '$storageType', count: { $sum: 1 } } },
       ]);
 
       // Get documents created over time (last 30 days)
@@ -272,9 +275,9 @@ router.get(
             type: t._id || 'unknown',
             count: t.count,
           })),
-          uploadTypeBreakdown: uploadTypeBreakdown.map(u => ({
-            uploadType: u._id || 'unknown',
-            count: u.count,
+          storageTypeBreakdown: storageTypeBreakdown.map(s => ({
+            storageType: s._id || 'unknown',
+            count: s.count,
           })),
           creationTrend: creationTrend.map(d => ({
             date: d._id,

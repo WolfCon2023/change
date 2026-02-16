@@ -85,7 +85,7 @@ interface TaskAnalytics {
 interface DocumentAnalytics {
   categoryBreakdown: { category: string; count: number }[];
   typeBreakdown: { type: string; count: number }[];
-  uploadTypeBreakdown: { uploadType: string; count: number }[];
+  storageTypeBreakdown: { storageType: string; count: number }[];
   creationTrend: { date: string; count: number }[];
 }
 
@@ -546,15 +546,15 @@ export function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex justify-center gap-8">
-                      {(documentAnalytics?.uploadTypeBreakdown || []).map((item, index) => (
-                        <div key={item.uploadType} className="text-center">
+                      {(documentAnalytics?.storageTypeBreakdown || []).map((item, index) => (
+                        <div key={item.storageType} className="text-center">
                           <div 
                             className="w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold"
                             style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
                           >
                             {item.count}
                           </div>
-                          <p className="mt-2 text-sm font-medium">{formatStatus(item.uploadType)}</p>
+                          <p className="mt-2 text-sm font-medium">{formatStatus(item.storageType)}</p>
                         </div>
                       ))}
                     </div>

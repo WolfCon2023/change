@@ -80,7 +80,7 @@ router.get('/health', (_req: Request, res: Response) => {
   res.json({ 
     success: true, 
     message: 'App routes healthy',
-    version: '2025-02-12-v10',
+    version: '2025-02-12-v11',
     routeLoaders: {
       documents: typeof documentsRoutes,
       analytics: typeof analyticsRoutes,
