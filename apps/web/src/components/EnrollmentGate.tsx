@@ -11,7 +11,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { UserRole } from '@change/shared';
 
-const PLATFORM_ROLES = [UserRole.SYSTEM_ADMIN, UserRole.PROGRAM_ADMIN, UserRole.ADVISOR];
+const PLATFORM_ROLES: string[] = [UserRole.SYSTEM_ADMIN, UserRole.PROGRAM_ADMIN, UserRole.ADVISOR];
 
 interface BillingResponse {
   success: boolean;
@@ -33,17 +33,18 @@ export function EnrollmentGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (PLATFORM_ROLES.includes(user.role as UserRole)) {
+    if (PLATFORM_ROLES.includes(user.role)) {
       setEnrolled(true);
       return;
     }
 
     let cancelled = false;
     api
-      .get('/app/billing')
-      .then((res: BillingResponse) => {
+      .get<BillingResponse>('/app/billing')
+      .then((res) => {
         if (cancelled) return;
-        const sub = res.data?.subscription;
+        const body = res.data;
+        const sub = body?.data?.subscription;
         const hasPaidPlan =
           sub &&
           ['starter', 'professional', 'enterprise'].includes(sub.plan) &&
