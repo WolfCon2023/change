@@ -1,11 +1,12 @@
 /**
  * Pricing Page
- * Display subscription plans and pricing
+ * Display subscription plans and pricing.
+ * When Stripe is not configured (demo mode), shows "Simulate payment" to complete enrollment without a Stripe account.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, TestTube } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/auth.store';
 import { api } from '../lib/api';
@@ -61,23 +62,59 @@ export function PricingPage() {
   const { isAuthenticated } = useAuthStore();
   const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState<string | null>(null);
+  const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null);
+
+  // When authenticated, check if Stripe is configured (demo mode = not configured)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setStripeConfigured(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get('/app/billing/plans')
+      .then((res) => {
+        if (!cancelled && res.data?.success) {
+          setStripeConfigured(res.data.data?.stripeConfigured ?? false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStripeConfigured(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  const isDemoMode = isAuthenticated && stripeConfigured === false;
 
   const handleSelectPlan = async (planId: string) => {
     if (!isAuthenticated) {
-      // Redirect to register with plan info
       navigate(`/register?plan=${planId}&interval=${interval}`);
       return;
     }
 
     setLoading(planId);
     try {
+      if (isDemoMode) {
+        const response = await api.post('/app/billing/simulate-payment', {
+          plan: planId,
+          interval,
+        });
+        if (response.data.success && response.data.data?.redirectUrl) {
+          window.location.href = response.data.data.redirectUrl;
+          return;
+        }
+        navigate('/app/billing?success=true');
+        return;
+      }
+
       const response = await api.post('/app/billing/checkout', {
         plan: planId,
         interval,
       });
 
       if (response.data.success && response.data.data.url) {
-        // Redirect to Stripe checkout
         window.location.href = response.data.data.url;
       }
     } catch (error: any) {
@@ -124,6 +161,16 @@ export function PricingPage() {
         <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto mb-6 sm:mb-8">
           Choose the plan that's right for your business. All plans include a 7-day free trial.
         </p>
+
+        {/* Demo mode notice when Stripe is not configured */}
+        {isDemoMode && (
+          <div className="mb-6 mx-4 inline-flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
+            <TestTube className="h-4 w-4 shrink-0" />
+            <span>
+              Demo mode: payment is not configured. Use <strong>Simulate payment</strong> to activate a plan and continue.
+            </span>
+          </div>
+        )}
 
         {/* Interval Toggle */}
         <div className="inline-flex items-center bg-gray-100 rounded-full p-1 mb-8 sm:mb-12">
@@ -188,6 +235,11 @@ export function PricingPage() {
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Loading...
+                    </>
+                  ) : isDemoMode ? (
+                    <>
+                      <TestTube className="h-4 w-4 mr-2" />
+                      Simulate payment
                     </>
                   ) : (
                     'Start Free Trial'

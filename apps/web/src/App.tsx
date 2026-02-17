@@ -57,8 +57,11 @@ import {
 import { BillingPage } from '@/pages/app/BillingPage';
 import { AnalyticsPage } from '@/pages/app/AnalyticsPage';
 
-// Pricing Page (public)
+// Pricing Page (public) - also used as enrollment step after registration
 import { PricingPage } from '@/pages/PricingPage';
+
+// Enrollment gate - requires active subscription before accessing app
+import { EnrollmentGate } from '@/components/EnrollmentGate';
 
 // Advisor Pages
 import { AdvisorDashboardPage } from '@/pages/advisor/AdvisorDashboardPage';
@@ -215,12 +218,14 @@ function App() {
           <Route path="clients/:tenantId" element={<ClientDetailPage />} />
         </Route>
 
-        {/* Business App Routes */}
+        {/* Business App Routes - require enrollment (active subscription) for client users */}
         <Route
           path="/app"
           element={
             <ProtectedRoute>
-              <AppLayout />
+              <EnrollmentGate>
+                <AppLayout />
+              </EnrollmentGate>
             </ProtectedRoute>
           }
         >

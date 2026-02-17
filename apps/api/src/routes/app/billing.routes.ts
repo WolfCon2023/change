@@ -270,4 +270,74 @@ router.post('/reactivate', async (req: Request, res: Response, next: NextFunctio
   }
 });
 
+/**
+ * POST /billing/simulate-payment
+ * Demo mode only: simulate a successful payment without Stripe.
+ * Available when Stripe is not configured (e.g. initial/demo phase).
+ */
+router.post(
+  '/simulate-payment',
+  validate(checkoutSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const tenantId = req.user?.tenantId;
+
+      if (!tenantId) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'BAD_REQUEST', message: 'Tenant required' },
+        });
+      }
+
+      if (stripeService.isConfigured()) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'DEMO_DISABLED',
+            message: 'Simulate payment is only available when Stripe is not configured (demo mode).',
+          },
+        });
+      }
+
+      const { plan, interval } = req.body as { plan: PlanType; interval: 'monthly' | 'annual' };
+
+      const tenant = await Tenant.findById(tenantId);
+      if (!tenant) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Tenant not found' },
+        });
+      }
+
+      const now = new Date();
+      const periodEnd = new Date(now);
+      if (interval === 'annual') {
+        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      } else {
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+      }
+
+      tenant.subscription = {
+        plan,
+        status: 'active',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+      };
+      await tenant.save();
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Demo payment simulated successfully',
+          redirectUrl: `${config.appUrl}/app/billing?success=true`,
+        },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

@@ -39,9 +39,9 @@ export function RegisterPage() {
       });
       toast({
         title: 'Account created!',
-        description: 'Welcome to the C.H.A.N.G.E. Platform.',
+        description: 'Choose a plan to complete enrollment and access the application.',
       });
-      navigate('/dashboard');
+      navigate('/pricing');
     } catch (error) {
       toast({
         variant: 'destructive',
