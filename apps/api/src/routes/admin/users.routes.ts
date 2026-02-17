@@ -827,7 +827,7 @@ router.post(
 
 /**
  * DELETE /admin/tenants/:tenantId/users/:userId
- * Deactivate user
+ * Deactivate user (sets isActive = false). Reversible by editing the user and setting Active back to true.
  * IT_ADMIN can deactivate any user including platform users
  */
 router.delete(
@@ -840,7 +840,6 @@ router.delete(
       const { tenantId, userId } = req.params;
 
       // Build query based on role
-      // IT_ADMIN can delete ANY user
       let query: Record<string, unknown>;
       if (req.primaryRole === PrimaryRole.IT_ADMIN) {
         query = { _id: userId };
@@ -868,6 +867,84 @@ router.delete(
       res.json({
         success: true,
         data: { message: 'User deactivated successfully' },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /admin/tenants/:tenantId/users/:userId/permanent-delete
+ * Permanently delete a user from the database. Cannot be undone.
+ * IT_ADMIN can permanently delete any user. Cannot delete self or the last IT_ADMIN.
+ */
+router.post(
+  '/tenants/:tenantId/users/:userId/permanent-delete',
+  authenticate,
+  loadIamPermissions,
+  requirePermission(IamPermission.IAM_USER_DELETE),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { tenantId, userId } = req.params;
+
+      if (userId === req.user?.userId) {
+        throw new ForbiddenError('You cannot permanently delete your own account');
+      }
+
+      let query: Record<string, unknown>;
+      if (req.primaryRole === PrimaryRole.IT_ADMIN) {
+        query = { _id: userId };
+      } else {
+        query = { _id: userId, tenantId: tenantId };
+      }
+
+      const user = await User.findOne(query);
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      if (user.primaryRole === PrimaryRole.IT_ADMIN) {
+        const otherItAdmins = await User.countDocuments({
+          _id: { $ne: userId },
+          primaryRole: PrimaryRole.IT_ADMIN,
+          isActive: true,
+        });
+        if (otherItAdmins === 0) {
+          throw new ForbiddenError(
+            'Cannot permanently delete the last IT Admin. Assign another IT Admin first, or deactivate this user instead.'
+          );
+        }
+      }
+
+      const targetName = `${user.firstName} ${user.lastName}`;
+      const targetEmail = user.email;
+
+      // Remove user from all groups that include this user
+      const userObjectId = user._id;
+      await Group.updateMany(
+        { members: userObjectId },
+        { $pull: { members: userObjectId } }
+      );
+
+      await User.deleteOne({ _id: userObjectId });
+
+      await logIamActionFromRequest(
+        req,
+        IamAuditAction.USER_DELETED,
+        'User',
+        userId,
+        `Permanently deleted user ${targetEmail}`,
+        {
+          targetName,
+          after: { permanentDelete: true, email: targetEmail },
+        }
+      );
+
+      res.json({
+        success: true,
+        data: { message: 'User permanently deleted' },
         meta: { timestamp: new Date().toISOString() },
       });
     } catch (error) {

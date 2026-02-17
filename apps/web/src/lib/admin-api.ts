@@ -269,6 +269,22 @@ export function useDeleteUser(tenantId: string) {
   });
 }
 
+export function usePermanentDeleteUser(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await api.post<ApiResponse<{ message: string }>>(
+        `/admin/tenants/${tenantId}/users/${userId}/permanent-delete`
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', tenantId] });
+    },
+  });
+}
+
 export function useSetUserRoles(tenantId: string, userId: string) {
   const queryClient = useQueryClient();
   return useMutation({
