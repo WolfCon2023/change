@@ -4,7 +4,7 @@
  */
 
 import { useRef, useState, useEffect } from 'react';
-import { Eraser, Type, Pen, Check, X } from 'lucide-react';
+import { Eraser, Type, Pen, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 

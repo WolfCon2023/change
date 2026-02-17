@@ -8,7 +8,6 @@ import {
   X, 
   Save, 
   Send, 
-  Download, 
   Pen, 
   FileText,
   Mail,
@@ -54,7 +53,7 @@ const FIELD_LABELS: Record<string, string> = {
 
 export function DocumentEditor({ document, onClose, onSave }: DocumentEditorProps) {
   const { user } = useAuthStore();
-  const [content, setContent] = useState(document.textContent || document.content || '');
+  const [content] = useState(document.textContent ?? '');
   const [fillableFields, setFillableFields] = useState<Record<string, string>>({});
   const [signature, setSignature] = useState<string | null>(null);
   const [signatureName, setSignatureName] = useState('');
@@ -129,7 +128,6 @@ export function DocumentEditor({ document, onClose, onSave }: DocumentEditorProp
   // Update content with filled values
   const processedContent = useMemo(() => {
     let result = content;
-    let offset = 0;
     
     FILLABLE_FIELD_PATTERN.lastIndex = 0;
     let match;
@@ -276,7 +274,7 @@ export function DocumentEditor({ document, onClose, onSave }: DocumentEditorProp
               <p className="text-sm text-gray-500">No fillable fields detected in this document.</p>
             ) : (
               <div className="space-y-3">
-                {detectedFields.map((field, index) => (
+                {detectedFields.map((field) => (
                   <div key={field.id}>
                     <Label htmlFor={field.id} className="text-xs">
                       {field.label}
