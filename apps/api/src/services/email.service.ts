@@ -32,6 +32,18 @@ export interface PasswordResetData {
   expiresIn: string;
 }
 
+export interface DocumentEmailData {
+  to: string[];
+  cc?: string[];
+  subject: string;
+  message?: string;
+  documentName: string;
+  documentContent: string;
+  senderName: string;
+  senderEmail: string;
+  hasSignature?: boolean;
+}
+
 class EmailService {
   private transporter: Transporter | null = null;
   private initialized = false;
@@ -312,6 +324,97 @@ class EmailService {
     `.trim();
 
     return this.sendEmail(data.recipientEmail, subject, html);
+  }
+
+  /**
+   * Send document via email
+   */
+  async sendDocumentEmail(data: DocumentEmailData): Promise<boolean> {
+    const logoUrl = `${config.appUrl}/logo-v2.png`;
+    
+    // Format document content for email - preserve formatting
+    const formattedContent = data.documentContent
+      .split('\n')
+      .map(line => `<p style="margin: 0 0 8px 0; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.5;">${line || '&nbsp;'}</p>`)
+      .join('');
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 800px; margin: 0 auto; background-color: #ffffff;">
+    <!-- Header with Logo -->
+    <tr>
+      <td style="background-color: #1e40af; padding: 24px; text-align: center;">
+        <img src="${logoUrl}" alt="C.H.A.N.G.E. Platform" style="height: 50px; width: auto;" />
+      </td>
+    </tr>
+    
+    <!-- Content -->
+    <tr>
+      <td style="padding: 32px 24px;">
+        <p style="color: #374151; font-size: 16px; margin: 0 0 16px 0;">
+          ${data.senderName} has shared a document with you via C.H.A.N.G.E. Platform.
+        </p>
+        
+        ${data.message ? `
+        <div style="background-color: #f0f9ff; border-left: 4px solid #1e40af; padding: 16px; margin: 0 0 24px 0;">
+          <p style="color: #374151; font-size: 14px; margin: 0; font-style: italic;">"${data.message}"</p>
+        </div>
+        ` : ''}
+        
+        <!-- Document Card -->
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+          <div style="background-color: #f9fafb; padding: 16px; border-bottom: 1px solid #e5e7eb;">
+            <h2 style="color: #111827; font-size: 18px; margin: 0;">
+              📄 ${data.documentName}
+            </h2>
+            ${data.hasSignature ? '<span style="display: inline-block; margin-top: 8px; background-color: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 12px; font-size: 12px;">✓ Digitally Signed</span>' : ''}
+          </div>
+          <div style="padding: 24px; background-color: #ffffff; max-height: 600px; overflow: auto;">
+            ${formattedContent}
+          </div>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin: 0;">
+          This document was sent from <a href="mailto:${data.senderEmail}" style="color: #1e40af;">${data.senderEmail}</a>
+        </p>
+      </td>
+    </tr>
+    
+    <!-- Footer -->
+    <tr>
+      <td style="background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0;">
+          © ${new Date().getFullYear()} CHANGE Business Transformation Platform. All rights reserved.
+        </p>
+        <p style="color: #9ca3af; font-size: 11px; margin: 8px 0 0 0;">
+          This document was shared via the C.H.A.N.G.E. Platform document system.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
+
+    // Send to all recipients
+    const results = await Promise.all(
+      data.to.map(recipient => this.sendEmail(recipient, data.subject, html))
+    );
+
+    // Send CC if provided
+    if (data.cc && data.cc.length > 0) {
+      await Promise.all(
+        data.cc.map(recipient => this.sendEmail(recipient, `[CC] ${data.subject}`, html))
+      );
+    }
+
+    return results.every(r => r);
   }
 
   /**

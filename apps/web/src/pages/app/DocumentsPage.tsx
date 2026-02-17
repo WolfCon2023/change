@@ -32,6 +32,7 @@ import { Label } from '../../components/ui/label';
 import { useDocuments, useCreateDocument, useDeleteDocument, useUpdateDocument, useUploadFile, type Document } from '../../lib/app-api';
 import { useAuthStore } from '../../stores/auth.store';
 import { DocumentGenerator } from '../../components/DocumentGenerator';
+import { DocumentEditor } from '../../components/DocumentEditor';
 
 // Document type configurations
 const DOCUMENT_TYPES = {
@@ -89,7 +90,7 @@ const CATEGORY_CONFIG = {
 };
 
 export default function DocumentsPage() {
-  const { data, isLoading, error } = useDocuments();
+  const { data, isLoading, error, refetch } = useDocuments();
   const createDocumentMutation = useCreateDocument();
   const deleteDocumentMutation = useDeleteDocument();
   const updateDocumentMutation = useUpdateDocument();
@@ -102,6 +103,7 @@ export default function DocumentsPage() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState<Document | null>(null);
   const [showEditModal, setShowEditModal] = useState<Document | null>(null);
+  const [showDocumentEditor, setShowDocumentEditor] = useState<Document | null>(null);
   const [newDocument, setNewDocument] = useState({
     name: '',
     description: '',
@@ -462,10 +464,19 @@ export default function DocumentsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
+                        {!isFile && (doc.textContent || doc.storageType === 'text') && (
+                          <button
+                            onClick={() => setShowDocumentEditor(doc)}
+                            className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-purple-600"
+                            title="Edit Content & Sign"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleOpenEditModal(doc)}
                           className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-amber-600"
-                          title="Edit"
+                          title="Edit Details"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
@@ -830,6 +841,17 @@ export default function DocumentsPage() {
           onClose={() => setShowGenerateModal(false)}
           onDocumentGenerated={() => {
             // Optionally refresh the documents list
+          }}
+        />
+      )}
+      
+      {/* Document Editor Modal */}
+      {showDocumentEditor && (
+        <DocumentEditor
+          document={showDocumentEditor}
+          onClose={() => setShowDocumentEditor(null)}
+          onSave={() => {
+            refetch();
           }}
         />
       )}

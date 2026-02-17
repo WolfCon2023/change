@@ -6,8 +6,9 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { Artifact, BusinessProfile, DocumentInstance } from '../../db/models/index.js';
+import { Artifact, BusinessProfile, DocumentInstance, User } from '../../db/models/index.js';
 import { documentGenerationService } from '../../services/document-generation.service.js';
+import { emailService } from '../../services/email.service.js';
 import { validate } from '../../middleware/index.js';
 
 const router = Router();
@@ -16,6 +17,24 @@ const router = Router();
 const generateDocumentSchema = z.object({
   templateType: z.string().min(1),
   customData: z.record(z.string()).optional(),
+});
+
+// Validation schema for document content update
+const updateContentSchema = z.object({
+  content: z.string().min(1),
+  signature: z.string().optional().nullable(),
+  signatureName: z.string().optional(),
+  fillableFields: z.record(z.string()).optional(),
+});
+
+// Validation schema for sending document
+const sendDocumentSchema = z.object({
+  to: z.array(z.string().email()).min(1),
+  cc: z.array(z.string().email()).optional(),
+  subject: z.string().min(1),
+  message: z.string().optional(),
+  content: z.string().optional(),
+  signature: z.string().optional().nullable(),
 });
 
 // Document categories for organization
@@ -420,6 +439,166 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 });
+
+/**
+ * PUT /app/documents/:id/content
+ * Update document content with fillable fields and signature
+ */
+router.put(
+  '/:id/content',
+  validate(updateContentSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const tenantId = req.user?.tenantId;
+      const userId = req.user?.userId;
+      const { id } = req.params;
+      
+      if (!tenantId) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+        });
+      }
+      
+      const { content, signature, signatureName, fillableFields } = req.body;
+      
+      // Find existing document
+      const existing = await Artifact.findOne({ _id: id, tenantId });
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Document not found' },
+        });
+      }
+      
+      // Update document with new content and metadata
+      const updateData: Record<string, any> = {
+        textContent: content,
+        updatedBy: userId,
+      };
+      
+      // Store signature and filled fields in jsonContent
+      if (signature || fillableFields) {
+        updateData.jsonContent = {
+          ...((existing.jsonContent as Record<string, any>) || {}),
+          signature,
+          signatureName,
+          signedAt: signature ? new Date().toISOString() : undefined,
+          signedBy: signature ? userId : undefined,
+          fillableFields,
+        };
+      }
+      
+      const rawDoc = await Artifact.findOneAndUpdate(
+        { _id: id, tenantId },
+        updateData,
+        { new: true }
+      ).lean();
+      
+      // Transform _id to id
+      const document = {
+        ...rawDoc,
+        id: rawDoc!._id.toString(),
+        _id: undefined,
+      };
+      
+      res.json({
+        success: true,
+        data: document,
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /app/documents/:id/send
+ * Send document via email
+ */
+router.post(
+  '/:id/send',
+  validate(sendDocumentSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const tenantId = req.user?.tenantId;
+      const userId = req.user?.userId;
+      const { id } = req.params;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'NO_TENANT', message: 'User must belong to a tenant' },
+        });
+      }
+      
+      const { to, cc, subject, message, content, signature } = req.body;
+      
+      // Find the document
+      const document = await Artifact.findOne({ _id: id, tenantId }).lean();
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Document not found' },
+        });
+      }
+      
+      // Get sender information
+      const sender = await User.findById(userId).lean();
+      if (!sender) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'USER_NOT_FOUND', message: 'Sender not found' },
+        });
+      }
+      
+      // Use provided content or fall back to stored content
+      const documentContent = content || document.textContent || '';
+      
+      // Send the email
+      const sent = await emailService.sendDocumentEmail({
+        to,
+        cc,
+        subject,
+        message,
+        documentName: document.name,
+        documentContent,
+        senderName: `${sender.firstName} ${sender.lastName}`,
+        senderEmail: sender.email,
+        hasSignature: !!signature,
+      });
+      
+      if (!sent) {
+        return res.status(500).json({
+          success: false,
+          error: { code: 'EMAIL_FAILED', message: 'Failed to send email. Please check SMTP configuration.' },
+        });
+      }
+      
+      // Log the send action in document metadata
+      await Artifact.findByIdAndUpdate(id, {
+        $push: {
+          'metadata.sentHistory': {
+            sentAt: new Date(),
+            sentBy: userId,
+            recipients: to,
+            cc,
+            subject,
+          },
+        },
+      });
+      
+      res.json({
+        success: true,
+        message: `Document sent to ${to.length} recipient(s)`,
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 /**
  * PUT /app/documents/:id

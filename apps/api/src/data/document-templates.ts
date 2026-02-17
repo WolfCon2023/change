@@ -110,8 +110,8 @@ IN WITNESS WHEREOF, the undersigned organizer has executed these Articles of Org
 _______________________________
 {{signatoryName}}, Organizer
 
-STATE OF {{formationState}}
-COUNTY OF _______________
+STATE OF _____________________
+COUNTY OF _____________________
 
 The foregoing instrument was acknowledged before me this ___ day of __________, {{year}}.
 
@@ -475,7 +475,7 @@ export const BUSINESS_ADDRESS_AFFIDAVIT_TEMPLATE: DocumentTemplateData = {
   category: DocumentCategory.FORMATION,
   content: `BUSINESS ADDRESS AFFIDAVIT
 
-STATE OF {{formationState}}
+STATE OF _____________________
 COUNTY OF _____________________
 
 I, {{signatoryName}}, being duly sworn, do hereby state and affirm as follows:
@@ -512,7 +512,7 @@ Date: {{date}}
 
 NOTARIZATION (if required)
 
-STATE OF {{formationState}}
+STATE OF _____________________
 COUNTY OF _____________________
 
 Subscribed and sworn to before me this ___ day of __________, {{year}}.
