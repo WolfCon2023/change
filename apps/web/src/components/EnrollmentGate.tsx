@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
@@ -25,7 +25,12 @@ interface BillingResponse {
 
 export function EnrollmentGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
+  const location = useLocation();
   const [enrolled, setEnrolled] = useState<boolean | null>(null);
+
+  // Allow /app/billing through so Stripe can redirect to /app/billing?success=true after payment
+  // without being sent back to pricing (subscription may not be updated until webhook runs)
+  const isBillingPage = location.pathname === '/app/billing' || location.pathname.startsWith('/app/billing/');
 
   useEffect(() => {
     if (!user) {
@@ -68,7 +73,7 @@ export function EnrollmentGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!enrolled) {
+  if (!enrolled && !isBillingPage) {
     return <Navigate to="/pricing" replace />;
   }
 

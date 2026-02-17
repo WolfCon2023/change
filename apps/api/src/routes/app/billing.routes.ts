@@ -289,16 +289,7 @@ router.post(
         });
       }
 
-      if (stripeService.isConfigured()) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'DEMO_DISABLED',
-            message: 'Simulate payment is only available when Stripe is not configured (demo mode).',
-          },
-        });
-      }
-
+      // Allow simulate-payment whether or not Stripe is configured (for demo/test use without going to Stripe)
       const { plan, interval } = req.body as { plan: PlanType; interval: 'monthly' | 'annual' };
 
       const tenant = await Tenant.findById(tenantId);

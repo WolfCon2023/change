@@ -88,6 +88,30 @@ export function PricingPage() {
 
   const isDemoMode = isAuthenticated && stripeConfigured === false;
 
+  const handleSimulatePayment = async (planId: string) => {
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent('/pricing')}`);
+      return;
+    }
+    setLoading(`simulate-${planId}`);
+    try {
+      const response = await api.post('/app/billing/simulate-payment', {
+        plan: planId,
+        interval,
+      });
+      if (response.data.success && response.data.data?.redirectUrl) {
+        window.location.href = response.data.data.redirectUrl;
+        return;
+      }
+      navigate('/app/billing?success=true');
+    } catch (error: any) {
+      console.error('Simulate payment error:', error);
+      alert(error.response?.data?.error?.message || 'Simulate payment failed');
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const handleSelectPlan = async (planId: string) => {
     if (!isAuthenticated) {
       navigate(`/register?plan=${planId}&interval=${interval}`);
@@ -97,15 +121,7 @@ export function PricingPage() {
     setLoading(planId);
     try {
       if (isDemoMode) {
-        const response = await api.post('/app/billing/simulate-payment', {
-          plan: planId,
-          interval,
-        });
-        if (response.data.success && response.data.data?.redirectUrl) {
-          window.location.href = response.data.data.redirectUrl;
-          return;
-        }
-        navigate('/app/billing?success=true');
+        await handleSimulatePayment(planId);
         return;
       }
 
@@ -162,15 +178,17 @@ export function PricingPage() {
           Choose the plan that's right for your business. All plans include a 7-day free trial.
         </p>
 
-        {/* Demo mode notice when Stripe is not configured */}
-        {isDemoMode && (
-          <div className="mb-6 mx-4 inline-flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
-            <TestTube className="h-4 w-4 shrink-0" />
-            <span>
-              Demo mode: payment is not configured. Use <strong>Simulate payment</strong> to activate a plan and continue.
-            </span>
-          </div>
-        )}
+        {/* Simulate payment notice - always visible so the option is never missed */}
+        <div className="mb-6 mx-4 inline-flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
+          <TestTube className="h-4 w-4 shrink-0" />
+          <span>
+            {!isAuthenticated
+              ? 'No payment required for demos: sign in, then use Simulate payment on any plan to activate without paying.'
+              : isDemoMode
+                ? 'Demo mode: payment is not configured. Use Simulate payment to activate a plan and continue.'
+                : 'No Stripe account? Use Simulate payment on any plan to activate without paying.'}
+          </span>
+        </div>
 
         {/* Interval Toggle */}
         <div className="inline-flex items-center bg-gray-100 rounded-full p-1 mb-8 sm:mb-12">
@@ -225,26 +243,43 @@ export function PricingPage() {
                     </p>
                   )}
                 </div>
-                <Button
-                  className="w-full"
-                  variant={plan.popular ? 'default' : 'outline'}
-                  onClick={() => handleSelectPlan(plan.id)}
-                  disabled={loading !== null}
-                >
-                  {loading === plan.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : isDemoMode ? (
-                    <>
-                      <TestTube className="h-4 w-4 mr-2" />
-                      Simulate payment
-                    </>
-                  ) : (
-                    'Start Free Trial'
+                <div className="space-y-2">
+                  {!isDemoMode && (
+                    <Button
+                      className="w-full"
+                      variant={plan.popular ? 'default' : 'outline'}
+                      onClick={() => handleSelectPlan(plan.id)}
+                      disabled={loading !== null}
+                    >
+                      {loading === plan.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        'Start Free Trial'
+                      )}
+                    </Button>
                   )}
-                </Button>
+                  <Button
+                    className="w-full"
+                    variant={isDemoMode && isAuthenticated ? 'default' : 'outline'}
+                    onClick={() => handleSimulatePayment(plan.id)}
+                    disabled={loading !== null}
+                  >
+                    {loading === `simulate-${plan.id}` ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="h-4 w-4 mr-2" />
+                        Simulate payment
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

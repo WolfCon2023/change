@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginRequestSchema } from '@change/shared';
@@ -16,6 +16,8 @@ type LoginFormData = z.infer<typeof loginRequestSchema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/app/home';
   const { login, loginWithMfa, isLoading, mfaPending, clearMfaState } = useAuthStore();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -44,12 +46,12 @@ export function LoginPage() {
         return;
       }
       
-      console.log('[Login] No MFA required, navigating to dashboard');
+      console.log('[Login] No MFA required, navigating to', redirectTo);
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
-      navigate('/dashboard');
+      navigate(redirectTo.startsWith('/') ? redirectTo : `/${redirectTo}`);
     } catch (error) {
       console.error('[Login] Error caught:', error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid credentials';
@@ -77,7 +79,7 @@ export function LoginPage() {
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
-      navigate('/dashboard');
+      navigate(redirectTo.startsWith('/') ? redirectTo : `/${redirectTo}`);
     } catch (error) {
       setMfaError(error instanceof Error ? error.message : 'Invalid verification code');
     }
