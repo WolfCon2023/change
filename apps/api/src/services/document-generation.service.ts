@@ -4,7 +4,7 @@
  */
 
 import mongoose from 'mongoose';
-import { DocumentType, DocumentStatus, type DocumentTypeValue } from '@change/shared';
+import { DocumentType, DocumentStatus, USStateNames, type DocumentTypeValue, type USStateType } from '@change/shared';
 import { DocumentTemplate, DocumentInstance, BusinessProfile, Person } from '../db/models/index.js';
 import type { IBusinessProfile } from '../db/models/business-profile.model.js';
 import type { IMergeField } from '../db/models/document-template.model.js';
@@ -144,9 +144,19 @@ class DocumentGenerationService {
       }
     }
 
-    // Add formatted business address
-    if (profile.principalAddress) {
-      data['businessAddress'] = this.formatAddress(profile.principalAddress);
+    // Add formatted business address (use businessAddress to support any city/state)
+    const businessAddr = profile.businessAddress;
+    if (businessAddr) {
+      data['businessAddress'] = this.formatAddress(businessAddr);
+      data['businessCity'] = businessAddr.city || '';
+      data['acknowledgmentCounty'] = businessAddr.county || '';
+      const stateCode = (businessAddr.state || profile.formationState) as USStateType;
+      data['acknowledgmentState'] = USStateNames[stateCode] || stateCode || '';
+    } else {
+      data['businessAddress'] = data['businessAddress'] || '';
+      data['businessCity'] = '';
+      data['acknowledgmentCounty'] = '';
+      data['acknowledgmentState'] = (profile.formationState && USStateNames[profile.formationState as USStateType]) || profile.formationState || '';
     }
 
     // Add owner names

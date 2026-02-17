@@ -85,6 +85,8 @@ export interface Address {
   state: USStateType;
   zipCode: string;
   country: string;
+  /** County (optional); used for notary/acknowledgment blocks in generated documents */
+  county?: string;
 }
 
 // =============================================================================

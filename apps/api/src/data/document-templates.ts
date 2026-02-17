@@ -10,10 +10,14 @@ import {
 } from '@change/shared';
 
 // Common merge fields used across multiple templates
+// Location fields (acknowledgmentState, acknowledgmentCounty, businessCity) are populated from
+// business profile address so documents are suitable for any city/county/state.
 const COMMON_MERGE_FIELDS = {
   businessName: { key: 'businessName', label: 'Business Name', source: 'business_profile' as const, sourcePath: 'businessName', required: true },
   formationState: { key: 'formationState', label: 'Formation State', source: 'business_profile' as const, sourcePath: 'formationState', required: true },
-  businessAddress: { key: 'businessAddress', label: 'Business Address', source: 'business_profile' as const, sourcePath: 'principalAddress', required: true },
+  businessAddress: { key: 'businessAddress', label: 'Business Address', source: 'business_profile' as const, sourcePath: 'businessAddress', required: true },
+  businessCity: { key: 'businessCity', label: 'Business City', source: 'business_profile' as const, sourcePath: 'businessAddress.city', required: false },
+  // acknowledgmentState and acknowledgmentCounty are injected by document-generation.service from business address/formation state
   registeredAgentName: { key: 'registeredAgentName', label: 'Registered Agent Name', source: 'business_profile' as const, sourcePath: 'registeredAgent.name', required: true },
   registeredAgentAddress: { key: 'registeredAgentAddress', label: 'Registered Agent Address', source: 'business_profile' as const, sourcePath: 'registeredAgent.address', required: true },
   memberName: { key: 'memberName', label: 'Member Name', source: 'person' as const, sourcePath: 'fullName', required: true },
@@ -110,8 +114,8 @@ IN WITNESS WHEREOF, the undersigned organizer has executed these Articles of Org
 _______________________________
 {{signatoryName}}, Organizer
 
-STATE OF _____________________
-COUNTY OF _____________________
+STATE OF {{acknowledgmentState}}
+COUNTY OF {{acknowledgmentCounty}}
 
 The foregoing instrument was acknowledged before me this ___ day of __________, {{year}}.
 
@@ -475,8 +479,8 @@ export const BUSINESS_ADDRESS_AFFIDAVIT_TEMPLATE: DocumentTemplateData = {
   category: DocumentCategory.FORMATION,
   content: `BUSINESS ADDRESS AFFIDAVIT
 
-STATE OF _____________________
-COUNTY OF _____________________
+STATE OF {{acknowledgmentState}}
+COUNTY OF {{acknowledgmentCounty}}
 
 I, {{signatoryName}}, being duly sworn, do hereby state and affirm as follows:
 
@@ -512,8 +516,8 @@ Date: {{date}}
 
 NOTARIZATION (if required)
 
-STATE OF _____________________
-COUNTY OF _____________________
+STATE OF {{acknowledgmentState}}
+COUNTY OF {{acknowledgmentCounty}}
 
 Subscribed and sworn to before me this ___ day of __________, {{year}}.
 

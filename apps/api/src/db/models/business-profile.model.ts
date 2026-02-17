@@ -8,6 +8,8 @@ export interface IAddress {
   state: USStateType;
   zipCode: string;
   country: string;
+  /** County (optional); used for notary/acknowledgment blocks in generated documents */
+  county?: string;
 }
 
 export interface IRegisteredAgent {
@@ -212,6 +214,7 @@ const addressSchema = new Schema<IAddress>(
     state: { type: String, required: true, enum: Object.values(USState) },
     zipCode: { type: String, required: true, match: /^\d{5}(-\d{4})?$/ },
     country: { type: String, default: 'USA' },
+    county: { type: String, maxlength: 100 },
   },
   { _id: false }
 );
